@@ -17,12 +17,15 @@ package io.aklivity.zillabase.cli.internal;
 import com.github.rvesse.airline.annotations.Cli;
 import com.github.rvesse.airline.help.Help;
 
+import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
+
 @Cli(name = "zillabase",
     description = "Zillabase CLI",
     defaultCommand = Help.class,
     commands =
     {
-        Help.class
+        Help.class,
+        ZillabaseInitCommand.class
     })
 public final class ZillabaseCli
 {
