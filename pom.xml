@@ -9,7 +9,7 @@
   <artifactId>zillabase</artifactId>
   <version>develop-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>zilla</name>
+  <name>zillabase</name>
   <url>https://github.com/aklivity/zillabase</url>
   <inceptionYear>2024</inceptionYear>
 
@@ -61,6 +61,21 @@
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-engine</artifactId>
         <version>5.10.2</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.docker-java</groupId>
+        <artifactId>docker-java-core</artifactId>
+        <version>3.3.6</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.docker-java</groupId>
+        <artifactId>docker-java-transport-httpclient5</artifactId>
+        <version>3.3.6</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.7.30</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
