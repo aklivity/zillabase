@@ -14,44 +14,30 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.start;
 
-import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.StartContainerCmd;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientConfig;
-import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
-import com.github.dockerjava.transport.DockerHttpClient;
 import com.github.rvesse.airline.annotations.Command;
 
-import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
+import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 
 @Command(
     name = "start",
     description = "Start containers for local development")
-public final class ZillabaseStartCommand extends ZillabaseCommand
+public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
     @Override
-    protected void invoke()
+    protected void invoke(
+        DockerClient client)
     {
-        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-            .withDockerHost("unix:///var/run/docker.sock")
-            .withDockerConfig("zillabase")
-            .build();
-
-        DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
-            .dockerHost(config.getDockerHost())
-            .sslConfig(config.getSSLConfig())
-            .maxConnections(100)
-            .connectionTimeout(Duration.ofSeconds(30))
-            .responseTimeout(Duration.ofSeconds(45))
-            .build();
-
-        DockerClient client = DockerClientImpl.getInstance(config, httpClient);
+        Map<String, String> project = Map.of("com.docker.compose.project", "zillabase");
 
         String format = "zillabase_%s";
         String networkName = String.format(format, "default");
@@ -69,16 +55,28 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
                 .exec();
         }
 
-        CreateContainerResponse zilla = client
+        List<String> containerIds = new ArrayList<>();
+
+        try (CreateContainerCmd command = client
             .createContainerCmd("ghcr.io/aklivity/zilla:latest")
-            .withName("zillabase_zilla")
+            .withLabels(project)
+            .withName(String.format(format, "zilla"))
             .withCmd("start", "-v")
             .withTty(true)
             .withHostConfig(HostConfig.newHostConfig()
-                .withNetworkMode(networkName))
-            .exec();
+                .withNetworkMode(networkName)))
+        {
+            CreateContainerResponse zilla = command.exec();
 
-        client.startContainerCmd(zilla.getId())
-            .exec();
+            containerIds.add(zilla.getId());
+        }
+
+        for (String containerId : containerIds)
+        {
+            try (StartContainerCmd command = client.startContainerCmd(containerId))
+            {
+                command.exec();
+            }
+        }
     }
 }

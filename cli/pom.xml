@@ -112,6 +112,7 @@
                 <exclude>META-INF/NOTICE.md</exclude>
                 <exclude>META-INF/NOTICE.txt</exclude>
                 <exclude>META-INF/MANIFEST.MF</exclude>
+                <exclude>META-INF/DEPENDENCIES</exclude>
               </excludes>
             </filter>
           </filters>
