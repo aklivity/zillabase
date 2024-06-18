@@ -18,6 +18,7 @@ import com.github.rvesse.airline.annotations.Cli;
 import com.github.rvesse.airline.help.Help;
 
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
+import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
 
 @Cli(name = "zillabase",
     description = "Zillabase CLI",
@@ -25,7 +26,8 @@ import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
     commands =
     {
         Help.class,
-        ZillabaseInitCommand.class
+        ZillabaseInitCommand.class,
+        ZillabaseStartCommand.class
     })
 public final class ZillabaseCli
 {
