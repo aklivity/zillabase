@@ -75,7 +75,8 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
         DockerClient client,
         String id)
     {
-        try (RemoveContainerCmd command = client.removeContainerCmd(id))
+        try (RemoveContainerCmd command = client.removeContainerCmd(id)
+                .withForce(true))
         {
             command.exec();
         }
