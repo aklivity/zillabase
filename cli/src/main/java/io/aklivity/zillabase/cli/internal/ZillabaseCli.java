@@ -17,6 +17,7 @@ package io.aklivity.zillabase.cli.internal;
 import com.github.rvesse.airline.annotations.Cli;
 import com.github.rvesse.airline.help.Help;
 
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
 import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
 import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
@@ -29,7 +30,8 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
         Help.class,
         ZillabaseInitCommand.class,
         ZillabaseStartCommand.class,
-        ZillabaseStopCommand.class
+        ZillabaseStopCommand.class,
+        ZillabaseAsyncapiCommand.class
     })
 public final class ZillabaseCli
 {

@@ -49,6 +49,7 @@
     <maven.compiler.release>17</maven.compiler.release>
     <checkstyle.config.location>io/aklivity/zilla/conf/checkstyle/configuration.xml</checkstyle.config.location>
     <checkstyle.suppressions.location>io/aklivity/zilla/conf/checkstyle/suppressions.xml</checkstyle.suppressions.location>
+    <k3po.version>3.2.0</k3po.version>
   </properties>
 
   <modules>
@@ -76,6 +77,16 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
         <version>1.7.30</version>
+      </dependency>
+      <dependency>
+        <groupId>io.aklivity.k3po</groupId>
+        <artifactId>lang</artifactId>
+        <version>${k3po.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.aklivity.k3po</groupId>
+        <artifactId>control-junit</artifactId>
+        <version>${k3po.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
