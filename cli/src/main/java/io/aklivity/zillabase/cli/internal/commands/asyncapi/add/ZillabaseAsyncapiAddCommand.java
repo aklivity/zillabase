@@ -34,14 +34,12 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
     description = "Add a new AsyncAPI specification")
 public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
 {
-    private static final URI ZILLABASE_DEFAULT_LOCATION = URI.create("./asyncapi.yml");
-
     private final HttpClient client = HttpClient.newHttpClient();
 
     @Required
     @Option(name = {"-s", "--spec"},
         description = "AsyncAPI specification location")
-    public URI spec;
+    public String spec;
 
     @Option(name = {"-u", "--url"},
         description = "Admin Server URL")
@@ -54,7 +52,7 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
     @Override
     protected void invoke()
     {
-        Path path = Path.of(spec != null ? spec : ZILLABASE_DEFAULT_LOCATION);
+        Path path = Path.of(spec);
         if (Files.exists(path))
         {
             try
@@ -64,18 +62,26 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
                 {
                     System.out.println(response);
                 }
+                else
+                {
+                    System.out.println("error");
+                }
             }
             catch (IOException ex)
             {
                 System.out.println("Failed to load: " + path);
             }
         }
-
     }
 
     private String sendHttpRequest(
         InputStream content)
     {
+        if (serverURL == null)
+        {
+            serverURL = ADMIN_SERVER_DEFAULT;
+        }
+
         HttpRequest httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(ASYNCAPI_PATH))
             .header("Content-Type", "application/json")

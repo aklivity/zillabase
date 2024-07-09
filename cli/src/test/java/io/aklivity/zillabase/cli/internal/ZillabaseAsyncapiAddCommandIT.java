@@ -17,13 +17,13 @@ package io.aklivity.zillabase.cli.internal;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
-import java.net.URI;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
 import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
+
+import com.github.rvesse.airline.HelpOption;
 
 import io.aklivity.k3po.runtime.junit.annotation.Specification;
 import io.aklivity.k3po.runtime.junit.rules.K3poRule;
@@ -45,9 +45,9 @@ public class ZillabaseAsyncapiAddCommandIT
     public void shouldAddAsyncapiSpec() throws Exception
     {
         ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
+        command.helpOption = new HelpOption<>();
         command.verbose = true;
-        command.spec = URI.create("io/aklivity/zillabase/cli/internal/specs/asyncapi.yaml");
-        command.serverURL = URI.create("http://localhost:7184/v1");
+        command.spec = "src/test/scripts/io/aklivity/zillabase/cli/internal/specs/asyncapi.yaml";
 
         command.run();
 

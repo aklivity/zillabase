@@ -62,6 +62,11 @@ public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
     private String sendHttpRequest(
         String path)
     {
+        if (serverURL == null)
+        {
+            serverURL = ADMIN_SERVER_DEFAULT;
+        }
+
         HttpRequest httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(path))
             .DELETE()

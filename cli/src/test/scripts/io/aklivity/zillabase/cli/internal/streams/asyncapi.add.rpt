@@ -33,7 +33,7 @@ read 'asyncapi: 3.0.0\n'
      '  plain:\n'
      '    host: mqtt://localhost:7183\n'
      '    protocol: mqtt\n'
-     'defaultContentType: application/json';
+     'defaultContentType: application/json'
 
 read closed
 

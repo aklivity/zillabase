@@ -14,10 +14,13 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.asyncapi;
 
+import java.net.URI;
+
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 
 public abstract class ZillabaseAsyncapiCommand extends ZillabaseCommand
 {
-    protected static final String ASYNCAPI_PATH = "/asyncapis";
+    protected static final String ASYNCAPI_PATH = "asyncapis";
     protected static final String ASYNCAPI_ID_PATH = ASYNCAPI_PATH + "/%s";
+    protected static final URI ADMIN_SERVER_DEFAULT = URI.create("http://localhost:7184/v1/");
 }
