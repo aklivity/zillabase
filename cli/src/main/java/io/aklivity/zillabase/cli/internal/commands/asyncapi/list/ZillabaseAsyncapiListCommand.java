@@ -14,26 +14,20 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.asyncapi.list;
 
-import static io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand.ASYNCAPI_ID_PATH;
-import static io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand.ASYNCAPI_PATH;
-
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
-import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
+
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 
 @Command(
     name = "list",
     description = "List AsyncAPI specifications")
-public class ZillabaseAsyncapiListCommand extends ZillabaseCommand
+public class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
 {
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -56,7 +50,7 @@ public class ZillabaseAsyncapiListCommand extends ZillabaseCommand
 
         if (id != null)
         {
-            response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, ASYNCAPI_PATH, id));
+            response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, id));
         }
         else
         {

@@ -17,7 +17,8 @@ package io.aklivity.zillabase.cli.internal;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
-import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
+import java.net.URI;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -31,7 +32,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncap
 public class ZillabaseAsyncapiAddCommandIT
 {
     private final K3poRule k3po = new K3poRule()
-        .addScriptRoot("server", "io/aklivity/zillabase/cli/internal");
+        .addScriptRoot("server", "io/aklivity/zillabase/cli/internal/streams");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(10, SECONDS));
 
@@ -40,10 +41,13 @@ public class ZillabaseAsyncapiAddCommandIT
 
     @Test
     @Specification({
-        "${server}/add.asyncapi.spec"})
+        "${server}/asyncapi.add"})
     public void shouldAddAsyncapiSpec() throws Exception
     {
-        ZillabaseCommand command = new ZillabaseAsyncapiAddCommand();
+        ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
+        command.verbose = true;
+        command.spec = URI.create("io/aklivity/zillabase/cli/internal/specs/asyncapi.yaml");
+        command.serverURL = URI.create("http://localhost:7184/v1");
 
         command.run();
 

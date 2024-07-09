@@ -14,8 +14,6 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.asyncapi.add;
 
-import static io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand.ASYNCAPI_PATH;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -24,22 +22,23 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
-import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
+import com.github.rvesse.airline.annotations.restrictions.Required;
+
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 
 @Command(
     name = "add",
     description = "Add a new AsyncAPI specification")
-public class ZillabaseAsyncapiAddCommand extends ZillabaseCommand
+public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
 {
     private static final URI ZILLABASE_DEFAULT_LOCATION = URI.create("./asyncapi.yml");
 
     private final HttpClient client = HttpClient.newHttpClient();
 
+    @Required
     @Option(name = {"-s", "--spec"},
         description = "AsyncAPI specification location")
     public URI spec;

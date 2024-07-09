@@ -14,31 +14,10 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.asyncapi;
 
-import com.github.rvesse.airline.annotations.Cli;
-import com.github.rvesse.airline.help.Help;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsyncapiListCommand;
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
 
-@Cli(name = "asyncapi",
-    description = "Manage AsyncAPI specifications",
-    defaultCommand = Help.class,
-    commands =
-        {
-            Help.class,
-            ZillabaseAsyncapiAddCommand.class,
-            ZillabaseAsyncapiListCommand.class,
-            ZillabaseAsyncapiRemoveCommand.class,
-        })
-public class ZillabaseAsyncapiCommand extends ZillabaseCommand
+public abstract class ZillabaseAsyncapiCommand extends ZillabaseCommand
 {
-    public static final String ASYNCAPI_PATH = "/asyncapis";
-    public static final String ASYNCAPI_ID_PATH = "%s/%s";
-
-    @Override
-    protected void invoke()
-    {
-
-    }
+    protected static final String ASYNCAPI_PATH = "/asyncapis";
+    protected static final String ASYNCAPI_ID_PATH = ASYNCAPI_PATH + "/%s";
 }

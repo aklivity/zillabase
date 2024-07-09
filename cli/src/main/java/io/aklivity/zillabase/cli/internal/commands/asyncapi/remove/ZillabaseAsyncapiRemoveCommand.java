@@ -14,9 +14,6 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.asyncapi.remove;
 
-import static io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand.ASYNCAPI_ID_PATH;
-import static io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand.ASYNCAPI_PATH;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -24,12 +21,13 @@ import java.net.http.HttpResponse;
 
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
-import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
+
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 
 @Command(
     name = "remove",
     description = "Delete an AsyncAPI specification")
-public class ZillabaseAsyncapiRemoveCommand extends ZillabaseCommand
+public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
 {
     private final HttpClient client = HttpClient.newHttpClient();
 

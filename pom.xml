@@ -142,6 +142,9 @@
                 </excludes>
               </licenseSet>
             </licenseSets>
+            <mapping>
+              <rpt>SCRIPT_STYLE</rpt>
+            </mapping>
             <failIfUnknown>true</failIfUnknown>
             <failIfMissing>true</failIfMissing>
           </configuration>
