@@ -15,8 +15,12 @@
 package io.aklivity.zillabase.cli.internal;
 
 import com.github.rvesse.airline.annotations.Cli;
+import com.github.rvesse.airline.annotations.Group;
 import com.github.rvesse.airline.help.Help;
 
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsyncapiListCommand;
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
 import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
 import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
@@ -24,6 +28,19 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
 @Cli(name = "zillabase",
     description = "Zillabase CLI",
     defaultCommand = Help.class,
+    groups =
+    {
+        @Group(
+            name = "asyncapi",
+            description = "AsyncAPI specification",
+            defaultCommand = Help.class,
+            commands =
+            {
+                ZillabaseAsyncapiAddCommand.class,
+                ZillabaseAsyncapiListCommand.class,
+                ZillabaseAsyncapiRemoveCommand.class
+            })
+    },
     commands =
     {
         Help.class,
