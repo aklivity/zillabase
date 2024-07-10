@@ -21,7 +21,7 @@ connected
 read http:method "POST"
 read http:version "HTTP/1.1"
 read http:header "Host" "localhost:7184"
-read http:header "content-type" "application/json"
+read http:header "content-type" "application/vnd.aai.asyncapi+yaml"
 
 read 'asyncapi: 3.0.0\n'
      'info:\n'
@@ -33,7 +33,7 @@ read 'asyncapi: 3.0.0\n'
      '  plain:\n'
      '    host: mqtt://localhost:7183\n'
      '    protocol: mqtt\n'
-     'defaultContentType: application/json'
+     'defaultContentType: application/json\n'
 
 read closed
 

@@ -34,8 +34,6 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
     description = "Add a new AsyncAPI specification")
 public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
 {
-    private final HttpClient client = HttpClient.newHttpClient();
-
     @Required
     @Option(name = {"-s", "--spec"},
         description = "AsyncAPI specification location")
@@ -57,7 +55,8 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
         {
             try
             {
-                String response = sendHttpRequest(Files.newInputStream(path));
+                HttpClient client = HttpClient.newHttpClient();
+                String response = sendHttpRequest(Files.newInputStream(path), client);
                 if (response != null)
                 {
                     System.out.println(response);
@@ -75,7 +74,8 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
     }
 
     private String sendHttpRequest(
-        InputStream content)
+        InputStream content,
+        HttpClient client)
     {
         if (serverURL == null)
         {
@@ -84,7 +84,7 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
 
         HttpRequest httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(ASYNCAPI_PATH))
-            .header("Content-Type", "application/json")
+            .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
             .POST(HttpRequest.BodyPublishers.ofInputStream(() -> content))
             .build();
 

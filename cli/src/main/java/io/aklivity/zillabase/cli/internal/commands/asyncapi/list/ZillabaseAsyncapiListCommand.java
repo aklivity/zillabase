@@ -29,8 +29,6 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
     description = "List AsyncAPI specifications")
 public class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
 {
-    private final HttpClient client = HttpClient.newHttpClient();
-
     @Option(name = {"-id"},
         description = "AsyncAPI specification identifier")
     public String id;
@@ -47,14 +45,15 @@ public class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
     protected void invoke()
     {
         String response;
+        HttpClient client = HttpClient.newHttpClient();
 
         if (id != null)
         {
-            response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, id));
+            response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, id), client);
         }
         else
         {
-            response = sendHttpRequest(ASYNCAPI_PATH);
+            response = sendHttpRequest(ASYNCAPI_PATH, client);
         }
 
         if (response != null)
@@ -64,7 +63,8 @@ public class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
     }
 
     private String sendHttpRequest(
-        String path)
+        String path,
+        HttpClient client)
     {
         if (serverURL == null)
         {

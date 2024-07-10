@@ -22,6 +22,7 @@ import java.net.http.HttpResponse;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 
+import com.github.rvesse.airline.annotations.restrictions.Required;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 
 @Command(
@@ -31,8 +32,7 @@ public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
 {
     private static final String SUCCESSFULLY_DELETED = "The artifact was successfully deleted";
 
-    private final HttpClient client = HttpClient.newHttpClient();
-
+    @Required
     @Option(name = {"-id"},
         description = "AsyncAPI specification identifier")
     public String id;
@@ -48,12 +48,8 @@ public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
     @Override
     protected void invoke()
     {
-        String response = null;
-
-        if (id != null)
-        {
-            response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, ASYNCAPI_PATH, id));
-        }
+        HttpClient client = HttpClient.newHttpClient();
+        String response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, ASYNCAPI_PATH, id), client);
 
         if (response != null)
         {
@@ -62,7 +58,8 @@ public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
     }
 
     private String sendHttpRequest(
-        String path)
+        String path,
+        HttpClient client)
     {
         if (serverURL == null)
         {
