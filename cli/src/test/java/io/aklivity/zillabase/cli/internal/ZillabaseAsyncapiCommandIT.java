@@ -28,8 +28,10 @@ import com.github.rvesse.airline.HelpOption;
 import io.aklivity.k3po.runtime.junit.annotation.Specification;
 import io.aklivity.k3po.runtime.junit.rules.K3poRule;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsyncapiListCommand;
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
 
-public class ZillabaseAsyncapiAddCommandIT
+public class ZillabaseAsyncapiCommandIT
 {
     private final K3poRule k3po = new K3poRule()
         .addScriptRoot("server", "io/aklivity/zillabase/cli/internal/streams");
@@ -48,6 +50,36 @@ public class ZillabaseAsyncapiAddCommandIT
         command.helpOption = new HelpOption<>();
         command.verbose = true;
         command.spec = "src/test/scripts/io/aklivity/zillabase/cli/internal/specs/asyncapi.yaml";
+
+        command.run();
+
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "${server}/asyncapi.list.via.id"})
+    public void shouldListAsyncapiSpec() throws Exception
+    {
+        ZillabaseAsyncapiListCommand command = new ZillabaseAsyncapiListCommand();
+        command.helpOption = new HelpOption<>();
+        command.verbose = true;
+        command.id = "1";
+
+        command.run();
+
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "${server}/asyncapi.remove.via.id"})
+    public void shouldRemoveAsyncapiSpec() throws Exception
+    {
+        ZillabaseAsyncapiRemoveCommand command = new ZillabaseAsyncapiRemoveCommand();
+        command.helpOption = new HelpOption<>();
+        command.verbose = true;
+        command.id = "1";
 
         command.run();
 

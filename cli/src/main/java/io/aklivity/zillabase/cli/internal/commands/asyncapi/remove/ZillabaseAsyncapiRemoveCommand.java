@@ -29,6 +29,8 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
     description = "Delete an AsyncAPI specification")
 public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
 {
+    private static final String SUCCESSFULLY_DELETED = "The artifact was successfully deleted";
+
     private final HttpClient client = HttpClient.newHttpClient();
 
     @Option(name = {"-id"},
@@ -76,7 +78,7 @@ public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
         try
         {
             HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            responseBody = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
+            responseBody = httpResponse.statusCode() == 204 ? SUCCESSFULLY_DELETED : null;
         }
         catch (Exception ex)
         {
