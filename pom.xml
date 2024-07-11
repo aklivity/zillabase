@@ -54,6 +54,7 @@
 
   <modules>
     <module>cli</module>
+    <module>service</module>
   </modules>
 
   <dependencyManagement>
