@@ -1,3 +1,17 @@
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.aklivity.zillabase.service.internal.handler;
 
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
@@ -20,14 +34,17 @@ public class ZillabaseServerAsyncApiSpecificationIdHandler extends ZillabaseServ
 
     private final HttpClient client;
     private final String baseUrl;
+    private final String groupId;
     private final Matcher matcher;
 
     public ZillabaseServerAsyncApiSpecificationIdHandler(
         HttpClient client,
-        String baseUrl)
+        String baseUrl,
+        String groupId)
     {
         this.client = client;
         this.baseUrl = baseUrl;
+        this.groupId = groupId;
         this.matcher = PATH_PATTERN.matcher("");
     }
 
@@ -42,27 +59,27 @@ public class ZillabaseServerAsyncApiSpecificationIdHandler extends ZillabaseServ
             String method = exchange.getRequestMethod();
             boolean badMethod = false;
             HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(baseUrl,
-                MessageFormat.format(ARTIFACT_VERSION_PATH, "zilla", specId)));
+                MessageFormat.format(ARTIFACT_VERSION_PATH, groupId, specId)));
 
             try
             {
                 switch (method)
                 {
-                    case "GET":
-                        builder.uri(toURI(baseUrl, MessageFormat.format(ARTIFACT_BY_GLOBAL_ID_PATH, specId)))
-                            .GET();
-                        break;
-                    case "PUT":
-                        exchange.getRequestHeaders().forEach((k, v) -> builder.header(k, String.join(",", v)));
-                        builder.PUT(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
-                        break;
-                    case "DELETE":
-                        builder.DELETE();
-                        break;
-                    default:
-                        exchange.sendResponseHeaders(HTTP_BAD_METHOD, NO_RESPONSE_BODY);
-                        badMethod = true;
-                        break;
+                case "GET":
+                    builder.uri(toURI(baseUrl, MessageFormat.format(ARTIFACT_BY_GLOBAL_ID_PATH, specId)))
+                        .GET();
+                    break;
+                case "PUT":
+                    exchange.getRequestHeaders().forEach((k, v) -> builder.header(k, String.join(",", v)));
+                    builder.PUT(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
+                    break;
+                case "DELETE":
+                    builder.DELETE();
+                    break;
+                default:
+                    exchange.sendResponseHeaders(HTTP_BAD_METHOD, NO_RESPONSE_BODY);
+                    badMethod = true;
+                    break;
                 }
 
                 if (!badMethod)
@@ -81,7 +98,7 @@ public class ZillabaseServerAsyncApiSpecificationIdHandler extends ZillabaseServ
             }
             catch (Exception ex)
             {
-                throw new RuntimeException(ex);
+                ex.printStackTrace(System.err);
             }
 
         }

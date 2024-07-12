@@ -12,29 +12,5 @@ specific language governing permissions and limitations
 under the License.
 
 This project includes:
-  Airline - IO Library under The Apache License, Version 2.0
-  Airline - Library under The Apache License, Version 2.0
-  Apache Commons Codec under Apache License, Version 2.0
-  Apache Commons Collections under Apache License, Version 2.0
-  Apache Commons Compress under Apache License, Version 2.0
-  Apache Commons IO under Apache-2.0
-  Apache Commons Lang under Apache License, Version 2.0
-  Apache HttpClient under Apache License, Version 2.0
-  Apache HttpComponents Core HTTP/1.1 under Apache License, Version 2.0
-  Apache HttpComponents Core HTTP/2 under Apache License, Version 2.0
-  Bouncy Castle ASN.1 Extension and Utility APIs under Bouncy Castle Licence
-  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs under Bouncy Castle Licence
-  Bouncy Castle Provider under Bouncy Castle Licence
-  docker-java-api under The Apache Software License, Version 2.0
-  docker-java-core under The Apache Software License, Version 2.0
-  docker-java-transport under The Apache Software License, Version 2.0
-  docker-java-transport-httpclient5 under The Apache Software License, Version 2.0
-  Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
-  Jackson-annotations under The Apache Software License, Version 2.0
-  Jackson-core under The Apache Software License, Version 2.0
-  jackson-databind under The Apache Software License, Version 2.0
-  Jakarta Dependency Injection under The Apache Software License, Version 2.0
-  Java Native Access under LGPL-2.1-or-later or Apache-2.0
-  SLF4J API Module under MIT License
-  SLF4J Simple Binding under MIT License
+  SnakeYAML under Apache License, Version 2.0
 

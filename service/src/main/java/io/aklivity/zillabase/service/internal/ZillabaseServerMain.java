@@ -16,20 +16,17 @@ package io.aklivity.zillabase.service.internal;
 
 import io.aklivity.zillabase.service.internal.server.ZillabaseServer;
 
-public class ZillabaseServerMain
+public final class ZillabaseServerMain
 {
     public static void main(
         String[] args)
     {
         ZillabaseServer server = new ZillabaseServer();
 
-        try
-        {
-            server.run();
-        }
-        finally
-        {
-            server.stop();
-        }
+        server.run();
+    }
+
+    private ZillabaseServerMain()
+    {
     }
 }

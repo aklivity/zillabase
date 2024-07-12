@@ -12,20 +12,8 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.internal.handler;
+package io.aklivity.zillabase.service.internal;
 
-import java.net.URI;
-
-import com.sun.net.httpserver.HttpHandler;
-
-public abstract class ZillabaseServerHandler implements HttpHandler
+public class ZillabaseServerIT
 {
-    protected static final int NO_RESPONSE_BODY = -1;
-
-    protected URI toURI(
-        String baseUrl,
-        String path)
-    {
-        return URI.create(baseUrl).resolve(path);
-    }
 }
