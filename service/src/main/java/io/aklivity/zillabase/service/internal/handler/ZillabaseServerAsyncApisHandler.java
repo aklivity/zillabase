@@ -14,12 +14,11 @@
  */
 package io.aklivity.zillabase.service.internal.handler;
 
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 
-import java.io.OutputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -54,8 +53,8 @@ public class ZillabaseServerAsyncApisHandler extends ZillabaseServerHandler
             switch (method)
             {
             case "POST":
-                exchange.getRequestHeaders().forEach((k, v) -> builder.header(k, String.join(",", v)));
-                builder.header("artifactType", "ASYNCAPI")
+                builder.header("Content-Type", "application/vnd.aai.asyncapi+yaml")
+                    .header("artifactType", "ASYNCAPI")
                     .POST(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
                 break;
             case "GET":
@@ -69,13 +68,11 @@ public class ZillabaseServerAsyncApisHandler extends ZillabaseServerHandler
 
             if (!badMethod)
             {
-                HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(response.statusCode(), response.body().length());
+                boolean error = buildResponse(client, exchange, builder.build());
 
-                try (OutputStream os = exchange.getResponseBody())
+                if (error)
                 {
-                    os.write(response.body().getBytes());
+                    exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, NO_RESPONSE_BODY);
                 }
             }
 

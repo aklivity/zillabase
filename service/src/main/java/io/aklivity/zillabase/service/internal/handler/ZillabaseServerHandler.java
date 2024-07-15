@@ -14,8 +14,13 @@
  */
 package io.aklivity.zillabase.service.internal.handler;
 
+import java.io.OutputStream;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 public abstract class ZillabaseServerHandler implements HttpHandler
@@ -27,5 +32,33 @@ public abstract class ZillabaseServerHandler implements HttpHandler
         String path)
     {
         return URI.create(baseUrl).resolve(path);
+    }
+
+    protected boolean buildResponse(
+        HttpClient client,
+        HttpExchange exchange,
+        HttpRequest request)
+    {
+        boolean error = false;
+        try
+        {
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            response.headers().map().forEach((k, v) -> exchange.getResponseHeaders().add(k, String.join(",", v)));
+            exchange.sendResponseHeaders(response.statusCode(), response.body().length());
+
+            if (response.body() != null && !response.body().isEmpty())
+            {
+                try (OutputStream os = exchange.getResponseBody())
+                {
+                    os.write(response.body().getBytes());
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            error = true;
+            ex.printStackTrace(System.err);
+        }
+        return error;
     }
 }

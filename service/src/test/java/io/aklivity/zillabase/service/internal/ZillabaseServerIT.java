@@ -14,6 +14,63 @@
  */
 package io.aklivity.zillabase.service.internal;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.rules.RuleChain.outerRule;
+
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.DisableOnDebug;
+import org.junit.rules.TestRule;
+import org.junit.rules.Timeout;
+
+import io.aklivity.k3po.runtime.junit.annotation.Specification;
+import io.aklivity.k3po.runtime.junit.rules.K3poRule;
+import io.aklivity.zillabase.service.internal.server.ZillabaseServer;
+
 public class ZillabaseServerIT
 {
+    private final K3poRule k3po = new K3poRule()
+        .addScriptRoot("app", "io/aklivity/zillabase/service/internal/streams");
+
+    private final TestRule timeout = new DisableOnDebug(new Timeout(10, SECONDS));
+
+    @Rule
+    public final TestRule chain = outerRule(k3po).around(timeout);
+
+    private static ZillabaseServer server;
+
+    @BeforeClass
+    public static void init()
+    {
+        server = new ZillabaseServer();
+        server.run();
+    }
+
+    @Test
+    @Specification({
+        "${app}/asyncapi.register/client",
+        "${app}/asyncapi.register/server"})
+    public void shouldRegisterAsyncapiSpec() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "${app}/resolve.artifact.via.global.id/client",
+        "${app}/resolve.artifact.via.global.id/server"})
+    public void shouldResolveAsyncapiSpecById() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "${app}/remove.artifact/client",
+        "${app}/remove.artifact/server"})
+    public void shouldRemoveAsyncapiSpec() throws Exception
+    {
+        k3po.finish();
+    }
 }

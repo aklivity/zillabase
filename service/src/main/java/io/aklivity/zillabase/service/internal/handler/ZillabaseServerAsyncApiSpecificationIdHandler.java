@@ -14,12 +14,11 @@
  */
 package io.aklivity.zillabase.service.internal.handler;
 
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 
-import java.io.OutputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,7 +29,7 @@ public class ZillabaseServerAsyncApiSpecificationIdHandler extends ZillabaseServ
 {
     private static final String ARTIFACT_BY_GLOBAL_ID_PATH = "/apis/registry/v2/ids/globalIds/{0}";
     private static final String ARTIFACT_VERSION_PATH = "/apis/registry/v2/groups/{0}/artifacts/{1}";
-    private static final Pattern PATH_PATTERN = Pattern.compile("/asyncapis/(.*)");
+    private static final Pattern PATH_PATTERN = Pattern.compile("/v1/asyncapis/(.*)");
 
     private final HttpClient client;
     private final String baseUrl;
@@ -70,8 +69,8 @@ public class ZillabaseServerAsyncApiSpecificationIdHandler extends ZillabaseServ
                         .GET();
                     break;
                 case "PUT":
-                    exchange.getRequestHeaders().forEach((k, v) -> builder.header(k, String.join(",", v)));
-                    builder.PUT(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
+                    builder.header("Content-Type", "application/vnd.aai.asyncapi+yaml")
+                        .PUT(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
                     break;
                 case "DELETE":
                     builder.DELETE();
@@ -84,13 +83,11 @@ public class ZillabaseServerAsyncApiSpecificationIdHandler extends ZillabaseServ
 
                 if (!badMethod)
                 {
-                    HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(response.statusCode(), response.body().length());
+                    boolean error = buildResponse(client, exchange, builder.build());
 
-                    try (OutputStream os = exchange.getResponseBody())
+                    if (error)
                     {
-                        os.write(response.body().getBytes());
+                        exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, NO_RESPONSE_BODY);
                     }
                 }
 
