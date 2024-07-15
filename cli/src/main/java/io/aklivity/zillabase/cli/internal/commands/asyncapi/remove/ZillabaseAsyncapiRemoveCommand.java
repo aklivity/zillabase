@@ -21,8 +21,8 @@ import java.net.http.HttpResponse;
 
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
-
 import com.github.rvesse.airline.annotations.restrictions.Required;
+
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 
 @Command(

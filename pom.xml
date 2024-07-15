@@ -54,6 +54,7 @@
 
   <modules>
     <module>cli</module>
+    <module>service</module>
   </modules>
 
   <dependencyManagement>
@@ -72,6 +73,11 @@
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-transport-httpclient5</artifactId>
         <version>3.3.6</version>
+      </dependency>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>1.33</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
