@@ -65,6 +65,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                 ResultCallback<PullResponseItem> callback = new ResultCallback.Adapter<PullResponseItem>()
                 {
+                    private String id;
+
                     @Override
                     public void close() throws IOException
                     {
@@ -82,10 +84,16 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                     @Override
                     public void onNext(
-                        PullResponseItem object)
+                        PullResponseItem item)
                     {
                         // TODO Auto-generated method stub
-                        System.out.println("onNext: " + object);
+                        String id = item.getId();
+                        if (this.id != null && !this.id.equals(id))
+                        {
+                            System.out.println();
+                            this.id = id;
+                        }
+                        System.out.format("%s: %s\r", id, item.getProgress());
                     }
 
                     @Override
