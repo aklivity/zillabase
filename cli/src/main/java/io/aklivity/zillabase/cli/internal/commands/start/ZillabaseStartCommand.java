@@ -16,13 +16,16 @@ package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.io.PrintStream;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.fusesource.jansi.Ansi;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
@@ -33,6 +36,7 @@ import com.github.dockerjava.api.command.StartContainerCmd;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.api.model.PullResponseItem;
+import com.github.dockerjava.api.model.ResponseItem;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
@@ -63,67 +67,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 ReentrantLock lock = new ReentrantLock();
                 Condition complete = lock.newCondition();
 
-                ResultCallback<PullResponseItem> callback = new ResultCallback.Adapter<PullResponseItem>()
-                {
-                    private String id;
-
-                    @Override
-                    public void close() throws IOException
-                    {
-                        // TODO Auto-generated method stub
-                        System.out.println("close");
-                    }
-
-                    @Override
-                    public void onStart(
-                        Closeable closeable)
-                    {
-                        // TODO Auto-generated method stub
-                        System.out.println("onStart: " + closeable);
-                    }
-
-                    @Override
-                    public void onNext(
-                        PullResponseItem item)
-                    {
-                        // TODO Auto-generated method stub
-                        String id = item.getId();
-                        if (this.id != null && !this.id.equals(id))
-                        {
-                            System.out.println();
-                            this.id = id;
-                        }
-                        System.out.format("%s: %s\r", id, item.getProgress());
-                    }
-
-                    @Override
-                    public void onError(
-                        Throwable throwable)
-                    {
-                        // TODO Auto-generated method stub
-                        System.out.println("onError: " + throwable);
-                    }
-
-                    @Override
-                    public void onComplete()
-                    {
-                        System.out.println("onComplete");
-                        lock.lock();
-                        try
-                        {
-                            complete.signal();
-                        }
-                        finally
-                        {
-                            lock.unlock();
-                        }
-                    }
-                };
-
                 lock.lock();
                 try
                 {
-                    command.exec(callback);
+                    command.exec(new PullImageProgressHandler(System.out, lock, complete));
                     complete.awaitUninterruptibly();
                 }
                 finally
@@ -148,6 +95,90 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try (StartContainerCmd command = client.startContainerCmd(containerId))
             {
                 command.exec();
+            }
+        }
+    }
+
+    private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
+    {
+        private final PrintStream out;
+        private final Lock lock;
+        private final Condition complete;
+
+        private final Map<String, ResponseItem> items;
+
+        private PullImageProgressHandler(
+            PrintStream out,
+            Lock lock,
+            Condition complete)
+        {
+            this.out = out;
+            this.lock = lock;
+            this.complete = complete;
+            this.items = new LinkedHashMap<>();
+        }
+
+        @Override
+        public void onNext(
+            PullResponseItem item)
+        {
+            Ansi ansi = Ansi.ansi();
+            for (int i = 0; i < items.size(); i++)
+            {
+                ansi.eraseLine();
+                ansi.cursorUpLine();
+            }
+            out.print(ansi);
+
+            String itemId = item.getId();
+            if (itemId != null)
+            {
+                String from = item.getFrom();
+                String layer = String.format("%s:%s", from, itemId);
+                items.put(layer, item);
+            }
+
+            for (ResponseItem value : items.values())
+            {
+                String id = value.getId();
+                String progress = value.getProgress();
+                String status = value.getStatus();
+
+                switch (status)
+                {
+                case "Downloading":
+                    out.format("%s: %s\n", id, progress);
+                    break;
+                default:
+                    out.format("%s: %s\n", id, status);
+                    break;
+                }
+            }
+        }
+
+        @Override
+        public void onError(
+            Throwable throwable)
+        {
+            doSignalComplete();
+        }
+
+        @Override
+        public void onComplete()
+        {
+            doSignalComplete();
+        }
+
+        private void doSignalComplete()
+        {
+            lock.lock();
+            try
+            {
+                complete.signal();
+            }
+            finally
+            {
+                lock.unlock();
             }
         }
     }
