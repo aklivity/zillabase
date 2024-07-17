@@ -34,6 +34,7 @@ This project includes:
   Jackson-core under The Apache Software License, Version 2.0
   jackson-databind under The Apache Software License, Version 2.0
   Jakarta Dependency Injection under The Apache Software License, Version 2.0
+  Jansi under Apache License, Version 2.0
   Java Native Access under LGPL-2.1-or-later or Apache-2.0
   SLF4J API Module under MIT License
   SLF4J Simple Binding under MIT License
