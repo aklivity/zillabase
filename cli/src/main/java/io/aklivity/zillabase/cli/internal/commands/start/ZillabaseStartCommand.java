@@ -58,6 +58,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateKafkaFactory());
         factories.add(new CreateRisingWaveFactory());
         factories.add(new CreateApicurioFactory());
+        factories.add(new CreateKeycloakFactory());
 
         for (CreateContainerFactory factory : factories)
         {
@@ -340,6 +341,31 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
                 .withCmd("playground");
+        }
+    }
+
+    private static final class CreateKeycloakFactory extends CreateContainerFactory
+    {
+        CreateKeycloakFactory()
+        {
+            super("keycloak", "bitnami/keycloak:latest");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                        .withNetworkMode(network)
+                        .withRestartPolicy(unlessStoppedRestart()))
+                .withTty(true)
+                .withEnv(
+                    "KEYCLOAK_DATABASE_VENDOR=dev-file");
         }
     }
 }
