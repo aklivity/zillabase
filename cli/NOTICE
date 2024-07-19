@@ -38,4 +38,5 @@ This project includes:
   Java Native Access under LGPL-2.1-or-later or Apache-2.0
   SLF4J API Module under MIT License
   SLF4J Simple Binding under MIT License
+  SnakeYAML under Apache License, Version 2.0
 

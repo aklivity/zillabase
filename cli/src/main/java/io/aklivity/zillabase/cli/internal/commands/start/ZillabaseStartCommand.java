@@ -16,7 +16,12 @@ package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.fusesource.jansi.Ansi;
+import org.yaml.snakeyaml.Yaml;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
@@ -33,10 +39,15 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
+import com.github.dockerjava.api.model.Volume;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
@@ -46,6 +57,10 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
+    private static final String API = "api";
+    private static final String PORT = "port";
+    private static final int DEFAULT_ADMIN_PORT = 7184;
+
     @Override
     protected void invoke(
         DockerClient client)
@@ -54,6 +69,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
+        factories.add(new CreateZillabaseFactory());
         factories.add(new CreateZillaFactory());
         factories.add(new CreateKafkaFactory());
         factories.add(new CreateRisingWaveFactory());
@@ -366,6 +382,58 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withTty(true)
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file");
+        }
+    }
+
+    private static final class CreateZillabaseFactory extends CreateContainerFactory
+    {
+        CreateZillabaseFactory()
+        {
+            super("zillabase", "ghcr.io/aklivity/zillabase/service:latest");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            int port = DEFAULT_ADMIN_PORT;
+            Path configPath = Paths.get("zillabase/config.yaml");
+
+            if (Files.exists(configPath))
+            {
+                try
+                {
+                    InputStream inputStream = Files.newInputStream(configPath);
+                    Yaml yaml = new Yaml();
+                    Map<String, Object> config = yaml.load(inputStream);
+
+                    if (config.containsKey(API))
+                    {
+                        Map<String, String> apiConfig = (Map<String, String>) config.get(API);
+                        if (apiConfig.containsKey(PORT))
+                        {
+                            port = Integer.parseInt(apiConfig.get(PORT));
+                        }
+                    }
+                }
+                catch (IOException ex)
+                {
+                    ex.printStackTrace(System.err);
+                }
+            }
+
+            ExposedPort exposedPort = ExposedPort.tcp(port);
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network))
+                    .withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/app/zillabase/config.yaml")))
+                    .withPortBindings(new PortBinding(Ports.Binding.bindPort(port), exposedPort))
+                .withExposedPorts(exposedPort)
+                .withTty(true);
         }
     }
 }
