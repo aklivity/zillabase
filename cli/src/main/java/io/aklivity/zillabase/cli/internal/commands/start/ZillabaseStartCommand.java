@@ -134,12 +134,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     if (!"-- seed".equals(content.trim()))
                     {
                         Thread.sleep(RISINGWAVE_INITIALIZATION_DELAY_MS);
-                        String url = DEFAULT_RISINGWAVE_URL;
                         Properties props = new Properties();
                         props.setProperty("user", "root");
                         try
                         {
-                            Connection conn = DriverManager.getConnection(url, props);
+                            Connection conn = DriverManager.getConnection(DEFAULT_RISINGWAVE_URL, props);
                             Statement stmt = conn.createStatement();
 
                             String[] sqlCommands = content.split(";");
