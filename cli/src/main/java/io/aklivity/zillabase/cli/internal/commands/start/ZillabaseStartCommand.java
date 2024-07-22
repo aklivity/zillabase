@@ -16,11 +16,20 @@ package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -33,8 +42,11 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
 import com.github.rvesse.airline.annotations.Command;
@@ -46,6 +58,10 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
+    private static final int RISINGWAVE_INITIALIZATION_DELAY_MS = 1000;
+    private static final String DEFAULT_RISINGWAVE_URL = "jdbc:postgresql://0.0.0.0:4566/dev";
+    private static final int DEFAULT_RISINGWAVE_PORT = 4566;
+
     @Override
     protected void invoke(
         DockerClient client)
@@ -82,12 +98,18 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         List<String> containerIds = new LinkedList<>();
+        boolean risingwave = false;
         for (CreateContainerFactory factory : factories)
         {
             try (CreateContainerCmd command = factory.createContainer(client))
             {
                 CreateContainerResponse response = command.exec();
                 containerIds.add(response.getId());
+
+                if ("zillabase_risingwave".equals(factory.name))
+                {
+                    risingwave = true;
+                }
             }
         }
 
@@ -96,6 +118,53 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try (StartContainerCmd command = client.startContainerCmd(containerId))
             {
                 command.exec();
+            }
+        }
+
+        if (risingwave)
+        {
+            Path seedPath = Paths.get("zillabase/seed.sql");
+
+            if (Files.exists(seedPath))
+            {
+                try
+                {
+                    String content = Files.readString(seedPath);
+
+                    if (!"-- seed".equals(content.trim()))
+                    {
+                        Thread.sleep(RISINGWAVE_INITIALIZATION_DELAY_MS);
+                        String url = DEFAULT_RISINGWAVE_URL;
+                        Properties props = new Properties();
+                        props.setProperty("user", "root");
+                        try
+                        {
+                            Connection conn = DriverManager.getConnection(url, props);
+                            Statement stmt = conn.createStatement();
+
+                            String[] sqlCommands = content.split(";");
+                            for (String command : sqlCommands)
+                            {
+                                if (!command.trim().isEmpty())
+                                {
+                                    stmt.execute(command);
+                                }
+                            }
+
+                            System.out.println("RisingWave seeded successfully!");
+
+                            conn.close();
+                        }
+                        catch (SQLException ex)
+                        {
+                            ex.printStackTrace(System.err);
+                        }
+                    }
+                }
+                catch (InterruptedException | IOException ex)
+                {
+                    ex.printStackTrace(System.err);
+                }
             }
         }
     }
@@ -331,6 +400,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
+            ExposedPort exposedPort = ExposedPort.tcp(DEFAULT_RISINGWAVE_PORT);
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -338,7 +409,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
+                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(DEFAULT_RISINGWAVE_PORT), exposedPort))
                         .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPort)
                 .withTty(true)
                 .withCmd("playground");
         }
