@@ -30,8 +30,12 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbConfig;
+import jakarta.json.bind.JsonbException;
+
 import org.fusesource.jansi.Ansi;
-import org.yaml.snakeyaml.Yaml;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
@@ -50,17 +54,15 @@ import com.github.dockerjava.api.model.ResponseItem;
 import com.github.dockerjava.api.model.Volume;
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
+import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
 
 @Command(
     name = "start",
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
-    private static final String API = "api";
-    private static final String PORT = "port";
-    private static final int DEFAULT_ADMIN_PORT = 7184;
-
     @Override
     protected void invoke(
         DockerClient client)
@@ -69,7 +71,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
-        factories.add(new CreateZillabaseFactory());
+        factories.add(new CreateAdminFactory());
         factories.add(new CreateZillaFactory());
         factories.add(new CreateKafkaFactory());
         factories.add(new CreateRisingWaveFactory());
@@ -385,43 +387,34 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private static final class CreateZillabaseFactory extends CreateContainerFactory
+    private static final class CreateAdminFactory extends CreateContainerFactory
     {
-        CreateZillabaseFactory()
+        CreateAdminFactory()
         {
-            super("zillabase", "ghcr.io/aklivity/zillabase/service:latest");
+            super("admin", "ghcr.io/aklivity/zillabase/admin:latest");
         }
 
         @Override
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            int port = DEFAULT_ADMIN_PORT;
+            ZillabaseConfig config;
             Path configPath = Paths.get("zillabase/config.yaml");
 
-            if (Files.exists(configPath))
+            try (InputStream inputStream = Files.newInputStream(configPath))
             {
-                try
-                {
-                    InputStream inputStream = Files.newInputStream(configPath);
-                    Yaml yaml = new Yaml();
-                    Map<String, Object> config = yaml.load(inputStream);
+                inputStream.reset();
+                JsonbConfig jsonbConfig = new JsonbConfig().withAdapters(new ZillabaseConfigAdapter());
+                Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
 
-                    if (config.containsKey(API))
-                    {
-                        Map<String, String> apiConfig = (Map<String, String>) config.get(API);
-                        if (apiConfig.containsKey(PORT))
-                        {
-                            port = Integer.parseInt(apiConfig.get(PORT));
-                        }
-                    }
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace(System.err);
-                }
+                config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
+            }
+            catch (IOException | JsonbException ex)
+            {
+                config = new ZillabaseConfig();
             }
 
+            int port = config.port;
             ExposedPort exposedPort = ExposedPort.tcp(port);
             return client
                 .createContainerCmd(image)

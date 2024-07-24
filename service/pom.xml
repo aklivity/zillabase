@@ -21,8 +21,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
+      <groupId>jakarta.json.bind</groupId>
+      <artifactId>jakarta.json.bind-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.leadpony.joy</groupId>
+      <artifactId>joy-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse</groupId>
+      <artifactId>yasson</artifactId>
     </dependency>
     <dependency>
       <groupId>io.aklivity.k3po</groupId>
@@ -121,8 +129,8 @@
           <filter>${*}</filter>
           <images combine.children="append">
             <image>
-              <alias>zillabase-service</alias>
-              <name>ghcr.io/aklivity/zillabase/service:%v</name>
+              <alias>admin</alias>
+              <name>ghcr.io/aklivity/zillabase/admin:%v</name>
               <build>
                 <contextDir>${project.basedir}</contextDir>
                 <tags>

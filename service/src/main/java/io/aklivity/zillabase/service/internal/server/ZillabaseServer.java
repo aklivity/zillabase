@@ -21,62 +21,49 @@ import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.yaml.snakeyaml.Yaml;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbConfig;
+import jakarta.json.bind.JsonbException;
 
 import com.sun.net.httpserver.HttpServer;
 
+import io.aklivity.zillabase.service.config.ZillabaseAdminConfig;
+import io.aklivity.zillabase.service.internal.config.ZillabaseAdminConfigAdapter;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApiSpecificationIdHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApisHandler;
 
 public class ZillabaseServer implements Runnable
 {
-    private static final String API = "api";
-    private static final String REGISTRY_URL = "registry.url";
-    private static final String PORT = "port";
-    private static final int DEFAULT_PORT = 7184;
-    private static final String REGISTRY_GROUP_ID = "registry.groupId";
-    private static final String DEFAULT_GROUP_ID = "zilla";
-
     private final HttpServer server;
     private final HttpClient client;
     private final String baseUrl;
     private final String groupId;
-    private final Map<String, String> configs;
 
     public ZillabaseServer()
     {
+        ZillabaseAdminConfig config;
         Path configPath = Paths.get("zillabase/config.yaml");
-        this.configs = new HashMap<>();
-
-        if (Files.exists(configPath))
+        try (InputStream inputStream = Files.newInputStream(configPath))
         {
-            try
-            {
-                InputStream inputStream = Files.newInputStream(configPath);
-                Yaml yaml = new Yaml();
-                Map<String, Object> config = yaml.load(inputStream);
+            JsonbConfig jsonbConfig = new JsonbConfig().withAdapters(new ZillabaseAdminConfigAdapter());
+            Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
 
-                if (config.containsKey(API))
-                {
-                    this.configs.putAll((Map<String, String>) config.get(API));
-                }
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
-            }
+            config = jsonb.fromJson(inputStream, ZillabaseAdminConfig.class);
+        }
+        catch (IOException | JsonbException ex)
+        {
+            config = new ZillabaseAdminConfig();
         }
 
-        this.baseUrl = configs.containsKey(REGISTRY_URL) ? configs.get(REGISTRY_URL) : null;
-        this.groupId = configs.containsKey(REGISTRY_GROUP_ID) ? configs.get(REGISTRY_GROUP_ID) : DEFAULT_GROUP_ID;
+        this.baseUrl = config.registryUrl;
+        this.groupId = config.registryGroupId;
 
         try
         {
             this.server = HttpServer.create(
-                new InetSocketAddress(configs.containsKey(PORT) ? Integer.parseInt(configs.get(PORT)) : DEFAULT_PORT), 0);
+                new InetSocketAddress(config.port), 0);
             this.client = HttpClient.newHttpClient();
         }
         catch (IOException ex)
