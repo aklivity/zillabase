@@ -17,18 +17,28 @@ package io.aklivity.zillabase.cli.config;
 public class ZillabaseConfig
 {
     public static final int DEFAULT_ADMIN_PORT = 7184;
+    public static final String DEFAULT_GROUP_ID = "zilla";
+    public static final String DEFAULT_REGISTRY_URL = "http://localhost:8080";
 
     public int port;
+    public String registryUrl;
+    public String registryGroupId;
 
     public ZillabaseConfig(
-        int port)
+        int port,
+        String registryUrl,
+        String registryGroupId)
     {
         this.port = port;
+        this.registryUrl = registryUrl;
+        this.registryGroupId = registryGroupId;
     }
 
     public ZillabaseConfig()
     {
         this.port = DEFAULT_ADMIN_PORT;
+        this.registryUrl = DEFAULT_REGISTRY_URL;
+        this.registryGroupId = DEFAULT_GROUP_ID;
     }
 }
 

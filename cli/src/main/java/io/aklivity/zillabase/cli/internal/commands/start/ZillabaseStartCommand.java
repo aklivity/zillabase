@@ -22,6 +22,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,7 +44,6 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
-import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
@@ -51,7 +51,6 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
-import com.github.dockerjava.api.model.Volume;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
@@ -63,6 +62,10 @@ import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
+    private static final String REGISTRY_URL = "REGISTRY_URL=";
+    private static final String REGISTRY_GROUP_ID = "REGISTRY_GROUP_ID=";
+    private static final String ADMIN_PORT = "ADMIN_PORT=";
+
     @Override
     protected void invoke(
         DockerClient client)
@@ -72,11 +75,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         List<CreateContainerFactory> factories = new LinkedList<>();
         factories.add(new CreateAdminFactory());
-        factories.add(new CreateZillaFactory());
+        /*factories.add(new CreateZillaFactory());
         factories.add(new CreateKafkaFactory());
         factories.add(new CreateRisingWaveFactory());
         factories.add(new CreateApicurioFactory());
-        factories.add(new CreateKeycloakFactory());
+        factories.add(new CreateKeycloakFactory());*/
 
         for (CreateContainerFactory factory : factories)
         {
@@ -99,10 +102,24 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        ZillabaseConfig config;
+        Path configPath = Paths.get("zillabase/config.yaml");
+
+        try (InputStream inputStream = Files.newInputStream(configPath))
+        {
+            JsonbConfig jsonbConfig = new JsonbConfig().withAdapters(new ZillabaseConfigAdapter());
+            Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
+            config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
+        }
+        catch (IOException | JsonbException ex)
+        {
+            config = new ZillabaseConfig();
+        }
+
         List<String> containerIds = new LinkedList<>();
         for (CreateContainerFactory factory : factories)
         {
-            try (CreateContainerCmd command = factory.createContainer(client))
+            try (CreateContainerCmd command = factory.createContainer(client, config))
             {
                 CreateContainerResponse response = command.exec();
                 containerIds.add(response.getId());
@@ -252,7 +269,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         abstract CreateContainerCmd createContainer(
-            DockerClient client);
+            DockerClient client,
+            ZillabaseConfig config);
     }
 
     private static final class CreateZillaFactory extends CreateContainerFactory
@@ -264,7 +282,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -287,7 +306,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -324,7 +344,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -347,7 +368,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -371,7 +393,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -396,23 +419,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
-            ZillabaseConfig config;
-            Path configPath = Paths.get("zillabase/config.yaml");
-
-            try (InputStream inputStream = Files.newInputStream(configPath))
-            {
-                inputStream.reset();
-                JsonbConfig jsonbConfig = new JsonbConfig().withAdapters(new ZillabaseConfigAdapter());
-                Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
-
-                config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
-            }
-            catch (IOException | JsonbException ex)
-            {
-                config = new ZillabaseConfig();
-            }
+            List<String> envVars = Arrays.asList(
+                ADMIN_PORT + config.port,
+                REGISTRY_URL + config.registryUrl,
+                REGISTRY_GROUP_ID + config.registryGroupId);
 
             int port = config.port;
             ExposedPort exposedPort = ExposedPort.tcp(port);
@@ -423,9 +436,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network))
-                    .withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/app/zillabase/config.yaml")))
                     .withPortBindings(new PortBinding(Ports.Binding.bindPort(port), exposedPort))
                 .withExposedPorts(exposedPort)
+                .withEnv(envVars)
                 .withTty(true);
         }
     }

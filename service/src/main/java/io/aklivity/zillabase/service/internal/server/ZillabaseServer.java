@@ -15,27 +15,20 @@
 package io.aklivity.zillabase.service.internal.server;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbConfig;
-import jakarta.json.bind.JsonbException;
 
 import com.sun.net.httpserver.HttpServer;
 
-import io.aklivity.zillabase.service.config.ZillabaseAdminConfig;
-import io.aklivity.zillabase.service.internal.config.ZillabaseAdminConfigAdapter;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApiSpecificationIdHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApisHandler;
 
 public class ZillabaseServer implements Runnable
 {
+    private static final String REGISTRY_URL = "REGISTRY_URL";
+    private static final String REGISTRY_GROUP_ID = "REGISTRY_GROUP_ID";
+    private static final String ADMIN_PORT = "ADMIN_PORT";
+
     private final HttpServer server;
     private final HttpClient client;
     private final String baseUrl;
@@ -43,27 +36,13 @@ public class ZillabaseServer implements Runnable
 
     public ZillabaseServer()
     {
-        ZillabaseAdminConfig config;
-        Path configPath = Paths.get("zillabase/config.yaml");
-        try (InputStream inputStream = Files.newInputStream(configPath))
-        {
-            JsonbConfig jsonbConfig = new JsonbConfig().withAdapters(new ZillabaseAdminConfigAdapter());
-            Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
-
-            config = jsonb.fromJson(inputStream, ZillabaseAdminConfig.class);
-        }
-        catch (IOException | JsonbException ex)
-        {
-            config = new ZillabaseAdminConfig();
-        }
-
-        this.baseUrl = config.registryUrl;
-        this.groupId = config.registryGroupId;
+        this.baseUrl = System.getenv(REGISTRY_URL);
+        this.groupId = System.getenv(REGISTRY_GROUP_ID);
 
         try
         {
             this.server = HttpServer.create(
-                new InetSocketAddress(config.port), 0);
+                new InetSocketAddress(Integer.parseInt(System.getenv(ADMIN_PORT))), 0);
             this.client = HttpClient.newHttpClient();
         }
         catch (IOException ex)
