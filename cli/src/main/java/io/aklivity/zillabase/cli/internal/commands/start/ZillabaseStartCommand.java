@@ -59,8 +59,10 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
     private static final int RISINGWAVE_INITIALIZATION_DELAY_MS = 1000;
-    private static final String DEFAULT_RISINGWAVE_URL = "jdbc:postgresql://0.0.0.0:4566/dev";
+    private static final int MAX_RETRIES = 5;
     private static final int DEFAULT_RISINGWAVE_PORT = 4566;
+    private static final String DEFAULT_RISINGWAVE_URL = "jdbc:postgresql://localhost:%d/dev"
+        .formatted(DEFAULT_RISINGWAVE_PORT);
 
     @Override
     protected void invoke(
@@ -98,18 +100,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         List<String> containerIds = new LinkedList<>();
-        boolean risingwave = false;
         for (CreateContainerFactory factory : factories)
         {
             try (CreateContainerCmd command = factory.createContainer(client))
             {
                 CreateContainerResponse response = command.exec();
                 containerIds.add(response.getId());
-
-                if ("zillabase_risingwave".equals(factory.name))
-                {
-                    risingwave = true;
-                }
             }
         }
 
@@ -121,51 +117,66 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
-        if (risingwave)
+        Path seedPath = Paths.get("zillabase/seed.sql");
+        if (Files.exists(seedPath))
         {
-            Path seedPath = Paths.get("zillabase/seed.sql");
-
-            if (Files.exists(seedPath))
+            try
             {
-                try
+                String content = Files.readString(seedPath);
+                Properties props = new Properties();
+                props.setProperty("user", "root");
+
+                if (processSeedSql(content, props))
                 {
-                    String content = Files.readString(seedPath);
-
-                    if (!"-- seed".equals(content.trim()))
-                    {
-                        Thread.sleep(RISINGWAVE_INITIALIZATION_DELAY_MS);
-                        Properties props = new Properties();
-                        props.setProperty("user", "root");
-                        try
-                        {
-                            Connection conn = DriverManager.getConnection(DEFAULT_RISINGWAVE_URL, props);
-                            Statement stmt = conn.createStatement();
-
-                            String[] sqlCommands = content.split(";");
-                            for (String command : sqlCommands)
-                            {
-                                if (!command.trim().isEmpty())
-                                {
-                                    stmt.execute(command);
-                                }
-                            }
-
-                            System.out.println("RisingWave seeded successfully!");
-
-                            conn.close();
-                        }
-                        catch (SQLException ex)
-                        {
-                            ex.printStackTrace(System.err);
-                        }
-                    }
+                    System.out.println("seed.sql processed successfully!");
                 }
-                catch (InterruptedException | IOException ex)
+                else
                 {
-                    ex.printStackTrace(System.err);
+                    System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
                 }
             }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
         }
+    }
+
+    private boolean processSeedSql(
+        String content,
+        Properties props)
+    {
+        boolean status = false;
+        int retries = 0;
+        int delay = RISINGWAVE_INITIALIZATION_DELAY_MS;
+
+        while (retries < MAX_RETRIES)
+        {
+            try
+            {
+                Thread.sleep(delay);
+                try (Connection conn = DriverManager.getConnection(DEFAULT_RISINGWAVE_URL, props);
+                     Statement stmt = conn.createStatement())
+                {
+                    String[] sqlCommands = content.split(";");
+                    for (String command : sqlCommands)
+                    {
+                        if (!command.trim().isEmpty())
+                        {
+                            stmt.execute(command);
+                        }
+                    }
+                    status = true;
+                    break;
+                }
+            }
+            catch (InterruptedException | SQLException ex)
+            {
+                retries++;
+                delay *= 2;
+            }
+        }
+        return status;
     }
 
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
