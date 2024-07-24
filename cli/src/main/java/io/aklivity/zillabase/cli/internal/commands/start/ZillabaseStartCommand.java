@@ -75,11 +75,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         List<CreateContainerFactory> factories = new LinkedList<>();
         factories.add(new CreateAdminFactory());
-        /*factories.add(new CreateZillaFactory());
+        factories.add(new CreateZillaFactory());
         factories.add(new CreateKafkaFactory());
         factories.add(new CreateRisingWaveFactory());
         factories.add(new CreateApicurioFactory());
-        factories.add(new CreateKeycloakFactory());*/
+        factories.add(new CreateKeycloakFactory());
 
         for (CreateContainerFactory factory : factories)
         {
