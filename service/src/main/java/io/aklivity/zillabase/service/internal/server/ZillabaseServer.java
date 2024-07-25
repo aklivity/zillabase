@@ -74,12 +74,12 @@ public class ZillabaseServer implements Runnable
 
         if (debug)
         {
-System.out.format("""
-    environment:
-      ADMIN_PORT=%d
-      REGISTRY_URL=%s
-      REGISTRY_GROUP_ID=%s
-    """, port, baseUrl, groupId);
+            System.out.format("""
+                environment:
+                  ADMIN_PORT=%d
+                  REGISTRY_URL=%s
+                  REGISTRY_GROUP_ID=%s
+                """, port, baseUrl, groupId);
         }
 
     }
