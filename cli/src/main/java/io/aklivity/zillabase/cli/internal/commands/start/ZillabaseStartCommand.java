@@ -62,10 +62,6 @@ import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
-    private static final String REGISTRY_URL = "REGISTRY_URL=";
-    private static final String REGISTRY_GROUP_ID = "REGISTRY_GROUP_ID=";
-    private static final String ADMIN_PORT = "ADMIN_PORT=";
-
     @Override
     protected void invoke(
         DockerClient client)
@@ -423,9 +419,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             ZillabaseConfig config)
         {
             List<String> envVars = Arrays.asList(
-                ADMIN_PORT + config.port,
-                REGISTRY_URL + config.registryUrl,
-                REGISTRY_GROUP_ID + config.registryGroupId);
+                "ADMIN_PORT=%d".formatted(config.port),
+                "REGISTRY_URL=%s".formatted(config.registryUrl),
+                "REGISTRY_GROUP_ID=%s".formatted(config.registryGroupId),
+                "DEBUG=%s".formatted(true));
 
             int port = config.port;
             ExposedPort exposedPort = ExposedPort.tcp(port);

@@ -15,8 +15,6 @@
 package io.aklivity.zillabase.cli.internal.config;
 
 import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_ADMIN_PORT;
-import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_GROUP_ID;
-import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_REGISTRY_URL;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -54,14 +52,11 @@ public class ZillabaseConfigAdapter implements JsonbAdapter<ZillabaseConfig, Jso
         JsonObject object)
     {
         JsonObject api = object.getJsonObject(API_NAME);
-
-        int port = DEFAULT_ADMIN_PORT;
-        String url = DEFAULT_REGISTRY_URL;
-        String groupId = DEFAULT_GROUP_ID;
+        ZillabaseConfig config = new ZillabaseConfig();
 
         if (api.containsKey(PORT_NAME))
         {
-            port = api.getInt(PORT_NAME);
+            config.port = api.getInt(PORT_NAME);
         }
 
         if (api.containsKey(REGISTRY_NAME))
@@ -70,15 +65,15 @@ public class ZillabaseConfigAdapter implements JsonbAdapter<ZillabaseConfig, Jso
 
             if (registry.containsKey(REGISTRY_URL))
             {
-                url = registry.getString(REGISTRY_URL);
+                config.registryUrl = registry.getString(REGISTRY_URL);
             }
 
             if (registry.containsKey(REGISTRY_GROUP_ID))
             {
-                groupId = registry.getString(REGISTRY_GROUP_ID);
+                config.registryGroupId = registry.getString(REGISTRY_GROUP_ID);
             }
         }
 
-        return new ZillabaseConfig(port, url, groupId);
+        return config;
     }
 }

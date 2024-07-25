@@ -70,6 +70,7 @@
             <ADMIN_PORT>7184</ADMIN_PORT>
             <REGISTRY_URL>http://localhost:8081</REGISTRY_URL>
             <REGISTRY_GROUP_ID>zilla</REGISTRY_GROUP_ID>
+            <DEBUG>true</DEBUG>
           </environmentVariables>
         </configuration>
       </plugin>
