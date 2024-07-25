@@ -34,8 +34,15 @@ This project includes:
   Jackson-core under The Apache Software License, Version 2.0
   jackson-databind under The Apache Software License, Version 2.0
   Jakarta Dependency Injection under The Apache Software License, Version 2.0
+  Jakarta JSON Processing API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   Jansi under Apache License, Version 2.0
   Java Native Access under LGPL-2.1-or-later or Apache-2.0
+  JSON-B API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  JSON-P Default Provider under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
+  org.leadpony.joy.core under The Apache Software License, Version 2.0
+  org.leadpony.joy.yaml under The Apache Software License, Version 2.0
   SLF4J API Module under MIT License
   SLF4J Simple Binding under MIT License
+  SnakeYAML Engine under Apache License, Version 2.0
 

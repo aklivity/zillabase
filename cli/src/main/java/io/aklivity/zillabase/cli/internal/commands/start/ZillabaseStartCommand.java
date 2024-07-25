@@ -16,7 +16,13 @@ package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +30,11 @@ import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbConfig;
+import jakarta.json.bind.JsonbException;
 
 import org.fusesource.jansi.Ansi;
 
@@ -33,13 +44,18 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
+import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
 
 @Command(
     name = "start",
@@ -54,6 +70,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
+        factories.add(new CreateAdminFactory());
         factories.add(new CreateZillaFactory());
         factories.add(new CreateKafkaFactory());
         factories.add(new CreateRisingWaveFactory());
@@ -81,10 +98,24 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        ZillabaseConfig config;
+        Path configPath = Paths.get("zillabase/config.yaml");
+
+        try (InputStream inputStream = Files.newInputStream(configPath))
+        {
+            JsonbConfig jsonbConfig = new JsonbConfig().withAdapters(new ZillabaseConfigAdapter());
+            Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
+            config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
+        }
+        catch (IOException | JsonbException ex)
+        {
+            config = new ZillabaseConfig();
+        }
+
         List<String> containerIds = new LinkedList<>();
         for (CreateContainerFactory factory : factories)
         {
-            try (CreateContainerCmd command = factory.createContainer(client))
+            try (CreateContainerCmd command = factory.createContainer(client, config))
             {
                 CreateContainerResponse response = command.exec();
                 containerIds.add(response.getId());
@@ -234,7 +265,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         abstract CreateContainerCmd createContainer(
-            DockerClient client);
+            DockerClient client,
+            ZillabaseConfig config);
     }
 
     private static final class CreateZillaFactory extends CreateContainerFactory
@@ -246,7 +278,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -269,7 +302,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -306,7 +340,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -329,7 +364,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -353,7 +389,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client)
+            DockerClient client,
+            ZillabaseConfig config)
         {
             return client
                 .createContainerCmd(image)
@@ -366,6 +403,40 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withTty(true)
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file");
+        }
+    }
+
+    private static final class CreateAdminFactory extends CreateContainerFactory
+    {
+        CreateAdminFactory()
+        {
+            super("admin", "ghcr.io/aklivity/zillabase/admin:latest");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client,
+            ZillabaseConfig config)
+        {
+            List<String> envVars = Arrays.asList(
+                "ADMIN_PORT=%d".formatted(config.port),
+                "REGISTRY_URL=%s".formatted(config.registryUrl),
+                "REGISTRY_GROUP_ID=%s".formatted(config.registryGroupId),
+                "DEBUG=%s".formatted(true));
+
+            int port = config.port;
+            ExposedPort exposedPort = ExposedPort.tcp(port);
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network))
+                    .withPortBindings(new PortBinding(Ports.Binding.bindPort(port), exposedPort))
+                .withExposedPorts(exposedPort)
+                .withEnv(envVars)
+                .withTty(true);
         }
     }
 }
