@@ -15,6 +15,7 @@
 package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
+import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_RISINGWAVE_PORT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,9 +70,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
     private static final int RISINGWAVE_INITIALIZATION_DELAY_MS = 1000;
     private static final int MAX_RETRIES = 5;
-    private static final int DEFAULT_RISINGWAVE_PORT = 4566;
-    private static final String DEFAULT_RISINGWAVE_URL = "jdbc:postgresql://localhost:%d/dev"
-        .formatted(DEFAULT_RISINGWAVE_PORT);
 
     @Override
     protected void invoke(
@@ -150,7 +148,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 Properties props = new Properties();
                 props.setProperty("user", "root");
 
-                if (processSeedSql(content, props))
+                if (processSeedSql(content, props, config))
                 {
                     System.out.println("seed.sql processed successfully!");
                 }
@@ -168,7 +166,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private boolean processSeedSql(
         String content,
-        Properties props)
+        Properties props,
+        ZillabaseConfig config)
     {
         boolean status = false;
         int retries = 0;
@@ -179,7 +178,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try
             {
                 Thread.sleep(delay);
-                try (Connection conn = DriverManager.getConnection(DEFAULT_RISINGWAVE_URL, props);
+                try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
+                    .formatted(config.risingWaveUrl, config.risingWaveDb), props);
                      Statement stmt = conn.createStatement())
                 {
                     String[] sqlCommands = content.split(";");
