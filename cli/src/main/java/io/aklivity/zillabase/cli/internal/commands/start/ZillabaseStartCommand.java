@@ -14,15 +14,23 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.start;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,8 +44,27 @@ import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbConfig;
 import jakarta.json.bind.JsonbException;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.TopicListing;
+import org.apache.kafka.common.KafkaFuture;
 import org.fusesource.jansi.Ansi;
 
+import com.asyncapi.bindings.kafka.v0._5_0.server.KafkaServerBinding;
+import com.asyncapi.schemas.asyncapi.Reference;
+import com.asyncapi.v2._6_0.model.channel.message.Message;
+import com.asyncapi.v3._0_0.model.AsyncAPI;
+import com.asyncapi.v3._0_0.model.channel.Channel;
+import com.asyncapi.v3._0_0.model.component.Components;
+import com.asyncapi.v3._0_0.model.info.Info;
+import com.asyncapi.v3._0_0.model.info.License;
+import com.asyncapi.v3._0_0.model.operation.Operation;
+import com.asyncapi.v3._0_0.model.operation.OperationAction;
+import com.asyncapi.v3._0_0.model.operation.reply.OperationReply;
+import com.asyncapi.v3._0_0.model.server.Server;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -129,6 +156,209 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 command.exec();
             }
         }
+
+        Path kafkaSpecPath = Paths.get("asyncapi-kafka.yaml");
+        String kafkaSpec = null;
+
+        if (Files.exists(kafkaSpecPath))
+        {
+            try
+            {
+                kafkaSpec = Files.readString(kafkaSpecPath);
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
+        }
+        else
+        {
+            kafkaSpec = generateAsyncApiSpecs(config);
+        }
+
+        if (kafkaSpec != null)
+        {
+            System.out.println(kafkaSpec);
+            // TODO: Remove print & register Asyncapi Spec to Registry
+        }
+    }
+
+    private String generateAsyncApiSpecs(
+        ZillabaseConfig config)
+    {
+        String spec = null;
+        try (AdminClient adminClient = AdminClient.create(Collections.singletonMap(
+            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapUrl)))
+        {
+            final AsyncAPI asyncAPI = new AsyncAPI();
+            final Components components = new Components();
+            final Map<String, Object> schemas = new HashMap<>();
+            final Map<String, Object> messages = new HashMap<>();
+            final Map<String, Object> channels = new HashMap<>();
+            final Map<String, Object> operations = new HashMap<>();
+            final HttpClient client = HttpClient.newHttpClient();
+
+            Message message;
+            Channel channel;
+            Operation operation;
+            Reference reference;
+
+            asyncAPI.setAsyncapi("3.0.0");
+
+            Info info = new Info();
+            info.setTitle("API Document for Kafka Cluster");
+            info.setVersion("1.0.0");
+            License license = new License("Aklivity Community License",
+                "https://github.com/aklivity/zillabase/blob/develop/LICENSE");
+            info.setLicense(license);
+            asyncAPI.setInfo(info);
+
+            Server server = new Server();
+            server.setHost(config.kafkaBootstrapUrl);
+            server.setProtocol("kafka");
+
+            KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
+            kafkaServerBinding.setSchemaRegistryUrl(config.registryUrl);
+            kafkaServerBinding.setSchemaRegistryVendor("apicurio");
+            server.setBindings(Collections.singletonMap("kafka", kafkaServerBinding));
+            asyncAPI.setServers(Collections.singletonMap("plain", server));
+
+            KafkaFuture<Collection<TopicListing>> topics = adminClient.listTopics().listings();
+            for (TopicListing topic : topics.get())
+            {
+                if (!topic.isInternal())
+                {
+                    String topicName = topic.name();
+
+                    String subject = "%s-value".formatted(topicName);
+                    String name = topicName.substring(0, 1).toUpperCase() + topicName.substring(1);
+                    String messageName = "%sMessage".formatted(name);
+
+                    String schema = resolveSchema(config, client, subject);
+                    if (schema != null)
+                    {
+                        channel = new Channel();
+                        channel.setAddress(topicName);
+                        reference = new Reference("#/components/messages/%s".formatted(messageName));
+                        channel.setMessages(Collections.singletonMap(messageName, reference));
+                        channels.put(topicName, channel);
+
+                        ObjectMapper schemaMapper = new ObjectMapper();
+                        schemas.put(subject, schemaMapper.readTree(schema));
+
+                        message = new Message();
+                        message.setName(messageName);
+                        String type = resolveType(config, client, subject);
+                        message.setContentType("application/%s".formatted(type));
+
+                        reference = new Reference("#/components/schemas/%s".formatted(subject));
+                        message.setPayload(reference);
+                        messages.put(messageName, message);
+
+                        operation = new Operation();
+                        operation.setAction(OperationAction.SEND);
+                        reference = new Reference("#/channels/%s".formatted(topicName));
+                        operation.setChannel(reference);
+                        reference = new Reference("#/channels/%s/messages/%s".formatted(topicName, messageName));
+                        operation.setMessages(Collections.singletonList(reference));
+                        if (topicName.endsWith("-commands"))
+                        {
+                            String replyTopic = topicName.replace("-commands", "-replies");
+                            OperationReply reply = new OperationReply();
+                            reference = new Reference("#/channels/%s".formatted(replyTopic));
+                            reply.setChannel(reference);
+                            operation.setReply(reply);
+                        }
+                        operations.put("do%s".formatted(name), operation);
+
+                        operation = new Operation();
+                        operation.setAction(OperationAction.RECEIVE);
+                        reference = new Reference("#/channels/%s".formatted(topicName));
+                        operation.setChannel(reference);
+                        reference = new Reference("#/channels/%s/messages/%s".formatted(topicName, messageName));
+                        operation.setMessages(Collections.singletonList(reference));
+                        operations.put("on%s".formatted(name), operation);
+                    }
+                }
+            }
+
+            components.setSchemas(schemas);
+            components.setMessages(messages);
+
+            asyncAPI.setComponents(components);
+            asyncAPI.setChannels(channels);
+            asyncAPI.setOperations(operations);
+
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+            mapper.setSerializationInclusion(NON_NULL);
+
+            spec = mapper.writeValueAsString(asyncAPI);
+        }
+        catch (Exception ex)
+        {
+            System.err.println("Error generating Kafka AsyncApi Spec");
+        }
+        return spec;
+    }
+
+    private String resolveType(
+        ZillabaseConfig config,
+        HttpClient client,
+        String subject)
+    {
+        String type = null;
+        try
+        {
+            HttpRequest httpRequest = HttpRequest
+                .newBuilder(toURI(config.registryUrl,
+                    "/apis/registry/v2/groups/%s/artifacts/%s/meta".formatted(config.registryGroupId, subject)))
+                .GET()
+                .build();
+
+            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            if (httpResponse.statusCode() == 200)
+            {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode rootNode = objectMapper.readTree(httpResponse.body());
+                type = rootNode.path("type").asText().toLowerCase();
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace(System.err);
+        }
+        return type;
+    }
+
+    private String resolveSchema(
+        ZillabaseConfig config,
+        HttpClient client,
+        String subject)
+    {
+        String responseBody;
+        try
+        {
+            HttpRequest httpRequest = HttpRequest
+                .newBuilder(toURI(config.registryUrl,
+                    "/apis/registry/v2/groups/%s/artifacts/%s".formatted(config.registryGroupId, subject)))
+                .GET()
+                .build();
+
+            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            responseBody = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
+        }
+        catch (Exception ex)
+        {
+            responseBody = null;
+        }
+        return responseBody;
+    }
+
+    private URI toURI(
+        String baseUrl,
+        String path)
+    {
+        return URI.create(baseUrl).resolve(path);
     }
 
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
@@ -305,6 +535,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client,
             ZillabaseConfig config)
         {
+            ExposedPort exposedPort = ExposedPort.tcp(9092);
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -313,6 +545,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
                         .withRestartPolicy(unlessStoppedRestart()))
+                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
+                .withExposedPorts(exposedPort)
                 .withTty(true)
                 .withEnv(
                     "ALLOW_PLAINTEXT_LISTENER=yes",
@@ -343,6 +577,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client,
             ZillabaseConfig config)
         {
+            ExposedPort exposedPort = ExposedPort.tcp(8080);
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -351,6 +587,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
                         .withRestartPolicy(unlessStoppedRestart()))
+                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(8080), exposedPort))
+                .withExposedPorts(exposedPort)
                 .withTty(true);
         }
     }

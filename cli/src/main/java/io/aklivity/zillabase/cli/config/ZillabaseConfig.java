@@ -17,10 +17,12 @@ package io.aklivity.zillabase.cli.config;
 public class ZillabaseConfig
 {
     public static final int DEFAULT_ADMIN_PORT = 7184;
-    public static final String DEFAULT_GROUP_ID = "zilla";
+    public static final String DEFAULT_GROUP_ID = "default";
     public static final String DEFAULT_REGISTRY_URL = "http://localhost:8080";
+    public static final String DEFAULT_KAFKA_BOOTSTRAP_URL = "localhost:9092";
 
     public int port = DEFAULT_ADMIN_PORT;
     public String registryUrl = DEFAULT_REGISTRY_URL;
     public String registryGroupId = DEFAULT_GROUP_ID;
+    public String kafkaBootstrapUrl = DEFAULT_KAFKA_BOOTSTRAP_URL;
 }

@@ -29,7 +29,7 @@ public class ZillabaseServer implements Runnable
     private static final String REGISTRY_GROUP_ID = "REGISTRY_GROUP_ID";
     private static final String ADMIN_PORT = "ADMIN_PORT";
     private static final int DEFAULT_ADMIN_PORT = 7184;
-    private static final String DEFAULT_GROUP_ID = "zilla";
+    private static final String DEFAULT_GROUP_ID = "default";
     private static final String DEFAULT_REGISTRY_URL = "http://localhost:8080";
 
     private final HttpServer server;
