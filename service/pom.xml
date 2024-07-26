@@ -21,8 +21,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
+      <groupId>jakarta.json.bind</groupId>
+      <artifactId>jakarta.json.bind-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.leadpony.joy</groupId>
+      <artifactId>joy-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse</groupId>
+      <artifactId>yasson</artifactId>
     </dependency>
     <dependency>
       <groupId>io.aklivity.k3po</groupId>
@@ -57,6 +65,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <environmentVariables>
+            <ADMIN_PORT>7184</ADMIN_PORT>
+            <REGISTRY_URL>http://localhost:8081</REGISTRY_URL>
+            <REGISTRY_GROUP_ID>zilla</REGISTRY_GROUP_ID>
+            <DEBUG>true</DEBUG>
+          </environmentVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -121,8 +141,8 @@
           <filter>${*}</filter>
           <images combine.children="append">
             <image>
-              <alias>zillabase-service</alias>
-              <name>ghcr.io/aklivity/zillabase/service:%v</name>
+              <alias>admin</alias>
+              <name>ghcr.io/aklivity/zillabase/admin:%v</name>
               <build>
                 <contextDir>${project.basedir}</contextDir>
                 <tags>

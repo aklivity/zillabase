@@ -12,5 +12,11 @@ specific language governing permissions and limitations
 under the License.
 
 This project includes:
-  SnakeYAML under Apache License, Version 2.0
+  Jakarta JSON Processing API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  JSON-B API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  JSON-P Default Provider under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
+  org.leadpony.joy.core under The Apache Software License, Version 2.0
+  org.leadpony.joy.yaml under The Apache Software License, Version 2.0
+  SnakeYAML Engine under Apache License, Version 2.0
 

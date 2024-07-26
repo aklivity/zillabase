@@ -15,16 +15,8 @@
 package io.aklivity.zillabase.service.internal.server;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.yaml.snakeyaml.Yaml;
 
 import com.sun.net.httpserver.HttpServer;
 
@@ -33,50 +25,35 @@ import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApisHa
 
 public class ZillabaseServer implements Runnable
 {
-    private static final String API = "api";
-    private static final String REGISTRY_URL = "registry.url";
-    private static final String PORT = "port";
-    private static final int DEFAULT_PORT = 7184;
-    private static final String REGISTRY_GROUP_ID = "registry.groupId";
+    private static final String REGISTRY_URL = "REGISTRY_URL";
+    private static final String REGISTRY_GROUP_ID = "REGISTRY_GROUP_ID";
+    private static final String ADMIN_PORT = "ADMIN_PORT";
+    private static final int DEFAULT_ADMIN_PORT = 7184;
     private static final String DEFAULT_GROUP_ID = "zilla";
+    private static final String DEFAULT_REGISTRY_URL = "http://localhost:8080";
 
     private final HttpServer server;
     private final HttpClient client;
     private final String baseUrl;
     private final String groupId;
-    private final Map<String, String> configs;
+    private final int port;
+    private final boolean debug;
 
     public ZillabaseServer()
     {
-        Path configPath = Paths.get("zillabase/config.yaml");
-        this.configs = new HashMap<>();
+        String registryUrl = System.getenv(REGISTRY_URL);
+        this.baseUrl = registryUrl != null ? registryUrl : DEFAULT_REGISTRY_URL;
+        String registryGroupId = System.getenv(REGISTRY_GROUP_ID);
+        this.groupId = registryGroupId != null ? registryGroupId : DEFAULT_GROUP_ID;
 
-        if (Files.exists(configPath))
-        {
-            try
-            {
-                InputStream inputStream = Files.newInputStream(configPath);
-                Yaml yaml = new Yaml();
-                Map<String, Object> config = yaml.load(inputStream);
-
-                if (config.containsKey(API))
-                {
-                    this.configs.putAll((Map<String, String>) config.get(API));
-                }
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
-            }
-        }
-
-        this.baseUrl = configs.containsKey(REGISTRY_URL) ? configs.get(REGISTRY_URL) : null;
-        this.groupId = configs.containsKey(REGISTRY_GROUP_ID) ? configs.get(REGISTRY_GROUP_ID) : DEFAULT_GROUP_ID;
+        String debug = System.getenv("DEBUG");
+        this.debug = debug != null && "true".equals(debug);
 
         try
         {
-            this.server = HttpServer.create(
-                new InetSocketAddress(configs.containsKey(PORT) ? Integer.parseInt(configs.get(PORT)) : DEFAULT_PORT), 0);
+            String adminPort = System.getenv(ADMIN_PORT);
+            this.port = adminPort != null ? Integer.parseInt(adminPort) : DEFAULT_ADMIN_PORT;
+            this.server = HttpServer.create(new InetSocketAddress(port), 0);
             this.client = HttpClient.newHttpClient();
         }
         catch (IOException ex)
@@ -88,17 +65,23 @@ public class ZillabaseServer implements Runnable
     @Override
     public void run()
     {
-        if (baseUrl == null)
-        {
-            throw new RuntimeException("Registry URL unavailable");
-        }
-
         server.createContext("/v1/asyncapis", new ZillabaseServerAsyncApisHandler(client, baseUrl, groupId));
         server.createContext("/v1/asyncapis/", new ZillabaseServerAsyncApiSpecificationIdHandler(client, baseUrl, groupId));
 
         server.start();
 
         System.out.format("started\n");
+
+        if (debug)
+        {
+            System.out.format("""
+                environment:
+                  ADMIN_PORT=%d
+                  REGISTRY_URL=%s
+                  REGISTRY_GROUP_ID=%s
+                """, port, baseUrl, groupId);
+        }
+
     }
 
     public void stop()
