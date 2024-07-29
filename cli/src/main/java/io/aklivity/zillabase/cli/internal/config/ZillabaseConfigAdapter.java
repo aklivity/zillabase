@@ -32,6 +32,7 @@ public class ZillabaseConfigAdapter implements JsonbAdapter<ZillabaseConfig, Jso
     private static final String REGISTRY_GROUP_ID = "groupId";
     private static final String RISINGWAVE_NAME = "risingwave";
     private static final String DB_NAME = "db";
+    private static final String KAFKA_NAME = "kafka";
 
     @Override
     public JsonObject adaptToJson(
@@ -88,6 +89,16 @@ public class ZillabaseConfigAdapter implements JsonbAdapter<ZillabaseConfig, Jso
             if (risingWave.containsKey(DB_NAME))
             {
                 config.risingWaveDb = risingWave.getString(DB_NAME);
+            }
+        }
+
+        if (api.containsKey(KAFKA_NAME))
+        {
+            JsonObject kafka = api.getJsonObject(KAFKA_NAME);
+
+            if (kafka.containsKey(URL_NAME))
+            {
+                config.kafkaBootstrapUrl = kafka.getString(URL_NAME);
             }
         }
 

@@ -32,6 +32,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -89,6 +90,7 @@ import com.github.rvesse.airline.annotations.Command;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
+import io.aklivity.zillabase.cli.internal.record.KafkaTopicSchemaRecord;
 
 @Command(
     name = "start",
@@ -206,7 +208,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
         else
         {
-            kafkaSpec = generateAsyncApiSpecs(config);
+            List<KafkaTopicSchemaRecord> records = resolveKafkaTopicsAndSchemas(config);
+            if (!records.isEmpty())
+            {
+                kafkaSpec = generateAsyncApiSpecs(config, records);
+            }
         }
 
         if (kafkaSpec != null)
@@ -216,12 +222,64 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private String generateAsyncApiSpecs(
+    private List<KafkaTopicSchemaRecord> resolveKafkaTopicsAndSchemas(
         ZillabaseConfig config)
     {
-        String spec = null;
+        List<KafkaTopicSchemaRecord> records = new ArrayList<>();
         try (AdminClient adminClient = AdminClient.create(Collections.singletonMap(
             AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapUrl)))
+        {
+            final HttpClient client = HttpClient.newHttpClient();
+
+            KafkaFuture<Collection<TopicListing>> topics = adminClient.listTopics().listings();
+            for (TopicListing topic : topics.get())
+            {
+                if (!topic.isInternal())
+                {
+                    String topicName = topic.name();
+
+                    StringBuilder label = new StringBuilder(topicName.length());
+                    boolean capitalizeNext = true;
+                    for (char c : topicName.toCharArray())
+                    {
+                        if (c == '-')
+                        {
+                            capitalizeNext = true;
+                        }
+                        else
+                        {
+                            if (capitalizeNext)
+                            {
+                                c = Character.toUpperCase(c);
+                                capitalizeNext = false;
+                            }
+                            label.append(c);
+                        }
+                    }
+
+                    String subject = "%s-value".formatted(topicName);
+                    String schema = resolveSchema(config, client, subject);
+                    if (schema != null)
+                    {
+                        String type = resolveType(config, client, subject);
+                        records.add(new KafkaTopicSchemaRecord(topicName, label.toString(), subject, type, schema));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.err.println("Error resolving Kafka Topics & Schemas Info");
+        }
+        return records;
+    }
+
+    private String generateAsyncApiSpecs(
+        ZillabaseConfig config,
+        List<KafkaTopicSchemaRecord> records)
+    {
+        String spec = null;
+        try
         {
             final AsyncAPI asyncAPI = new AsyncAPI();
             final Components components = new Components();
@@ -229,7 +287,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             final Map<String, Object> messages = new HashMap<>();
             final Map<String, Object> channels = new HashMap<>();
             final Map<String, Object> operations = new HashMap<>();
-            final HttpClient client = HttpClient.newHttpClient();
 
             Message message;
             Channel channel;
@@ -256,63 +313,54 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             server.setBindings(Collections.singletonMap("kafka", kafkaServerBinding));
             asyncAPI.setServers(Collections.singletonMap("plain", server));
 
-            KafkaFuture<Collection<TopicListing>> topics = adminClient.listTopics().listings();
-            for (TopicListing topic : topics.get())
+            for (KafkaTopicSchemaRecord record : records)
             {
-                if (!topic.isInternal())
+                String name = record.name;
+                String label = record.label;
+                String subject = record.subject;
+                String messageName = "%sMessage".formatted(label);
+
+                channel = new Channel();
+                channel.setAddress(name);
+                reference = new Reference("#/components/messages/%s".formatted(messageName));
+                channel.setMessages(Collections.singletonMap(messageName, reference));
+                channels.put(name, channel);
+
+                ObjectMapper schemaMapper = new ObjectMapper();
+                schemas.put(subject, schemaMapper.readTree(record.schema));
+
+                message = new Message();
+                message.setName(messageName);
+                message.setContentType("application/%s".formatted(record.type));
+
+                reference = new Reference("#/components/schemas/%s".formatted(subject));
+                message.setPayload(reference);
+                messages.put(messageName, message);
+
+                operation = new Operation();
+                operation.setAction(OperationAction.SEND);
+                reference = new Reference("#/channels/%s".formatted(name));
+                operation.setChannel(reference);
+                reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
+                operation.setMessages(Collections.singletonList(reference));
+                if (name.endsWith("-commands"))
                 {
-                    String topicName = topic.name();
-
-                    String subject = "%s-value".formatted(topicName);
-                    String name = topicName.substring(0, 1).toUpperCase() + topicName.substring(1);
-                    String messageName = "%sMessage".formatted(name);
-
-                    String schema = resolveSchema(config, client, subject);
-                    if (schema != null)
-                    {
-                        channel = new Channel();
-                        channel.setAddress(topicName);
-                        reference = new Reference("#/components/messages/%s".formatted(messageName));
-                        channel.setMessages(Collections.singletonMap(messageName, reference));
-                        channels.put(topicName, channel);
-
-                        ObjectMapper schemaMapper = new ObjectMapper();
-                        schemas.put(subject, schemaMapper.readTree(schema));
-
-                        message = new Message();
-                        message.setName(messageName);
-                        String type = resolveType(config, client, subject);
-                        message.setContentType("application/%s".formatted(type));
-
-                        reference = new Reference("#/components/schemas/%s".formatted(subject));
-                        message.setPayload(reference);
-                        messages.put(messageName, message);
-
-                        operation = new Operation();
-                        operation.setAction(OperationAction.SEND);
-                        reference = new Reference("#/channels/%s".formatted(topicName));
-                        operation.setChannel(reference);
-                        reference = new Reference("#/channels/%s/messages/%s".formatted(topicName, messageName));
-                        operation.setMessages(Collections.singletonList(reference));
-                        if (topicName.endsWith("-commands"))
-                        {
-                            String replyTopic = topicName.replace("-commands", "-replies");
-                            OperationReply reply = new OperationReply();
-                            reference = new Reference("#/channels/%s".formatted(replyTopic));
-                            reply.setChannel(reference);
-                            operation.setReply(reply);
-                        }
-                        operations.put("do%s".formatted(name), operation);
-
-                        operation = new Operation();
-                        operation.setAction(OperationAction.RECEIVE);
-                        reference = new Reference("#/channels/%s".formatted(topicName));
-                        operation.setChannel(reference);
-                        reference = new Reference("#/channels/%s/messages/%s".formatted(topicName, messageName));
-                        operation.setMessages(Collections.singletonList(reference));
-                        operations.put("on%s".formatted(name), operation);
-                    }
+                    String replyTopic = name.replace("-commands", "-replies");
+                    OperationReply reply = new OperationReply();
+                    reference = new Reference("#/channels/%s".formatted(replyTopic));
+                    reply.setChannel(reference);
+                    operation.setReply(reply);
                 }
+
+                operations.put("do%s".formatted(label), operation);
+
+                operation = new Operation();
+                operation.setAction(OperationAction.RECEIVE);
+                reference = new Reference("#/channels/%s".formatted(name));
+                operation.setChannel(reference);
+                reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
+                operation.setMessages(Collections.singletonList(reference));
+                operations.put("on%s".formatted(label), operation);
             }
 
             components.setSchemas(schemas);
