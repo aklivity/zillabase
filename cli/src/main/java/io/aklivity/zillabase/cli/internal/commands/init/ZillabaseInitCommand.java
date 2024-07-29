@@ -48,7 +48,7 @@ public final class ZillabaseInitCommand extends ZillabaseCommand
 
             if (!Files.exists(seedPath))
             {
-                Files.writeString(seedPath, "# seed\n");
+                Files.writeString(seedPath, "-- seed\n");
             }
 
             System.out.format("Finished zillabase init\n");

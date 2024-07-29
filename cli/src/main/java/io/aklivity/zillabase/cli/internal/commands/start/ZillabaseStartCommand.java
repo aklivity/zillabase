@@ -16,6 +16,7 @@ package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
+import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_RISINGWAVE_PORT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +28,10 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -89,6 +95,9 @@ import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
+    private static final int RISINGWAVE_INITIALIZATION_DELAY_MS = 1000;
+    private static final int MAX_RETRIES = 5;
+
     @Override
     protected void invoke(
         DockerClient client)
@@ -154,6 +163,30 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try (StartContainerCmd command = client.startContainerCmd(containerId))
             {
                 command.exec();
+            }
+        }
+
+        Path seedPath = Paths.get("zillabase/seed.sql");
+        if (Files.exists(seedPath))
+        {
+            try
+            {
+                String content = Files.readString(seedPath);
+                Properties props = new Properties();
+                props.setProperty("user", "root");
+
+                if (processSeedSql(content, props, config))
+                {
+                    System.out.println("seed.sql processed successfully!");
+                }
+                else
+                {
+                    System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
+                }
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
             }
         }
 
@@ -359,6 +392,45 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         String path)
     {
         return URI.create(baseUrl).resolve(path);
+    }
+
+    private boolean processSeedSql(
+        String content,
+        Properties props,
+        ZillabaseConfig config)
+    {
+        boolean status = false;
+        int retries = 0;
+        int delay = RISINGWAVE_INITIALIZATION_DELAY_MS;
+
+        while (retries < MAX_RETRIES)
+        {
+            try
+            {
+                Thread.sleep(delay);
+                try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
+                    .formatted(config.risingWaveUrl, config.risingWaveDb), props);
+                     Statement stmt = conn.createStatement())
+                {
+                    String[] sqlCommands = content.split(";");
+                    for (String command : sqlCommands)
+                    {
+                        if (!command.trim().isEmpty())
+                        {
+                            stmt.execute(command);
+                        }
+                    }
+                    status = true;
+                    break;
+                }
+            }
+            catch (InterruptedException | SQLException ex)
+            {
+                retries++;
+                delay *= 2;
+            }
+        }
+        return status;
     }
 
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
@@ -605,6 +677,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client,
             ZillabaseConfig config)
         {
+            ExposedPort exposedPort = ExposedPort.tcp(DEFAULT_RISINGWAVE_PORT);
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -612,7 +686,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
+                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(DEFAULT_RISINGWAVE_PORT), exposedPort))
                         .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPort)
                 .withTty(true)
                 .withCmd("playground");
         }

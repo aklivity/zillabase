@@ -49,6 +49,7 @@ This project includes:
   org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
   org.leadpony.joy.core under The Apache Software License, Version 2.0
   org.leadpony.joy.yaml under The Apache Software License, Version 2.0
+  PostgreSQL JDBC Driver under BSD-2-Clause
   Project Lombok under The MIT License
   SLF4J API Module under MIT License
   SLF4J Simple Binding under MIT License

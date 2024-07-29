@@ -28,8 +28,10 @@ public class ZillabaseConfigAdapter implements JsonbAdapter<ZillabaseConfig, Jso
     private static final String API_NAME = "api";
     private static final String PORT_NAME = "port";
     private static final String REGISTRY_NAME = "registry";
-    private static final String REGISTRY_URL = "url";
+    private static final String URL_NAME = "url";
     private static final String REGISTRY_GROUP_ID = "groupId";
+    private static final String RISINGWAVE_NAME = "risingwave";
+    private static final String DB_NAME = "db";
 
     @Override
     public JsonObject adaptToJson(
@@ -63,14 +65,29 @@ public class ZillabaseConfigAdapter implements JsonbAdapter<ZillabaseConfig, Jso
         {
             JsonObject registry = api.getJsonObject(REGISTRY_NAME);
 
-            if (registry.containsKey(REGISTRY_URL))
+            if (registry.containsKey(URL_NAME))
             {
-                config.registryUrl = registry.getString(REGISTRY_URL);
+                config.registryUrl = registry.getString(URL_NAME);
             }
 
             if (registry.containsKey(REGISTRY_GROUP_ID))
             {
                 config.registryGroupId = registry.getString(REGISTRY_GROUP_ID);
+            }
+        }
+
+        if (api.containsKey(RISINGWAVE_NAME))
+        {
+            JsonObject risingWave = api.getJsonObject(RISINGWAVE_NAME);
+
+            if (risingWave.containsKey(URL_NAME))
+            {
+                config.risingWaveUrl = risingWave.getString(URL_NAME);
+            }
+
+            if (risingWave.containsKey(DB_NAME))
+            {
+                config.risingWaveDb = risingWave.getString(DB_NAME);
             }
         }
 
