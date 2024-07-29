@@ -241,7 +241,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ZillabaseConfig config)
     {
         List<KafkaTopicSchemaRecord> records = new ArrayList<>();
-        try (AdminClient adminClient = AdminClient.create(Collections.singletonMap(
+        try (AdminClient adminClient = AdminClient.create(Map.of(
             AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapUrl)))
         {
             final HttpClient client = HttpClient.newHttpClient();
@@ -289,7 +289,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return records;
     }
 
-    private String generateKafkaAsyncApiSpecs(
+    public String generateKafkaAsyncApiSpecs(
         ZillabaseConfig config,
         List<KafkaTopicSchemaRecord> records)
     {
