@@ -39,6 +39,10 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
         description = "AsyncAPI specification location")
     public String spec;
 
+    @Option(name = {"--id"},
+        description = "Registry ArtifactId")
+    public String artifactId;
+
     @Option(name = {"-u", "--url"},
         description = "Admin Server URL")
     public URI serverURL;
@@ -82,16 +86,21 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
             serverURL = ADMIN_SERVER_DEFAULT;
         }
 
-        HttpRequest httpRequest = HttpRequest
+        HttpRequest.Builder httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(ASYNCAPI_PATH))
-            .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
-            .POST(HttpRequest.BodyPublishers.ofInputStream(() -> content))
-            .build();
+            .header("Content-Type", "application/vnd.aai.asyncapi+yaml");
+
+        if (artifactId != null)
+        {
+            httpRequest.header("X-Registry-ArtifactId", artifactId);
+        }
+
+        httpRequest.POST(HttpRequest.BodyPublishers.ofInputStream(() -> content));
 
         String responseBody;
         try
         {
-            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> httpResponse = client.send(httpRequest.build(), HttpResponse.BodyHandlers.ofString());
             responseBody = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
         }
         catch (Exception ex)

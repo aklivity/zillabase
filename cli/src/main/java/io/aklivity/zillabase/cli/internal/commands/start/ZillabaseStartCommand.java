@@ -18,6 +18,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_RISINGWAVE_PORT;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -85,10 +86,12 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
+import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
 import io.aklivity.zillabase.cli.internal.record.KafkaTopicSchemaRecord;
 
@@ -194,7 +197,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         Path kafkaSpecPath = Paths.get("asyncapi-kafka.yaml");
         String kafkaSpec = null;
-
         if (Files.exists(kafkaSpecPath))
         {
             try
@@ -211,14 +213,27 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             List<KafkaTopicSchemaRecord> records = resolveKafkaTopicsAndSchemas(config);
             if (!records.isEmpty())
             {
-                kafkaSpec = generateAsyncApiSpecs(config, records);
+                kafkaSpec = generateKafkaAsyncApiSpecs(config, records);
             }
         }
 
         if (kafkaSpec != null)
         {
-            System.out.println(kafkaSpec);
-            // TODO: Remove print & register Asyncapi Spec to Registry
+            try
+            {
+                File tempFile = File.createTempFile("zillabase-kafka-asyncapi-spec", ".tmp");
+
+                ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
+                command.artifactId = "zillabase-kafka-asyncapi-%s".formatted(System.currentTimeMillis());
+                command.helpOption = new HelpOption<>();
+                command.spec = tempFile.getPath();
+                command.run();
+                tempFile.delete();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
         }
     }
 
@@ -274,7 +289,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return records;
     }
 
-    private String generateAsyncApiSpecs(
+    private String generateKafkaAsyncApiSpecs(
         ZillabaseConfig config,
         List<KafkaTopicSchemaRecord> records)
     {
