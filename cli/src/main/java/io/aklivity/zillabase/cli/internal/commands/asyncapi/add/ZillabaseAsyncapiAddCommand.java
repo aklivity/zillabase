@@ -23,6 +23,8 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.restrictions.Required;
@@ -38,10 +40,6 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
     @Option(name = {"-s", "--spec"},
         description = "AsyncAPI specification location")
     public String spec;
-
-    @Option(name = {"--id"},
-        description = "Registry ArtifactId")
-    public String artifactId;
 
     @Option(name = {"-u", "--url"},
         description = "Admin Server URL")
@@ -63,7 +61,9 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
                 String response = sendHttpRequest(Files.newInputStream(path), client);
                 if (response != null)
                 {
-                    System.out.println(response);
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode jsonNode = mapper.readTree(response);
+                    System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonNode));
                 }
                 else
                 {
@@ -88,12 +88,8 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
 
         HttpRequest.Builder httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(ASYNCAPI_PATH))
-            .header("Content-Type", "application/vnd.aai.asyncapi+yaml");
-
-        if (artifactId != null)
-        {
-            httpRequest.header("X-Registry-ArtifactId", artifactId);
-        }
+            .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
+            .header("X-Registry-ArtifactId", "zillabase-asyncapi-%s".formatted(System.currentTimeMillis()));
 
         httpRequest.POST(HttpRequest.BodyPublishers.ofInputStream(() -> content));
 

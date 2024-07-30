@@ -223,7 +223,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             try
             {
-                System.out.println(kafkaSpec);
                 File tempFile = File.createTempFile("zillabase-kafka-asyncapi-spec", ".tmp");
 
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile)))
@@ -231,8 +230,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     writer.write(kafkaSpec);
                 }
 
+                System.out.println("Registering zillabase-kafka-asyncapi spec");
                 ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
-                command.artifactId = "zillabase-kafka-asyncapi-%s".formatted(System.currentTimeMillis());
                 command.helpOption = new HelpOption<>();
                 command.spec = tempFile.getPath();
                 command.run();

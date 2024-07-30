@@ -55,8 +55,8 @@ public class ZillabaseServerAsyncApisHandler extends ZillabaseServerHandler
             {
             case "POST":
                 builder.header("Content-Type", "application/vnd.aai.asyncapi+yaml")
-                    .header("artifactType", "ASYNCAPI")
-                    .POST(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
+                    .header("X-Registry-ArtifactType", "ASYNCAPI")
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes()));
 
                 if (exchange.getRequestHeaders().containsKey(REGISTRY_ARTIFACT_ID))
                 {
