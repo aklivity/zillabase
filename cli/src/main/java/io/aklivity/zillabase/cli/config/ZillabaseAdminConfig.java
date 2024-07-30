@@ -12,27 +12,13 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.record;
+package io.aklivity.zillabase.cli.config;
 
-public class KafkaTopicSchemaRecord
+public class ZillabaseAdminConfig
 {
-    public String name;
-    public String label;
-    public String subject;
-    public String type;
-    public String schema;
+    private static final String DEFAULT_GROUP_ID = "default";
+    private static final String DEFAULT_REGISTRY_URL = "http://apicurio.zillabase.dev:8080";
 
-    public KafkaTopicSchemaRecord(
-        String name,
-        String label,
-        String subject,
-        String type,
-        String schema)
-    {
-        this.name = name;
-        this.label = label;
-        this.subject = subject;
-        this.type = type;
-        this.schema = schema;
-    }
+    public String registryUrl = DEFAULT_REGISTRY_URL;
+    public String registryGroupId = DEFAULT_GROUP_ID;
 }

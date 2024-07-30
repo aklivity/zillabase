@@ -18,7 +18,9 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_RISINGWAVE_PORT;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -90,10 +92,10 @@ import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
-import io.aklivity.zillabase.cli.internal.record.KafkaTopicSchemaRecord;
 
 @Command(
     name = "start",
@@ -221,7 +223,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             try
             {
+                System.out.println(kafkaSpec);
                 File tempFile = File.createTempFile("zillabase-kafka-asyncapi-spec", ".tmp");
+
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile)))
+                {
+                    writer.write(kafkaSpec);
+                }
 
                 ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
                 command.artifactId = "zillabase-kafka-asyncapi-%s".formatted(System.currentTimeMillis());
@@ -614,6 +622,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private abstract static class CreateContainerFactory extends CommandFactory
     {
+        private static final String ZILLABASE_HOSTNAME_FORMAT = "%s.zillabase.dev";
+
         final Map<String, String> project;
         final String name;
         final String image;
@@ -626,7 +636,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             this.project = Map.of("com.docker.compose.project", "zillabase");
             this.name = String.format(ZILLABASE_NAME_FORMAT, name);
             this.image = image;
-            this.hostname = name;
+            this.hostname = String.format(ZILLABASE_HOSTNAME_FORMAT, name);
         }
 
         abstract CreateContainerCmd createContainer(
@@ -797,8 +807,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             List<String> envVars = Arrays.asList(
                 "ADMIN_PORT=%d".formatted(config.port),
-                "REGISTRY_URL=%s".formatted(config.registryUrl),
-                "REGISTRY_GROUP_ID=%s".formatted(config.registryGroupId),
+                "REGISTRY_URL=%s".formatted(config.adminConfig.registryUrl),
+                "REGISTRY_GROUP_ID=%s".formatted(config.adminConfig.registryGroupId),
                 "DEBUG=%s".formatted(true));
 
             int port = config.port;

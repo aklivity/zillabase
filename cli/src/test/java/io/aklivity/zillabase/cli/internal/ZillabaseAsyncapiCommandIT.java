@@ -31,11 +31,11 @@ import com.github.rvesse.airline.HelpOption;
 import io.aklivity.k3po.runtime.junit.annotation.Specification;
 import io.aklivity.k3po.runtime.junit.rules.K3poRule;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsyncapiListCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
-import io.aklivity.zillabase.cli.internal.record.KafkaTopicSchemaRecord;
 
 public class ZillabaseAsyncapiCommandIT
 {

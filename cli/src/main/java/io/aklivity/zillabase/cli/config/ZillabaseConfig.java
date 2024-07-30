@@ -31,4 +31,5 @@ public class ZillabaseConfig
     public String kafkaBootstrapUrl = DEFAULT_KAFKA_BOOTSTRAP_URL;
     public String risingWaveUrl = DEFAULT_RISINGWAVE_URL;
     public String risingWaveDb = DEFAULT_RISINGWAVE_DB;
+    public ZillabaseAdminConfig adminConfig = new ZillabaseAdminConfig();
 }
