@@ -86,17 +86,17 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
             serverURL = ADMIN_SERVER_DEFAULT;
         }
 
-        HttpRequest.Builder httpRequest = HttpRequest
+        HttpRequest httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(ASYNCAPI_PATH))
             .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
-            .header("X-Registry-ArtifactId", "zillabase-asyncapi-%s".formatted(System.currentTimeMillis()));
-
-        httpRequest.POST(HttpRequest.BodyPublishers.ofInputStream(() -> content));
+            .header("X-Registry-ArtifactId", "zillabase-asyncapi-%s".formatted(System.currentTimeMillis()))
+            .POST(HttpRequest.BodyPublishers.ofInputStream(() -> content))
+            .build();
 
         String responseBody;
         try
         {
-            HttpResponse<String> httpResponse = client.send(httpRequest.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
             responseBody = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
         }
         catch (Exception ex)
