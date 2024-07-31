@@ -119,6 +119,12 @@ public class ZillabaseAsyncapiCommandIT
             "    messages:\n" +
             "      EventsMessage:\n" +
             "        $ref: \"#/components/messages/EventsMessage\"\n" +
+            "    bindings:\n" +
+            "      kafka:\n" +
+            "        bindingVersion: \"0.5.0\"\n" +
+            "        topicConfiguration:\n" +
+            "          cleanup.policy:\n" +
+            "          - \"compact\"\n" +
             "operations:\n" +
             "  doEvents:\n" +
             "    action: \"send\"\n" +
@@ -169,7 +175,8 @@ public class ZillabaseAsyncapiCommandIT
             "}";
 
         ZillabaseStartCommand command = new ZillabaseStartCommand();
-        KafkaTopicSchemaRecord record = new KafkaTopicSchemaRecord("events", "Events", "events-value", "json", schema);
+        KafkaTopicSchemaRecord record = new KafkaTopicSchemaRecord("events", new String[]{"compact"}, "Events",
+            "events-value", "json", schema);
 
         String spec = command.generateKafkaAsyncApiSpecs(new ZillabaseConfig(), List.of(record));
         assertEquals(expectedSpec, spec);

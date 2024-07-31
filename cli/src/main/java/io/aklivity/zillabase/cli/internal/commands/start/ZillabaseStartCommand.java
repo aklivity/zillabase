@@ -17,6 +17,7 @@ package io.aklivity.zillabase.cli.internal.commands.start;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_RISINGWAVE_PORT;
+import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -56,10 +57,16 @@ import jakarta.json.bind.JsonbException;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.DescribeConfigsResult;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.config.ConfigResource;
 import org.fusesource.jansi.Ansi;
 
+import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelBinding;
+import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelTopicCleanupPolicy;
+import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelTopicConfiguration;
 import com.asyncapi.bindings.kafka.v0._5_0.server.KafkaServerBinding;
 import com.asyncapi.schemas.asyncapi.Reference;
 import com.asyncapi.v2._6_0.model.channel.message.Message;
@@ -260,6 +267,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 {
                     String topicName = topic.name();
 
+                    ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, topicName);
+                    DescribeConfigsResult result = adminClient.describeConfigs(List.of(resource));
+                    Map<ConfigResource, Config> configMap = result.all().get();
+
+                    Config topicConfig = configMap.get(resource);
+                    String[] policies = topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(",");
+
                     StringBuilder label = new StringBuilder(topicName.length());
                     boolean capitalizeNext = true;
                     for (char c : topicName.toCharArray())
@@ -284,7 +298,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     if (schema != null)
                     {
                         String type = resolveType(config, client, subject);
-                        records.add(new KafkaTopicSchemaRecord(topicName, label.toString(), subject, type, schema));
+                        records.add(new KafkaTopicSchemaRecord(topicName, policies, label.toString(), subject, type, schema));
                     }
                 }
             }
@@ -332,8 +346,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
             kafkaServerBinding.setSchemaRegistryUrl(config.registryUrl);
             kafkaServerBinding.setSchemaRegistryVendor("apicurio");
-            server.setBindings(Collections.singletonMap("kafka", kafkaServerBinding));
-            asyncAPI.setServers(Collections.singletonMap("plain", server));
+            server.setBindings(Map.of("kafka", kafkaServerBinding));
+            asyncAPI.setServers(Map.of("plain", server));
 
             for (KafkaTopicSchemaRecord record : records)
             {
@@ -344,8 +358,18 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                 channel = new Channel();
                 channel.setAddress(name);
+                KafkaChannelBinding kafkaChannelBinding = new com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelBinding();
+                KafkaChannelTopicConfiguration topicConfiguration = new KafkaChannelTopicConfiguration();
+                List<KafkaChannelTopicCleanupPolicy> policies = new ArrayList<>();
+                for (String policy : record.cleanupPolicies)
+                {
+                    policies.add(KafkaChannelTopicCleanupPolicy.valueOf(policy.toUpperCase()));
+                }
+                topicConfiguration.setCleanupPolicy(policies);
+                kafkaChannelBinding.setTopicConfiguration(topicConfiguration);
+                channel.setBindings(Map.of("kafka", kafkaChannelBinding));
                 reference = new Reference("#/components/messages/%s".formatted(messageName));
-                channel.setMessages(Collections.singletonMap(messageName, reference));
+                channel.setMessages(Map.of(messageName, reference));
                 channels.put(name, channel);
 
                 ObjectMapper schemaMapper = new ObjectMapper();
@@ -400,6 +424,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         catch (Exception ex)
         {
             System.err.println("Error generating Kafka AsyncApi Spec");
+            ex.printStackTrace(System.err);
         }
         return spec;
     }

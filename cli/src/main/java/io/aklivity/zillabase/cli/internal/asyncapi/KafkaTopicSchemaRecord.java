@@ -21,15 +21,18 @@ public class KafkaTopicSchemaRecord
     public String subject;
     public String type;
     public String schema;
+    public String[] cleanupPolicies;
 
     public KafkaTopicSchemaRecord(
         String name,
+        String[] cleanupPolicies,
         String label,
         String subject,
         String type,
         String schema)
     {
         this.name = name;
+        this.cleanupPolicies = cleanupPolicies;
         this.label = label;
         this.subject = subject;
         this.type = type;
