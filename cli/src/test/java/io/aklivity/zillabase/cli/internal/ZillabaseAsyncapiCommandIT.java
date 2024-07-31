@@ -181,4 +181,76 @@ public class ZillabaseAsyncapiCommandIT
         String spec = command.generateKafkaAsyncApiSpecs(new ZillabaseConfig(), List.of(record));
         assertEquals(expectedSpec, spec);
     }
+
+    @Test
+    public void shouldGenerateHttpAsyncapiSpec() throws Exception
+    {
+        String kafkaSpec =
+            "---\n" +
+                "asyncapi: \"3.0.0\"\n" +
+                "info:\n" +
+                "  title: \"API Document for Kafka Cluster\"\n" +
+                "  version: \"1.0.0\"\n" +
+                "  license:\n" +
+                "    name: \"Aklivity Community License\"\n" +
+                "    url: \"https://github.com/aklivity/zillabase/blob/develop/LICENSE\"\n" +
+                "servers:\n" +
+                "  plain:\n" +
+                "    host: \"localhost:9092\"\n" +
+                "    protocol: \"kafka\"\n" +
+                "    bindings:\n" +
+                "      kafka:\n" +
+                "        bindingVersion: \"0.5.0\"\n" +
+                "        schemaRegistryUrl: \"http://localhost:8080\"\n" +
+                "        schemaRegistryVendor: \"apicurio\"\n" +
+                "channels:\n" +
+                "  events:\n" +
+                "    address: \"events\"\n" +
+                "    messages:\n" +
+                "      EventsMessage:\n" +
+                "        $ref: \"#/components/messages/EventsMessage\"\n" +
+                "    bindings:\n" +
+                "      kafka:\n" +
+                "        bindingVersion: \"0.5.0\"\n" +
+                "        topicConfiguration:\n" +
+                "          cleanup.policy:\n" +
+                "          - \"compact\"\n" +
+                "operations:\n" +
+                "  doEvents:\n" +
+                "    action: \"send\"\n" +
+                "    channel:\n" +
+                "      $ref: \"#/channels/events\"\n" +
+                "    messages:\n" +
+                "    - $ref: \"#/channels/events/messages/EventsMessage\"\n" +
+                "  onEvents:\n" +
+                "    action: \"receive\"\n" +
+                "    channel:\n" +
+                "      $ref: \"#/channels/events\"\n" +
+                "    messages:\n" +
+                "    - $ref: \"#/channels/events/messages/EventsMessage\"\n" +
+                "components:\n" +
+                "  schemas:\n" +
+                "    events-value:\n" +
+                "      type: \"object\"\n" +
+                "      properties:\n" +
+                "        id:\n" +
+                "          type: \"string\"\n" +
+                "        status:\n" +
+                "          type: \"string\"\n" +
+                "      required:\n" +
+                "      - \"id\"\n" +
+                "      - \"status\"\n" +
+                "  messages:\n" +
+                "    EventsMessage:\n" +
+                "      payload:\n" +
+                "        $ref: \"#/components/schemas/events-value\"\n" +
+                "      contentType: \"application/json\"\n" +
+                "      name: \"EventsMessage\"\n";
+
+        ZillabaseStartCommand command = new ZillabaseStartCommand();
+
+        String spec = command.generateHttpAsyncApiSpecs(new ZillabaseConfig(), kafkaSpec);
+
+        // TODO: Add assert to validate
+    }
 }

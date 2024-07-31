@@ -24,6 +24,7 @@ public class ZillabaseConfig
     private static final String DEFAULT_REGISTRY_URL = "http://localhost:8080";
     private static final String DEFAULT_RISINGWAVE_URL = "localhost:%d".formatted(DEFAULT_RISINGWAVE_PORT);
     private static final String DEFAULT_RISINGWAVE_DB = "dev";
+    private static final String DEFAULT_HTTP_URL = "localhost:9090";
 
     public int port = DEFAULT_ADMIN_PORT;
     public String registryUrl = DEFAULT_REGISTRY_URL;
@@ -32,4 +33,5 @@ public class ZillabaseConfig
     public String risingWaveUrl = DEFAULT_RISINGWAVE_URL;
     public String risingWaveDb = DEFAULT_RISINGWAVE_DB;
     public ZillabaseAdminConfig adminConfig = new ZillabaseAdminConfig();
+    public String httpEndpoints = DEFAULT_HTTP_URL;
 }
