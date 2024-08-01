@@ -23,7 +23,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -97,6 +96,24 @@ public class ZillabaseAsyncapiCommandIT
 
     @Test
     public void shouldValidateAsyncapiSpec() throws Exception
+    {
+        ZillabaseStartCommand startCommand = new ZillabaseStartCommand();
+        startCommand.helpOption = new HelpOption<>();
+        startCommand.run();
+
+        String kafkaSpec = resolveAsyncApiSpec(4);
+        String httpSpec = resolveAsyncApiSpec(5);
+
+        ZillabaseStopCommand stopCommand = new ZillabaseStopCommand();
+        stopCommand.helpOption = new HelpOption<>();
+        stopCommand.run();
+
+        validateKafkaAsyncApiSpec(kafkaSpec);
+        validateHttpAsyncApiSpec(httpSpec);
+    }
+
+    private void validateKafkaAsyncApiSpec(
+        String kafkaSpec)
     {
         String expectedKafkaSpec = """
             ---
@@ -237,6 +254,12 @@ public class ZillabaseAsyncapiCommandIT
                   name: "EventsMessage"
             """;
 
+        assertEquals(expectedKafkaSpec, kafkaSpec);
+    }
+
+    private void validateHttpAsyncApiSpec(
+        String httpSpec)
+    {
         String expectedHttpSpec = """
             ---
             asyncapi: "3.0.0"
@@ -397,18 +420,6 @@ public class ZillabaseAsyncapiCommandIT
                   name: "EventsMessage"
             """;
 
-        ZillabaseStartCommand startCommand = new ZillabaseStartCommand();
-        startCommand.helpOption = new HelpOption<>();
-        startCommand.run();
-
-        String kafkaSpec = resolveAsyncApiSpec(4);
-        String httpSpec = resolveAsyncApiSpec(5);
-
-        ZillabaseStopCommand stopCommand = new ZillabaseStopCommand();
-        stopCommand.helpOption = new HelpOption<>();
-        stopCommand.run();
-
-        assertEquals(expectedKafkaSpec, kafkaSpec);
         assertEquals(expectedHttpSpec, httpSpec);
     }
 
