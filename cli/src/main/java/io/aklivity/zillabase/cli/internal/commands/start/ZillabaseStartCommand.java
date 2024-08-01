@@ -123,7 +123,7 @@ import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
-    private static final int SERVICE_INITIALIZATION_DELAY_MS = 1000;
+    private static final int SERVICE_INITIALIZATION_DELAY_MS = 2000;
     private static final int MAX_RETRIES = 5;
 
     @Override
@@ -346,19 +346,20 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                             }
                             topics.add(newTopic);
 
-                            HttpRequest request = HttpRequest.newBuilder(toURI(config.registryUrl,
-                                "/apis/registry/v2/groups/%s/artifacts".formatted(config.registryGroupId)))
-                                .header("X-Registry-ArtifactId", "%s-value".formatted(topicName))
-                                .POST(HttpRequest.BodyPublishers.ofString(topicObject.getString("schema")))
-                                .build();
-
-                            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                            if (response.statusCode() != 200)
+                            if (topicObject.containsKey("schema"))
                             {
-                                System.err.println("Error registering schema for %s. Error code: %s"
-                                    .formatted(topicName, response.statusCode()));
-                                System.err.println(response.body());
+                                JsonObject schemaObject = topicObject.getJsonObject("schema");
+                                if (schemaObject.containsKey("key"))
+                                {
+                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(topicName),
+                                        schemaObject.getString("key"));
+                                }
+
+                                if (schemaObject.containsKey("value"))
+                                {
+                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(topicName),
+                                        schemaObject.getString("value"));
+                                }
                             }
                         }
                         status = adminClient.createTopics(topics).all().get() == null;
@@ -377,6 +378,27 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
         return status;
+    }
+
+    private void registerKafkaTopicSchema(
+        ZillabaseConfig config,
+        HttpClient client,
+        String subject,
+        String schema) throws IOException, InterruptedException
+    {
+        HttpRequest request = HttpRequest.newBuilder(toURI(config.registryUrl,
+                "/apis/registry/v2/groups/%s/artifacts".formatted(config.registryGroupId)))
+            .header("X-Registry-ArtifactId", subject)
+            .POST(HttpRequest.BodyPublishers.ofString(schema))
+            .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200)
+        {
+            System.err.println("Error registering schema for %s. Error code: %s"
+                .formatted(subject, response.statusCode()));
+            System.err.println(response.body());
+        }
     }
 
     private void registerAsyncApiSpec(

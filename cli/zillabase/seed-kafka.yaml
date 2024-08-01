@@ -6,56 +6,68 @@ topics:
       replication_factor: 1
       partitions: 1
       cleanup.policy: compact
-    schema: |
-      {
-        "fields": [
-          {
-            "name": "id",
-            "type": "string"
-          },
-          {
-            "name": "status",
-            "type": "string"
-          }
-        ],
-        "name": "Event",
-        "namespace": "io.aklivity.example",
-        "type": "record"
-      }
+    schema:
+      key: |
+        {
+          "type": "string"
+        }
+      value: |
+        {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            }
+          ],
+          "name": "Event",
+          "namespace": "io.aklivity.example",
+          "type": "record"
+        }
   - name: streampay-replies
-    schema: |
-      {
-        "fields": [
-          {
-            "name": "price",
-            "type": "string"
-          },
-          {
-            "name": "unit",
-            "type": "string"
-          }
-        ],
-        "name": "Product",
-        "namespace": "io.aklivity.example",
-        "type": "record"
-      }
+    schema:
+      value: |
+        {
+          "fields": [
+            {
+              "name": "price",
+              "type": "string"
+            },
+            {
+              "name": "unit",
+              "type": "string"
+            }
+          ],
+          "name": "Product",
+          "namespace": "io.aklivity.example",
+          "type": "record"
+        }
   - name: events
     config:
       replication_factor: 1
       partitions: 1
-    schema: |
-      {
-        "fields": [
-          {
-            "name": "id",
-            "type": "string"
-          },
-          {
-            "name": "status",
-            "type": "string"
-          }
-        ],
-        "name": "Event",
-        "namespace": "io.aklivity.example",
-        "type": "record"
-      }
+    schema:
+      key: |
+        {
+          "type": "string"
+        }
+      value: |
+        {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            }
+          ],
+          "name": "Event",
+          "namespace": "io.aklivity.example",
+          "type": "record"
+        }
+

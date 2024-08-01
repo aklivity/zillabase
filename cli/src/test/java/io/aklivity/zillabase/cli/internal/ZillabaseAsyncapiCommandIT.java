@@ -101,8 +101,8 @@ public class ZillabaseAsyncapiCommandIT
         startCommand.helpOption = new HelpOption<>();
         startCommand.run();
 
-        String kafkaSpec = resolveAsyncApiSpec(4);
-        String httpSpec = resolveAsyncApiSpec(5);
+        String kafkaSpec = resolveAsyncApiSpec(6);
+        String httpSpec = resolveAsyncApiSpec(7);
 
         ZillabaseStopCommand stopCommand = new ZillabaseStopCommand();
         stopCommand.helpOption = new HelpOption<>();
