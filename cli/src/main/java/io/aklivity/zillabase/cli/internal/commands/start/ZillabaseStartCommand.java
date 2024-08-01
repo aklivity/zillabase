@@ -677,7 +677,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 ZillaHttpOperationBinding zillaHttpBinding =
                     new ZillaHttpOperationBinding(POST, Map.of("zilla:identity", "{identity}"));
                 Map<String, Object> bindings = new HashMap<>();
-                bindings.put("http", zillaHttpBinding);
+                bindings.put("http", httpBinding);
                 bindings.put("x-zilla-http-kafka", zillaHttpBinding);
                 operation.setBindings(bindings);
                 operations.put(compact ? "do%sCreate".formatted(label) : "do%s".formatted(label), operation);
@@ -694,7 +694,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     httpBinding.setMethod(PUT);
                     zillaHttpBinding = new ZillaHttpOperationBinding(PUT, Map.of("zilla:identity", "{identity}"));
                     bindings = new HashMap<>();
-                    bindings.put("http", zillaHttpBinding);
+                    bindings.put("http", httpBinding);
                     bindings.put("x-zilla-http-kafka", zillaHttpBinding);
                     operation.setBindings(bindings);
                     operations.put("do%sUpdate".formatted(label), operation);
