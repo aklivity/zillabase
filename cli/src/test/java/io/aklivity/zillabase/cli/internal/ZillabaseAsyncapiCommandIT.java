@@ -314,9 +314,8 @@ public class ZillabaseAsyncapiCommandIT
                     overrides:
                       zilla:identity: "{identity}"
                   http:
+                    bindingVersion: "0.3.0"
                     method: "POST"
-                    overrides:
-                      zilla:identity: "{identity}"
                 messages:
                 - $ref: "#/channels/events/messages/EventsMessage"
               onEventsReadItem:
@@ -335,9 +334,8 @@ public class ZillabaseAsyncapiCommandIT
                     overrides:
                       zilla:identity: "{identity}"
                   http:
+                    bindingVersion: "0.3.0"
                     method: "PUT"
-                    overrides:
-                      zilla:identity: "{identity}"
                 messages:
                 - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
               onStreampayCommandsRead:
@@ -368,9 +366,8 @@ public class ZillabaseAsyncapiCommandIT
                     overrides:
                       zilla:identity: "{identity}"
                   http:
+                    bindingVersion: "0.3.0"
                     method: "POST"
-                    overrides:
-                      zilla:identity: "{identity}"
                 messages:
                 - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
             components:
