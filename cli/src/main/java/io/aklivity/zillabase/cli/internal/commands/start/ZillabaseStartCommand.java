@@ -56,16 +56,19 @@ import java.util.concurrent.locks.ReentrantLock;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbConfig;
 import jakarta.json.bind.JsonbException;
+import jakarta.json.stream.JsonParsingException;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
@@ -120,7 +123,7 @@ import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
-    private static final int RISINGWAVE_INITIALIZATION_DELAY_MS = 1000;
+    private static final int SERVICE_INITIALIZATION_DELAY_MS = 1000;
     private static final int MAX_RETRIES = 5;
 
     @Override
@@ -191,6 +194,31 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        Path kafkaSeedPath = Paths.get("zillabase/seed-kafka.yaml");
+        if (Files.exists(kafkaSeedPath))
+        {
+            try
+            {
+                String content = Files.readString(kafkaSeedPath);
+                try (JsonReader jsonReader = Json.createReader(new StringReader(content)))
+                {
+                    JsonValue jsonValue = jsonReader.readValue();
+                    if (jsonValue instanceof JsonObject && seedKafkaAndRegistry(jsonValue, config))
+                    {
+                        System.out.println("seed-kafka.yaml processed successfully!");
+                    }
+                    else
+                    {
+                        System.err.println("Failed to process seed-kafka.yaml");
+                    }
+                }
+            }
+            catch (IOException | JsonParsingException ex)
+            {
+                System.err.println("Failed to process seed-kafka.yaml : %s".formatted(ex.getMessage()));
+            }
+        }
+
         Path seedPath = Paths.get("zillabase/seed.sql");
         if (Files.exists(seedPath))
         {
@@ -215,6 +243,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        processAsyncApiSpecs(config);
+    }
+
+    private void processAsyncApiSpecs(
+        ZillabaseConfig config)
+    {
         Path kafkaSpecPath = Paths.get("asyncapi-kafka.yaml");
         String kafkaSpec = null;
         if (Files.exists(kafkaSpecPath))
@@ -258,6 +292,91 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         registerAsyncApiSpec(httpSpec);
+    }
+
+    private boolean seedKafkaAndRegistry(
+        JsonValue content,
+        ZillabaseConfig config)
+    {
+        final HttpClient client = HttpClient.newHttpClient();
+
+        boolean status = false;
+        int retries = 0;
+        int delay = SERVICE_INITIALIZATION_DELAY_MS;
+
+        while (retries < MAX_RETRIES)
+        {
+            try
+            {
+                Thread.sleep(delay);
+                try (AdminClient adminClient = AdminClient.create(Map.of(
+                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapUrl)))
+                {
+                    JsonObject topicsObject = content.asJsonObject();
+                    if (topicsObject.containsKey("topics"))
+                    {
+                        List<NewTopic> topics = new ArrayList<>();
+                        for (JsonValue topicValue : topicsObject.getJsonArray("topics"))
+                        {
+                            JsonObject topicObject = topicValue.asJsonObject();
+
+                            String topicName = topicObject.getString("name");
+                            int partitions = topicObject.containsKey("partitions")
+                                ? topicObject.getJsonObject("config").getInt("partitions")
+                                : 1;
+                            int replicationFactor = topicObject.containsKey("replication_factor")
+                                ? topicObject.getJsonObject("config").getInt("replication_factor")
+                                : 1;
+
+                            NewTopic newTopic = new NewTopic(topicName, partitions, (short) replicationFactor);
+
+                            if (topicObject.containsKey("config"))
+                            {
+                                Map<String, String> configs = new HashMap<>();
+                                JsonObject configObject = topicObject.getJsonObject("config");
+                                for (Map.Entry<String, JsonValue> entry : configObject.entrySet())
+                                {
+                                    String key = entry.getKey();
+                                    if (!"partitions".equals(key) && !"replication_factor".equals(key))
+                                    {
+                                        configs.put(key, entry.getValue().toString().replace("\"", ""));
+                                    }
+                                }
+                                newTopic.configs(configs);
+                            }
+                            topics.add(newTopic);
+
+                            HttpRequest request = HttpRequest.newBuilder(toURI(config.registryUrl,
+                                "/apis/registry/v2/groups/%s/artifacts".formatted(config.registryGroupId)))
+                                .header("X-Registry-ArtifactId", "%s-value".formatted(topicName))
+                                .POST(HttpRequest.BodyPublishers.ofString(topicObject.getString("schema")))
+                                .build();
+
+                            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                            if (response.statusCode() != 200)
+                            {
+                                System.err.println("Error registering schema for %s. Error code: %s"
+                                    .formatted(topicName, response.statusCode()));
+                                System.err.println(response.body());
+                            }
+                        }
+                        status = adminClient.createTopics(topics).all().get() == null;
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                retries++;
+                delay *= 2;
+                if (retries >= MAX_RETRIES)
+                {
+                    System.err.println("Error creating Kafka topics : %s".formatted(ex.getMessage()));
+                }
+            }
+        }
+        return status;
     }
 
     private void registerAsyncApiSpec(
@@ -353,7 +472,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return label.toString();
     }
 
-    public String generateKafkaAsyncApiSpecs(
+    private String generateKafkaAsyncApiSpecs(
         ZillabaseConfig config,
         List<KafkaTopicSchemaRecord> records)
     {
@@ -460,7 +579,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return spec;
     }
 
-    public String generateHttpAsyncApiSpecs(
+    private String generateHttpAsyncApiSpecs(
         ZillabaseConfig config,
         String kafkaSpec)
     {
@@ -622,7 +741,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             ex.printStackTrace(System.err);
         }
 
-        System.out.println(spec);
         return spec;
     }
 
@@ -724,7 +842,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         boolean status = false;
         int retries = 0;
-        int delay = RISINGWAVE_INITIALIZATION_DELAY_MS;
+        int delay = SERVICE_INITIALIZATION_DELAY_MS;
 
         while (retries < MAX_RETRIES)
         {
