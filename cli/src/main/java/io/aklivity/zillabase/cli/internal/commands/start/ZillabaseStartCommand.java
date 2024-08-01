@@ -50,6 +50,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
@@ -57,6 +58,7 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
+import com.github.dockerjava.api.model.Volume;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
@@ -80,6 +82,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         List<CreateContainerFactory> factories = new LinkedList<>();
         factories.add(new CreateAdminFactory());
+        factories.add(new CreateConfigFactory());
         factories.add(new CreateZillaFactory());
         factories.add(new CreateKafkaFactory());
         factories.add(new CreateRisingWaveFactory());
@@ -511,6 +514,40 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network))
                     .withPortBindings(new PortBinding(Ports.Binding.bindPort(port), exposedPort))
                 .withExposedPorts(exposedPort)
+                .withEnv(envVars)
+                .withTty(true);
+        }
+    }
+
+    private static final class CreateConfigFactory extends CreateContainerFactory
+    {
+        CreateConfigFactory()
+        {
+            super("config", "ghcr.io/aklivity/zilla:latest");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client,
+            ZillabaseConfig config)
+        {
+            List<String> envVars = Arrays.asList(
+                "KEYSTORE_PASSWORD=%s".formatted("generated"),
+                "KAFKA_BOOTSTRAP_SERVER=%s".formatted("kafka:9092"));
+
+            Path configPath = Paths.get("zillabase/config/zilla.yaml");
+            Path certPath = Paths.get("zillabase/config/tls/localhost.p12");
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network))
+                    .withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/opt/zilla.yaml")),
+                        new Bind(certPath.toAbsolutePath().toString(), new Volume("/opt/tls/localhost.p12")))
+                .withCmd("start", "-v", "-e", "-c", "/opt/zilla.yaml")
                 .withEnv(envVars)
                 .withTty(true);
         }
