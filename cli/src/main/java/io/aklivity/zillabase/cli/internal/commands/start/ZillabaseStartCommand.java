@@ -52,6 +52,8 @@ import java.util.Properties;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -125,6 +127,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
     private static final int SERVICE_INITIALIZATION_DELAY_MS = 2000;
     private static final int MAX_RETRIES = 5;
+    private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
+
+    private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
     @Override
     protected void invoke(
@@ -457,7 +462,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     if (schema != null)
                     {
                         String type = resolveType(config, client, subject);
-                        records.add(new KafkaTopicSchemaRecord(topicName, policies, pascalCaseFormat(topicName),
+                        records.add(new KafkaTopicSchemaRecord(topicName, policies,
+                            matcher.reset(topicName).replaceAll(match -> match.group(2).toUpperCase()),
                             subject, type, schema));
                     }
                 }
@@ -468,30 +474,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             System.err.println("Error resolving Kafka Topics & Schemas Info");
         }
         return records;
-    }
-
-    private String pascalCaseFormat(
-        String name)
-    {
-        StringBuilder label = new StringBuilder(name.length());
-        boolean capitalizeNext = true;
-        for (char c : name.toCharArray())
-        {
-            if (c == '-')
-            {
-                capitalizeNext = true;
-            }
-            else
-            {
-                if (capitalizeNext)
-                {
-                    c = Character.toUpperCase(c);
-                    capitalizeNext = false;
-                }
-                label.append(c);
-            }
-        }
-        return label.toString();
     }
 
     private String generateKafkaAsyncApiSpecs(
@@ -646,7 +628,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 {
                     continue;
                 }
-                String label = pascalCaseFormat(name);
+                String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
                 String messageName = "%sMessage".formatted(label);
                 JsonValue channelValue = channelJson.getValue();
                 Channel channel = new Channel();
