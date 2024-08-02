@@ -58,7 +58,6 @@ import java.util.regex.Pattern;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
@@ -119,13 +118,16 @@ import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
+import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
+import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
+import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
 
 @Command(
     name = "start",
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
-    private static final int SERVICE_INITIALIZATION_DELAY_MS = 2000;
+    private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
     private static final int MAX_RETRIES = 5;
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
 
@@ -205,17 +207,16 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try
             {
                 String content = Files.readString(kafkaSeedPath);
-                try (JsonReader jsonReader = Json.createReader(new StringReader(content)))
+                JsonbConfig jsonbConfig = new JsonbConfig();
+                Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
+                KafkaBootstrapRecords records = jsonb.fromJson(content, KafkaBootstrapRecords.class);
+                if (records != null && !records.topics.isEmpty() && seedKafkaAndRegistry(records, config))
                 {
-                    JsonValue jsonValue = jsonReader.readValue();
-                    if (jsonValue instanceof JsonObject && seedKafkaAndRegistry(jsonValue, config))
-                    {
-                        System.out.println("seed-kafka.yaml processed successfully!");
-                    }
-                    else
-                    {
-                        System.err.println("Failed to process seed-kafka.yaml");
-                    }
+                    System.out.println("seed-kafka.yaml processed successfully!");
+                }
+                else
+                {
+                    System.err.println("Failed to process seed-kafka.yaml");
                 }
             }
             catch (IOException | JsonParsingException ex)
@@ -300,7 +301,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     }
 
     private boolean seedKafkaAndRegistry(
-        JsonValue content,
+        KafkaBootstrapRecords records,
         ZillabaseConfig config)
     {
         final HttpClient client = HttpClient.newHttpClient();
@@ -317,59 +318,54 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 try (AdminClient adminClient = AdminClient.create(Map.of(
                     AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapUrl)))
                 {
-                    JsonObject topicsObject = content.asJsonObject();
-                    if (topicsObject.containsKey("topics"))
+                    List<NewTopic> topics = new ArrayList<>();
+                    for (KafkaTopicRecord record : records.topics)
                     {
-                        List<NewTopic> topics = new ArrayList<>();
-                        for (JsonValue topicValue : topicsObject.getJsonArray("topics"))
+                        String name = record.name;
+                        Map<String, String> topicConfig = record.config;
+                        int partition = 1;
+                        short replication = 1;
+
+                        Map<String, String> configs = new HashMap<>();
+                        if (topicConfig != null && !topicConfig.isEmpty())
                         {
-                            JsonObject topicObject = topicValue.asJsonObject();
-
-                            String topicName = topicObject.getString("name");
-                            int partitions = topicObject.containsKey("partitions")
-                                ? topicObject.getJsonObject("config").getInt("partitions")
-                                : 1;
-                            int replicationFactor = topicObject.containsKey("replication_factor")
-                                ? topicObject.getJsonObject("config").getInt("replication_factor")
-                                : 1;
-
-                            NewTopic newTopic = new NewTopic(topicName, partitions, (short) replicationFactor);
-
-                            if (topicObject.containsKey("config"))
+                            for (Map.Entry<String, String> entry : topicConfig.entrySet())
                             {
-                                Map<String, String> configs = new HashMap<>();
-                                JsonObject configObject = topicObject.getJsonObject("config");
-                                for (Map.Entry<String, JsonValue> entry : configObject.entrySet())
+                                String key = entry.getKey();
+                                switch (key)
                                 {
-                                    String key = entry.getKey();
-                                    if (!"partitions".equals(key) && !"replication_factor".equals(key))
-                                    {
-                                        configs.put(key, entry.getValue().toString().replace("\"", ""));
-                                    }
-                                }
-                                newTopic.configs(configs);
-                            }
-                            topics.add(newTopic);
-
-                            if (topicObject.containsKey("schema"))
-                            {
-                                JsonObject schemaObject = topicObject.getJsonObject("schema");
-                                if (schemaObject.containsKey("key"))
-                                {
-                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(topicName),
-                                        schemaObject.getString("key"));
-                                }
-
-                                if (schemaObject.containsKey("value"))
-                                {
-                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(topicName),
-                                        schemaObject.getString("value"));
+                                case "partitions":
+                                    partition = Integer.parseInt(topicConfig.get("partitions"));
+                                    break;
+                                case "replication_factor":
+                                    replication = Short.parseShort(topicConfig.get("replication_factor"));
+                                    break;
+                                default:
+                                    configs.put(key, entry.getValue());
+                                    break;
                                 }
                             }
                         }
-                        status = adminClient.createTopics(topics).all().get() == null;
-                        break;
+                        NewTopic newTopic = new NewTopic(name, partition, replication);
+                        newTopic.configs(configs);
+                        topics.add(newTopic);
+
+                        KafkaTopicSchema schema = record.schema;
+                        if (schema != null)
+                        {
+                            if (schema.key != null)
+                            {
+                                registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key);
+                            }
+
+                            if (schema.value != null)
+                            {
+                                registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value);
+                            }
+                        }
                     }
+                    status = adminClient.createTopics(topics).all().get() == null;
+                    break;
                 }
             }
             catch (Exception ex)
