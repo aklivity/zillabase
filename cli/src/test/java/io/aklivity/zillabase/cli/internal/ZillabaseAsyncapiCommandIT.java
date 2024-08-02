@@ -391,16 +391,16 @@ public class ZillabaseAsyncapiCommandIT
     @Test
     public void shouldValidateAsyncapiSpec() throws Exception
     {
-        ZillabaseStartCommand startCommand = new ZillabaseStartCommand();
-        startCommand.helpOption = new HelpOption<>();
-        startCommand.run();
+        ZillabaseStartCommand start = new ZillabaseStartCommand();
+        start.helpOption = new HelpOption<>();
+        start.run();
 
         String actualKafkaSpec = resolveAsyncApiSpec(6);
         String actualHttpSpec = resolveAsyncApiSpec(7);
 
-        ZillabaseStopCommand stopCommand = new ZillabaseStopCommand();
-        stopCommand.helpOption = new HelpOption<>();
-        stopCommand.run();
+        ZillabaseStopCommand stop = new ZillabaseStopCommand();
+        stop.helpOption = new HelpOption<>();
+        stop.run();
 
         assertEquals(KAFKA_SPEC, actualKafkaSpec);
         assertEquals(HTTP_SPEC, actualHttpSpec);

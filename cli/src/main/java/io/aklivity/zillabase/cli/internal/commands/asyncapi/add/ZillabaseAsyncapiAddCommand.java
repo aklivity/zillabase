@@ -22,6 +22,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.CRC32C;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,7 +59,12 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
             try
             {
                 HttpClient client = HttpClient.newHttpClient();
-                String response = sendHttpRequest(Files.newInputStream(path), client);
+                CRC32C crc32c = new CRC32C();
+                InputStream content = Files.newInputStream(path);
+                byte[] data = content.readAllBytes();
+                crc32c.update(data, 0, data.length);
+
+                String response = sendHttpRequest(Files.newInputStream(path), client, crc32c.getValue());
                 if (response != null)
                 {
                     ObjectMapper mapper = new ObjectMapper();
@@ -79,7 +85,8 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
 
     private String sendHttpRequest(
         InputStream content,
-        HttpClient client)
+        HttpClient client,
+        long artifactId)
     {
         if (serverURL == null)
         {
@@ -89,7 +96,7 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
         HttpRequest httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(ASYNCAPI_PATH))
             .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
-            .header("X-Registry-ArtifactId", "zillabase-asyncapi-%s".formatted(System.currentTimeMillis()))
+            .header("X-Registry-ArtifactId", "zillabase-asyncapi-%s".formatted(artifactId))
             .POST(HttpRequest.BodyPublishers.ofInputStream(() -> content))
             .build();
 
