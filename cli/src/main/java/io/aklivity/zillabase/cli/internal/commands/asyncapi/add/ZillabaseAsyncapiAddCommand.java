@@ -64,7 +64,7 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
                 byte[] data = content.readAllBytes();
                 crc32c.update(data, 0, data.length);
 
-                String response = sendHttpRequest(Files.newInputStream(path), client, crc32c.getValue());
+                String response = sendHttpRequest(Files.newInputStream(path), client, String.valueOf(crc32c.getValue()));
                 if (response != null)
                 {
                     ObjectMapper mapper = new ObjectMapper();
@@ -86,7 +86,7 @@ public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
     private String sendHttpRequest(
         InputStream content,
         HttpClient client,
-        long artifactId)
+        String artifactId)
     {
         if (serverURL == null)
         {

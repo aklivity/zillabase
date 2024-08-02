@@ -61,7 +61,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbConfig;
 import jakarta.json.bind.JsonbException;
 import jakarta.json.stream.JsonParsingException;
 
@@ -173,8 +172,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         try (InputStream inputStream = Files.newInputStream(configPath))
         {
-            JsonbConfig jsonbConfig = new JsonbConfig();
-            Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
+            Jsonb jsonb = JsonbBuilder.create();
             config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
         }
         catch (IOException | JsonbException ex)
@@ -206,8 +204,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try
             {
                 String content = Files.readString(kafkaSeedPath);
-                JsonbConfig jsonbConfig = new JsonbConfig();
-                Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
+                Jsonb jsonb = JsonbBuilder.create();
                 KafkaBootstrapRecords records = jsonb.fromJson(content, KafkaBootstrapRecords.class);
                 if (records != null && !records.topics.isEmpty() && seedKafkaAndRegistry(records, config))
                 {
