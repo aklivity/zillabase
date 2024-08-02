@@ -18,7 +18,7 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.P
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
-import static io.aklivity.zillabase.cli.config.ZillabaseConfig.DEFAULT_RISINGWAVE_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
 import java.io.BufferedWriter;
@@ -117,7 +117,6 @@ import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
-import io.aklivity.zillabase.cli.internal.config.ZillabaseConfigAdapter;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
@@ -174,7 +173,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         try (InputStream inputStream = Files.newInputStream(configPath))
         {
-            JsonbConfig jsonbConfig = new JsonbConfig().withAdapters(new ZillabaseConfigAdapter());
+            JsonbConfig jsonbConfig = new JsonbConfig();
             Jsonb jsonb = JsonbBuilder.create(jsonbConfig);
             config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
         }
@@ -316,7 +315,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 Thread.sleep(delay);
                 try (AdminClient adminClient = AdminClient.create(Map.of(
-                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapUrl)))
+                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl)))
                 {
                     List<NewTopic> topics = new ArrayList<>();
                     for (KafkaTopicRecord record : records.topics)
@@ -387,8 +386,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         String subject,
         String schema) throws IOException, InterruptedException
     {
-        HttpRequest request = HttpRequest.newBuilder(toURI(config.registryUrl,
-                "/apis/registry/v2/groups/%s/artifacts".formatted(config.registryGroupId)))
+        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.url,
+                "/apis/registry/v2/groups/%s/artifacts".formatted(config.registry.groupId)))
             .header("X-Registry-ArtifactId", subject)
             .POST(HttpRequest.BodyPublishers.ofString(schema))
             .build();
@@ -435,7 +434,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         List<KafkaTopicSchemaRecord> records = new ArrayList<>();
         try (AdminClient adminClient = AdminClient.create(Map.of(
-            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapUrl)))
+            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl)))
         {
             final HttpClient client = HttpClient.newHttpClient();
 
@@ -498,11 +497,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             info.setLicense(license);
 
             Server server = new Server();
-            server.setHost(config.kafkaBootstrapUrl);
+            server.setHost(config.kafka.bootstrapUrl);
             server.setProtocol("kafka");
 
             KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
-            kafkaServerBinding.setSchemaRegistryUrl(config.registryUrl);
+            kafkaServerBinding.setSchemaRegistryUrl(config.registry.url);
             kafkaServerBinding.setSchemaRegistryVendor("apicurio");
             server.setBindings(Map.of("kafka", kafkaServerBinding));
 
@@ -784,8 +783,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registryUrl,
-                    "/apis/registry/v2/groups/%s/artifacts/%s/meta".formatted(config.registryGroupId, subject)))
+                .newBuilder(toURI(config.registry.url,
+                    "/apis/registry/v2/groups/%s/artifacts/%s/meta".formatted(config.registry.groupId, subject)))
                 .GET()
                 .build();
 
@@ -813,8 +812,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registryUrl,
-                    "/apis/registry/v2/groups/%s/artifacts/%s".formatted(config.registryGroupId, subject)))
+                .newBuilder(toURI(config.registry.url,
+                    "/apis/registry/v2/groups/%s/artifacts/%s".formatted(config.registry.groupId, subject)))
                 .GET()
                 .build();
 
@@ -850,7 +849,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 Thread.sleep(delay);
                 try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
-                    .formatted(config.risingWaveUrl, config.risingWaveDb), props);
+                    .formatted(config.risingWave.url, config.risingWave.db), props);
                      Statement stmt = conn.createStatement())
                 {
                     String[] sqlCommands = content.split(";");
@@ -1177,8 +1176,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             List<String> envVars = Arrays.asList(
                 "ADMIN_PORT=%d".formatted(config.port),
-                "REGISTRY_URL=%s".formatted(config.adminConfig.registryUrl),
-                "REGISTRY_GROUP_ID=%s".formatted(config.adminConfig.registryGroupId),
+                "REGISTRY_URL=%s".formatted(config.admin.registryUrl),
+                "REGISTRY_GROUP_ID=%s".formatted(config.admin.registryGroupId),
                 "DEBUG=%s".formatted(true));
 
             int port = config.port;
