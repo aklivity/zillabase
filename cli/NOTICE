@@ -22,6 +22,9 @@ This project includes:
   Apache HttpClient under Apache License, Version 2.0
   Apache HttpComponents Core HTTP/1.1 under Apache License, Version 2.0
   Apache HttpComponents Core HTTP/2 under Apache License, Version 2.0
+  Apache Kafka under The Apache Software License, Version 2.0
+  asyncapi-core under Apache License, Version 2.0
+  Bean Validation API under Apache License 2.0
   Bouncy Castle ASN.1 Extension and Utility APIs under Bouncy Castle Licence
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs under Bouncy Castle Licence
   Bouncy Castle Provider under Bouncy Castle Licence
@@ -30,20 +33,28 @@ This project includes:
   docker-java-transport under The Apache Software License, Version 2.0
   docker-java-transport-httpclient5 under The Apache Software License, Version 2.0
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
+  IntelliJ IDEA Annotations under The Apache Software License, Version 2.0
   Jackson-annotations under The Apache Software License, Version 2.0
   Jackson-core under The Apache Software License, Version 2.0
   jackson-databind under The Apache Software License, Version 2.0
+  Jackson-dataformat-YAML under The Apache Software License, Version 2.0
   Jakarta Dependency Injection under The Apache Software License, Version 2.0
   Jakarta JSON Processing API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   Jansi under Apache License, Version 2.0
   Java Native Access under LGPL-2.1-or-later or Apache-2.0
   JSON-B API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   JSON-P Default Provider under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  Kotlin Stdlib under The Apache License, Version 2.0
+  LZ4 and xxHash under The Apache Software License, Version 2.0
   org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
   org.leadpony.joy.core under The Apache Software License, Version 2.0
   org.leadpony.joy.yaml under The Apache Software License, Version 2.0
   PostgreSQL JDBC Driver under BSD-2-Clause
+  Project Lombok under The MIT License
   SLF4J API Module under MIT License
   SLF4J Simple Binding under MIT License
+  SnakeYAML under Apache License, Version 2.0
   SnakeYAML Engine under Apache License, Version 2.0
+  snappy-java under The Apache Software License, Version 2.0
+  zstd-jni under BSD 2-Clause License
 

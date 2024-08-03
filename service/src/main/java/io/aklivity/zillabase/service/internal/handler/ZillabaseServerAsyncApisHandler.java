@@ -26,6 +26,7 @@ import com.sun.net.httpserver.HttpExchange;
 public class ZillabaseServerAsyncApisHandler extends ZillabaseServerHandler
 {
     private static final String ARTIFACT_PATH = "/apis/registry/v2/groups/{0}/artifacts";
+    private static final String REGISTRY_ARTIFACT_ID = "X-Registry-ArtifactId";
 
     private final HttpClient client;
     private final String baseUrl;
@@ -54,8 +55,13 @@ public class ZillabaseServerAsyncApisHandler extends ZillabaseServerHandler
             {
             case "POST":
                 builder.header("Content-Type", "application/vnd.aai.asyncapi+yaml")
-                    .header("artifactType", "ASYNCAPI")
-                    .POST(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
+                    .header("X-Registry-ArtifactType", "ASYNCAPI")
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes()));
+
+                if (exchange.getRequestHeaders().containsKey(REGISTRY_ARTIFACT_ID))
+                {
+                    builder.header(REGISTRY_ARTIFACT_ID, exchange.getRequestHeaders().getFirst(REGISTRY_ARTIFACT_ID));
+                }
                 break;
             case "GET":
                 builder.GET();

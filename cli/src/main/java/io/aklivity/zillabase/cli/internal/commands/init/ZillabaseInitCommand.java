@@ -33,6 +33,7 @@ public final class ZillabaseInitCommand extends ZillabaseCommand
     {
         Path configPath = Paths.get("zillabase/config.yaml");
         Path seedPath = Paths.get("zillabase/seed.sql");
+        Path seedKafkaPath = Paths.get("zillabase/seed-kafka.yaml");
 
         init:
         try
@@ -49,6 +50,11 @@ public final class ZillabaseInitCommand extends ZillabaseCommand
             if (!Files.exists(seedPath))
             {
                 Files.writeString(seedPath, "-- seed\n");
+            }
+
+            if (!Files.exists(seedKafkaPath))
+            {
+                Files.writeString(seedKafkaPath, "# topics\n");
             }
 
             System.out.format("Finished zillabase init\n");

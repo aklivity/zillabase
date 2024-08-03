@@ -70,7 +70,7 @@ public class ZillabaseServerAsyncApiSpecificationIdHandler extends ZillabaseServ
                     break;
                 case "PUT":
                     builder.header("Content-Type", "application/vnd.aai.asyncapi+yaml")
-                        .PUT(HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()));
+                        .PUT(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes()));
                     break;
                 case "DELETE":
                     builder.DELETE();

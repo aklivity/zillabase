@@ -14,16 +14,13 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public class ZillabaseConfig
+public class ZillabaseRisingWaveConfig
 {
-    public static final int DEFAULT_ADMIN_PORT = 7184;
+    public static final int DEFAULT_RISINGWAVE_PORT = 4566;
 
-    private static final String DEFAULT_HTTP_URL = "localhost:9090";
+    private static final String DEFAULT_RISINGWAVE_URL = "localhost:%d".formatted(DEFAULT_RISINGWAVE_PORT);
+    private static final String DEFAULT_RISINGWAVE_DB = "dev";
 
-    public int port = DEFAULT_ADMIN_PORT;
-    public String httpEndpoints = DEFAULT_HTTP_URL;
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingWave = new ZillabaseRisingWaveConfig();
+    public String url = DEFAULT_RISINGWAVE_URL;
+    public String db = DEFAULT_RISINGWAVE_DB;
 }
