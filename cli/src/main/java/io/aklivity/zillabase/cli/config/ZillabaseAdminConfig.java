@@ -14,16 +14,11 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public class ZillabaseConfig
+public class ZillabaseAdminConfig
 {
-    public static final int DEFAULT_ADMIN_PORT = 7184;
+    private static final String DEFAULT_GROUP_ID = "default";
+    private static final String DEFAULT_REGISTRY_URL = "http://apicurio.zillabase.dev:8080";
 
-    private static final String DEFAULT_HTTP_URL = "localhost:9090";
-
-    public int port = DEFAULT_ADMIN_PORT;
-    public String httpEndpoints = DEFAULT_HTTP_URL;
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingWave = new ZillabaseRisingWaveConfig();
+    public String registryUrl = DEFAULT_REGISTRY_URL;
+    public String registryGroupId = DEFAULT_GROUP_ID;
 }

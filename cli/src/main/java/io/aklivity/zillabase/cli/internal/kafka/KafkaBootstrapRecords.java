@@ -12,18 +12,11 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.config;
+package io.aklivity.zillabase.cli.internal.kafka;
 
-public class ZillabaseConfig
+import java.util.List;
+
+public class KafkaBootstrapRecords
 {
-    public static final int DEFAULT_ADMIN_PORT = 7184;
-
-    private static final String DEFAULT_HTTP_URL = "localhost:9090";
-
-    public int port = DEFAULT_ADMIN_PORT;
-    public String httpEndpoints = DEFAULT_HTTP_URL;
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingWave = new ZillabaseRisingWaveConfig();
+    public List<KafkaTopicRecord> topics;
 }
