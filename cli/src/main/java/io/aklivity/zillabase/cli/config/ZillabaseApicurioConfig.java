@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public class ZillabaseApicurioConfig
+public final class ZillabaseApicurioConfig
 {
     private static final String DEFAULT_GROUP_ID = "default";
     private static final String DEFAULT_REGISTRY_URL = "http://localhost:8080";

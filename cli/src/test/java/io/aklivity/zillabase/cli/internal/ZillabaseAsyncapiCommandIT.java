@@ -393,6 +393,7 @@ public class ZillabaseAsyncapiCommandIT
     {
         ZillabaseStartCommand start = new ZillabaseStartCommand();
         start.helpOption = new HelpOption<>();
+        start.kafkaSeedFilePath = "src/test/resources/zillabase/seed-kafka.yaml";
         start.run();
 
         String actualKafkaSpec = resolveAsyncApiSpec(6);

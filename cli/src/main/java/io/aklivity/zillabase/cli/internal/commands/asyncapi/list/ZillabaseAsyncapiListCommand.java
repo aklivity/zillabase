@@ -27,7 +27,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
 @Command(
     name = "list",
     description = "List AsyncAPI specifications")
-public class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
+public final class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
 {
     @Option(name = {"-id"},
         description = "AsyncAPI specification identifier")

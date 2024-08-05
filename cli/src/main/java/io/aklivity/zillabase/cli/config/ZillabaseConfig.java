@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public class ZillabaseConfig
+public final class ZillabaseConfig
 {
     public static final int DEFAULT_ADMIN_PORT = 7184;
 

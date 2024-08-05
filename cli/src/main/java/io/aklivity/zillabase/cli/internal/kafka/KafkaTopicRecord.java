@@ -16,7 +16,7 @@ package io.aklivity.zillabase.cli.internal.kafka;
 
 import java.util.Map;
 
-public class KafkaTopicRecord
+public final class KafkaTopicRecord
 {
     public String name;
     public Map<String, String> config;

@@ -28,7 +28,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
 @Command(
     name = "remove",
     description = "Delete an AsyncAPI specification")
-public class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
+public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
 {
     private static final String SUCCESSFULLY_DELETED = "The artifact was successfully deleted";
 

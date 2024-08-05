@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public class ZillabaseRisingWaveConfig
+public final class ZillabaseRisingWaveConfig
 {
     public static final int DEFAULT_RISINGWAVE_PORT = 4566;
 

@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.cli.internal.asyncapi;
 
-public class KafkaTopicSchemaRecord
+public final class KafkaTopicSchemaRecord
 {
     public String name;
     public String label;
