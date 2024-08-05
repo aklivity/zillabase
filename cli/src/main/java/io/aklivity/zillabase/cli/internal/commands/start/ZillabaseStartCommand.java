@@ -1241,7 +1241,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network))
-                .withCmd("start", "-v", "-e", "-c", "/opt/zilla.yaml")
+                .withCmd("start", "-v", "-e")
                 .withEnv(envVars)
                 .withTty(true);
 
@@ -1250,7 +1250,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 File tempFile = File.createTempFile("zillabase-config-server-zilla", ".yaml");
                 Path configPath = Paths.get(tempFile.getPath());
                 Files.writeString(configPath, ZILLABASE_CONFIG_SERVER_ZILLA_YAML);
-                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/opt/zilla.yaml")));
+                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")));
                 tempFile.deleteOnExit();
             }
             catch (IOException ex)
