@@ -53,8 +53,8 @@
   </properties>
 
   <modules>
-    <module>cli</module>
     <module>service</module>
+    <module>cli</module>
   </modules>
 
   <dependencyManagement>
@@ -181,6 +181,7 @@
                 <excludes>
                   <exclude>src/conf/**</exclude>
                   <exclude>src/test/**/asyncapi.yaml</exclude>
+                  <exclude>src/test/**/seed-kafka.yaml</exclude>
                 </excludes>
               </licenseSet>
             </licenseSets>

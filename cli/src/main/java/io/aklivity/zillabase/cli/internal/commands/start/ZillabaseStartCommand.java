@@ -18,6 +18,8 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.P
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
+import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
+import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
@@ -133,6 +135,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
+    public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
+
     @Override
     protected void invoke(
         DockerClient client)
@@ -201,7 +205,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
-        Path kafkaSeedPath = Paths.get("zillabase/seed-kafka.yaml");
+        Path kafkaSeedPath = Paths.get(kafkaSeedFilePath);
         if (Files.exists(kafkaSeedPath))
         {
             try
@@ -249,6 +253,25 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         processAsyncApiSpecs(config);
+
+        createConfigServerKafkaTopic(config);
+    }
+
+    private void createConfigServerKafkaTopic(
+        ZillabaseConfig config)
+    {
+        try (AdminClient adminClient = AdminClient.create(Map.of(
+            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl)))
+        {
+            NewTopic configTopic = new NewTopic(ZILLABASE_CONFIG_KAFKA_TOPIC, 1, (short) 1);
+            configTopic.configs(Map.of("cleanup.policy", "compact"));
+            adminClient.createTopics(List.of(configTopic)).all().get();
+        }
+        catch (Exception ex)
+        {
+            System.err.println("Error creating Zillabase Config Server topic : %s".formatted(ex.getMessage()));
+        }
+
     }
 
     private void processAsyncApiSpecs(
@@ -1074,7 +1097,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     "KAFKA_CFG_PROCESS_ROLES=broker,controller",
                     "KAFKA_CFG_LISTENERS=CLIENT://:9092,INTERNAL://:29092,CONTROLLER://:9093",
                     "KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL",
-                    "KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://localhost:9092,INTERNAL://kafka:29092",
+                    "KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://localhost:9092,INTERNAL://kafka.zillabase.dev:29092",
                     "KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true");
         }
     }
@@ -1209,24 +1232,32 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             ZillabaseConfig config)
         {
             List<String> envVars = Arrays.asList(
-                "KEYSTORE_PASSWORD=%s".formatted("generated"),
-                "KAFKA_BOOTSTRAP_SERVER=%s".formatted("kafka:9092"));
+                "KAFKA_BOOTSTRAP_SERVER=%s".formatted("kafka.zillabase.dev:29092"));
 
-            Path configPath = Paths.get("zillabase/config/zilla.yaml");
-            Path certPath = Paths.get("zillabase/config/tls/localhost.p12");
-
-            return client
+            CreateContainerCmd container = client
                 .createContainerCmd(image)
                 .withLabels(project)
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network))
-                    .withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/opt/zilla.yaml")),
-                        new Bind(certPath.toAbsolutePath().toString(), new Volume("/opt/tls/localhost.p12")))
                 .withCmd("start", "-v", "-e", "-c", "/opt/zilla.yaml")
                 .withEnv(envVars)
                 .withTty(true);
+
+            try
+            {
+                File tempFile = File.createTempFile("zillabase-config-server-zilla", ".yaml");
+                Path configPath = Paths.get(tempFile.getPath());
+                Files.writeString(configPath, ZILLABASE_CONFIG_SERVER_ZILLA_YAML);
+                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/opt/zilla.yaml")));
+                tempFile.deleteOnExit();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
+            return container;
         }
     }
 }

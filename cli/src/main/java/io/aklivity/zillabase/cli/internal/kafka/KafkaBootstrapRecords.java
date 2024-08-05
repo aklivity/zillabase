@@ -16,7 +16,7 @@ package io.aklivity.zillabase.cli.internal.kafka;
 
 import java.util.List;
 
-public class KafkaBootstrapRecords
+public final class KafkaBootstrapRecords
 {
     public List<KafkaTopicRecord> topics;
 }

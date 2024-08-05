@@ -20,7 +20,7 @@ import com.asyncapi.bindings.OperationBinding;
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ZillaHttpOperationBinding extends OperationBinding
+public final class ZillaHttpOperationBinding extends OperationBinding
 {
     @JsonProperty("method")
     private HTTPOperationMethod method;

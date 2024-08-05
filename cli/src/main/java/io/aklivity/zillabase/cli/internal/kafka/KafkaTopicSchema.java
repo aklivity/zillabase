@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.cli.internal.kafka;
 
-public class KafkaTopicSchema
+public final class KafkaTopicSchema
 {
     public String key;
     public String value;

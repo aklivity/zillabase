@@ -35,7 +35,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
 @Command(
     name = "add",
     description = "Add a new AsyncAPI specification")
-public class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
+public final class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
 {
     @Required
     @Option(name = {"-s", "--spec"},

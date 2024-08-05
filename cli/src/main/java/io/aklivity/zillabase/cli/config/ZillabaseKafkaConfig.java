@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public class ZillabaseKafkaConfig
+public final class ZillabaseKafkaConfig
 {
     private static final String DEFAULT_KAFKA_BOOTSTRAP_URL = "localhost:9092";
 
