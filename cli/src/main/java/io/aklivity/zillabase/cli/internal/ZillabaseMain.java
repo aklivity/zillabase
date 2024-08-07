@@ -21,6 +21,11 @@ public final class ZillabaseMain
     public static void main(
         String[] args)
     {
+        System.setProperty("jdk.httpclient.allowRestrictedHeaders", "Content-Length");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.AdminClientConfig", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.internals.AdminMetadataManager", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.common.utils.AppInfoParser", "error");
+
         Cli<Runnable> parser = new Cli<>(ZillabaseCli.class);
         parser.parse(args).run();
     }

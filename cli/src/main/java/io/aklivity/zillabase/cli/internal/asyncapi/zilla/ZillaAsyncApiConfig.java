@@ -12,23 +12,13 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.internal;
+package io.aklivity.zillabase.cli.internal.asyncapi.zilla;
 
-import io.aklivity.zillabase.service.internal.server.ZillabaseServer;
+import java.util.Map;
 
-public final class ZillabaseServerMain
+public class ZillaAsyncApiConfig
 {
-    public static void main(
-        String[] args)
-    {
-        System.setProperty("jdk.httpclient.allowRestrictedHeaders", "Content-Length");
-
-        ZillabaseServer server = new ZillabaseServer();
-
-        server.run();
-    }
-
-    private ZillabaseServerMain()
-    {
-    }
+    public String name;
+    public Map<String, ZillaCatalogConfig> catalogs;
+    public Map<String, ZillaBindingConfig> bindings;
 }

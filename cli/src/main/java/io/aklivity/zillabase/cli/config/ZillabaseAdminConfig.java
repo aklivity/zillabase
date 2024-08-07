@@ -18,7 +18,9 @@ public final class ZillabaseAdminConfig
 {
     private static final String DEFAULT_GROUP_ID = "default";
     private static final String DEFAULT_REGISTRY_URL = "http://apicurio.zillabase.dev:8080";
+    private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
 
     public String registryUrl = DEFAULT_REGISTRY_URL;
     public String registryGroupId = DEFAULT_GROUP_ID;
+    public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
 }

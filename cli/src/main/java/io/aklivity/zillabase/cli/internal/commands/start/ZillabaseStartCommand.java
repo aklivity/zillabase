@@ -34,6 +34,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,6 +57,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32C;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -118,6 +120,11 @@ import com.github.rvesse.airline.annotations.Command;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
+import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaAsyncApiConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingRouteConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaCatalogConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
@@ -134,13 +141,20 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
+    private final List<String> operations = new ArrayList<>();
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
+
+    private String kafkaArtifactId;
+    private String httpArtifactId;
+    private ObjectMapper mapper;
 
     @Override
     protected void invoke(
         DockerClient client)
     {
+        this.mapper = new ObjectMapper(new YAMLFactory());
+        mapper.setSerializationInclusion(NON_NULL);
 
         new CreateNetworkFactory().createNetwork(client);
 
@@ -188,17 +202,27 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         List<String> containerIds = new LinkedList<>();
+        String zillaContainerId = null;
         for (CreateContainerFactory factory : factories)
         {
             try (CreateContainerCmd command = factory.createContainer(client, config))
             {
                 CreateContainerResponse response = command.exec();
-                containerIds.add(response.getId());
+                String responseId = response.getId();
+                containerIds.add(responseId);
+                if (factory.name.equals("zillabase_zilla"))
+                {
+                    zillaContainerId = responseId;
+                }
             }
         }
 
         for (String containerId : containerIds)
         {
+            if (zillaContainerId != null && containerId.equals(zillaContainerId))
+            {
+                continue;
+            }
             try (StartContainerCmd command = client.startContainerCmd(containerId))
             {
                 command.exec();
@@ -255,6 +279,119 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         processAsyncApiSpecs(config);
 
         createConfigServerKafkaTopic(config);
+
+        publishZillaConfig(config);
+
+        if (zillaContainerId != null)
+        {
+            try (StartContainerCmd command = client.startContainerCmd(zillaContainerId))
+            {
+                command.exec();
+            }
+        }
+    }
+
+    private void publishZillaConfig(
+        ZillabaseConfig config)
+    {
+        String zillaConfig = null;
+
+        try
+        {
+            Path zillaConfigPath = Paths.get("zillabase/zilla.yaml");
+            if (Files.exists(zillaConfigPath))
+            {
+                zillaConfig = Files.readString(zillaConfigPath);
+            }
+            else
+            {
+                List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete");
+
+                ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
+                ZillaCatalogConfig catalog = new ZillaCatalogConfig();
+                catalog.type = "apicurio";
+                catalog.options = Map.of("url", config.admin.registryUrl);
+
+                Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId)));
+                Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", kafkaArtifactId)));
+
+                List<ZillaBindingRouteConfig> routes = new ArrayList<>();
+
+                for (String operation : operations)
+                {
+                    if (operation.endsWith("Replies"))
+                    {
+                        continue;
+                    }
+                    ZillaBindingRouteConfig route = new ZillaBindingRouteConfig();
+                    route.when = List.of(Map.of("api-id", "http_api", "operation-id", operation));
+                    route.with = Map.of("api-id", "kafka_api", "operation-id", suffixes.stream()
+                        .filter(operation::endsWith)
+                        .map(suffix -> operation.substring(0, operation.length() - suffix.length()))
+                        .findFirst()
+                        .orElse(operation));
+                    route.exit = "south_kafka_client";
+                    routes.add(route);
+                }
+
+                Map<String, ZillaBindingConfig> bindings = new HashMap<>();
+
+                ZillaBindingConfig northHttpServer = new ZillaBindingConfig();
+                northHttpServer.type = "asyncapi";
+                northHttpServer.kind = "server";
+                ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
+                optionsConfig.specs = Map.of("http_api", httpApi);
+                northHttpServer.options = optionsConfig;
+                northHttpServer.exit = "south_kafka_proxy";
+                bindings.put("north_http_server", northHttpServer);
+
+                ZillaBindingConfig southKafkaProxy = new ZillaBindingConfig();
+                southKafkaProxy.type = "asyncapi";
+                southKafkaProxy.kind = "proxy";
+                optionsConfig = new ZillaBindingOptionsConfig();
+                optionsConfig.specs = Map.of("http_api", httpApi, "kafka_api", kafkaApi);
+                southKafkaProxy.options = optionsConfig;
+                southKafkaProxy.routes = routes;
+                bindings.put("south_kafka_proxy", southKafkaProxy);
+
+                ZillaBindingConfig southKafkaClient = new ZillaBindingConfig();
+                southKafkaClient.type = "asyncapi";
+                southKafkaClient.kind = "client";
+                optionsConfig = new ZillaBindingOptionsConfig();
+                optionsConfig.specs = Map.of("kafka_api", kafkaApi);
+                southKafkaClient.options = optionsConfig;
+                bindings.put("south_kafka_client", southKafkaClient);
+
+                zilla.name = "zilla-http-kafka-asyncapi";
+                zilla.catalogs = Map.of("apicurio_catalog", catalog);
+                zilla.bindings = bindings;
+
+                zillaConfig = mapper.writeValueAsString(zilla);
+            }
+
+            if (zillaConfig != null)
+            {
+                HttpRequest httpRequest = HttpRequest
+                    .newBuilder(toURI("http://localhost:%d".formatted(config.port), "/v1/config/zilla.yaml"))
+                    .header("Content-Length", String.valueOf(zillaConfig.getBytes(StandardCharsets.UTF_8).length))
+                    .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
+                    .build();
+
+                HttpClient client = HttpClient.newHttpClient();
+                HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+                if (httpResponse.statusCode() == 204)
+                {
+                    System.out.println("Config Server is populated with zilla.yaml");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace(System.err);
+        }
     }
 
     private void createConfigServerKafkaTopic(
@@ -299,6 +436,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        CRC32C crc32c = new CRC32C();
+        byte[] kafkaSpecBytes = kafkaSpec.getBytes();
+        crc32c.update(kafkaSpecBytes, 0, kafkaSpecBytes.length);
+        kafkaArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
+
         registerAsyncApiSpec(kafkaSpec);
 
         Path httpSpecPath = Paths.get("asyncapi-http.yaml");
@@ -319,7 +461,19 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             httpSpec = generateHttpAsyncApiSpecs(config, kafkaSpec);
         }
 
+        crc32c.reset();
+        byte[] httpSpecBytes = httpSpec.getBytes();
+        crc32c.update(httpSpecBytes, 0, httpSpecBytes.length);
+        httpArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
+
         registerAsyncApiSpec(httpSpec);
+
+        JsonValue jsonValue = Json.createReader(new StringReader(httpSpec)).readValue();
+        JsonObject operations = jsonValue.asJsonObject().getJsonObject("operations");
+        for (Map.Entry<String, JsonValue> operation : operations.entrySet())
+        {
+            this.operations.add(operation.getKey());
+        }
     }
 
     private boolean seedKafkaAndRegistry(
@@ -785,8 +939,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             asyncAPI.setChannels(channels);
             asyncAPI.setOperations(operations);
 
-            ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            mapper.setSerializationInclusion(NON_NULL);
             spec = mapper.writeValueAsString(asyncAPI);
         }
         catch (JsonProcessingException ex)
@@ -1055,7 +1207,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network))
-                .withCmd("start", "-v", "-e")
+                .withCmd("start", "-v", "-e", "-c", "%s/config/zilla.yaml".formatted(config.admin.configServerUrl))
                 .withTty(true);
         }
     }

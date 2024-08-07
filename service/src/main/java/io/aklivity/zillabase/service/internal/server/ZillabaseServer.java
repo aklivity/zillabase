@@ -20,6 +20,7 @@ import java.net.http.HttpClient;
 
 import com.sun.net.httpserver.HttpServer;
 
+import io.aklivity.zillabase.service.internal.handler.ZillabaseConfigServerHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApiSpecificationIdHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApisHandler;
 
@@ -67,6 +68,7 @@ public class ZillabaseServer implements Runnable
     {
         server.createContext("/v1/asyncapis", new ZillabaseServerAsyncApisHandler(client, baseUrl, groupId));
         server.createContext("/v1/asyncapis/", new ZillabaseServerAsyncApiSpecificationIdHandler(client, baseUrl, groupId));
+        server.createContext("/v1/config/", new ZillabaseConfigServerHandler(client));
 
         server.start();
 
