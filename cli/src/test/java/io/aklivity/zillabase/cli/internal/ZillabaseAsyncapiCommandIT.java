@@ -244,7 +244,7 @@ public class ZillabaseAsyncapiCommandIT
             bindings:
               http:
                 bindingVersion: "0.3.0"
-                method: "GET"  
+                method: "GET"
             messages:
             - $ref: "#/channels/events-item/messages/EventsMessage"
           doStreampayCommandsUpdate:
@@ -278,7 +278,7 @@ public class ZillabaseAsyncapiCommandIT
             bindings:
               http:
                 bindingVersion: "0.3.0"
-                method: "GET"  
+                method: "GET"
             messages:
             - $ref: "#/channels/streampay-commands-item/messages/StreampayCommandsMessage"
           onEventsRead:
@@ -288,7 +288,7 @@ public class ZillabaseAsyncapiCommandIT
             bindings:
               http:
                 bindingVersion: "0.3.0"
-                method: "GET"  
+                method: "GET"
             messages:
             - $ref: "#/channels/events/messages/EventsMessage"
           doStreampayCommandsCreate:
