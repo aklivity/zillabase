@@ -143,7 +143,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-commands-value:
               fields:
               - name: "id"
@@ -152,7 +152,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-replies-value:
               fields:
               - name: "price"
@@ -161,7 +161,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Product"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
           messages:
             StreampayRepliesMessage:
               payload:
@@ -191,7 +191,7 @@ public class ZillabaseAsyncapiCommandIT
         servers:
           sse:
             host: "localhost:9090"
-            protocol: "secure"
+            protocol: "sse"
           http:
             host: "localhost:9090"
             protocol: "http"
@@ -242,7 +242,7 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/events-item"
             messages:
-            - $ref: "#/channels/events/messages/EventsMessage"
+            - $ref: "#/channels/events-item/messages/EventsMessage"
           doStreampayCommandsUpdate:
             action: "send"
             channel:
@@ -256,7 +256,7 @@ public class ZillabaseAsyncapiCommandIT
                 bindingVersion: "0.3.0"
                 method: "PUT"
             messages:
-            - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
+            - $ref: "#/channels/streampay-commands-item/messages/StreampayCommandsMessage"
           onStreampayCommandsRead:
             action: "receive"
             channel:
@@ -268,7 +268,7 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands-item"
             messages:
-            - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
+            - $ref: "#/channels/streampay-commands-item/messages/StreampayCommandsMessage"
           onEventsRead:
             action: "receive"
             channel:
@@ -299,7 +299,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-commands-value:
               fields:
               - name: "id"
@@ -308,7 +308,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-replies-value:
               fields:
               - name: "price"
@@ -317,7 +317,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Product"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
           messages:
             StreampayRepliesMessage:
               payload:
@@ -402,6 +402,7 @@ public class ZillabaseAsyncapiCommandIT
 
         ZillabaseStopCommand stop = new ZillabaseStopCommand();
         stop.helpOption = new HelpOption<>();
+        Thread.sleep(10000);
         stop.run();
 
         assertEquals(KAFKA_SPEC, actualKafkaSpec);

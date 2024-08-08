@@ -14,6 +14,7 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.start;
 
+import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
@@ -79,10 +80,10 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.fusesource.jansi.Ansi;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
-import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelBinding;
-import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelTopicCleanupPolicy;
-import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelTopicConfiguration;
-import com.asyncapi.bindings.kafka.v0._5_0.server.KafkaServerBinding;
+import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
+import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolicy;
+import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguration;
+import com.asyncapi.bindings.kafka.v0._4_0.server.KafkaServerBinding;
 import com.asyncapi.schemas.asyncapi.Reference;
 import com.asyncapi.v2._6_0.model.channel.message.Message;
 import com.asyncapi.v3._0_0.model.AsyncAPI;
@@ -219,7 +220,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         for (String containerId : containerIds)
         {
-            if (zillaContainerId != null && containerId.equals(zillaContainerId))
+            if (containerId.equals(zillaContainerId))
             {
                 continue;
             }
@@ -298,7 +299,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         try
         {
-            Path zillaConfigPath = Paths.get("zillabase/zilla.yaml");
+            Path zillaConfigPath = Paths.get("zillabase/zilla/zilla.yaml");
             if (Files.exists(zillaConfigPath))
             {
                 zillaConfig = Files.readString(zillaConfigPath);
@@ -310,12 +311,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
                 ZillaCatalogConfig catalog = new ZillaCatalogConfig();
                 catalog.type = "apicurio";
-                catalog.options = Map.of("url", config.admin.registryUrl);
+                catalog.options = Map.of("url", config.admin.registryUrl, "group-id", config.admin.registryGroupId);
 
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId)));
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
                 Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", kafkaArtifactId)));
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", kafkaArtifactId, "version", "latest")));
 
                 List<ZillaBindingRouteConfig> routes = new ArrayList<>();
 
@@ -691,7 +692,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                 channel = new Channel();
                 channel.setAddress(name);
-                KafkaChannelBinding kafkaChannelBinding = new com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelBinding();
+                KafkaChannelBinding kafkaChannelBinding = new KafkaChannelBinding();
                 KafkaChannelTopicConfiguration topicConfiguration = new KafkaChannelTopicConfiguration();
                 List<KafkaChannelTopicCleanupPolicy> policies = new ArrayList<>();
                 for (String policy : record.cleanupPolicies)
@@ -705,8 +706,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 channel.setMessages(Map.of(messageName, reference));
                 channels.put(name, channel);
 
+                String schemaString = record.schema.replaceAll("\"type\": \"record\"", "\"type\": \"object\"");
+
                 ObjectMapper schemaMapper = new ObjectMapper();
-                schemas.put(subject, schemaMapper.readTree(record.schema));
+                JsonNode schemaObject = schemaMapper.readTree(schemaString);
+                schemas.put(subject, schemaObject);
 
                 message = new Message();
                 message.setName(messageName);
@@ -781,7 +785,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             Server server = new Server();
             server.setHost(config.httpEndpoints);
-            server.setProtocol("secure");
+            server.setProtocol("sse");
             servers.put("sse", server);
 
             server = new Server();
@@ -864,7 +868,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     operation.setAction(OperationAction.SEND);
                     reference = new Reference("#/channels/%s-item".formatted(name));
                     operation.setChannel(reference);
-                    reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
+                    reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
                     operation.setMessages(Collections.singletonList(reference));
                     httpBinding = new HTTPOperationBinding();
                     httpBinding.setMethod(PUT);
@@ -882,14 +886,20 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setChannel(reference);
                 reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
                 operation.setMessages(Collections.singletonList(reference));
+                httpBinding = new HTTPOperationBinding();
+                httpBinding.setMethod(GET);
+                operation.setBindings(Map.of("http", httpBinding));
                 operations.put("on%sRead".formatted(label), operation);
 
                 operation = new Operation();
                 operation.setAction(OperationAction.RECEIVE);
                 reference = new Reference("#/channels/%s-item".formatted(name));
                 operation.setChannel(reference);
-                reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
+                reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
                 operation.setMessages(Collections.singletonList(reference));
+                httpBinding = new HTTPOperationBinding();
+                httpBinding.setMethod(GET);
+                operation.setBindings(Map.of("http", httpBinding));
                 operations.put("on%sReadItem".formatted(label), operation);
             }
 
