@@ -56,7 +56,7 @@ public class ZillabaseAsyncapiCommandIT
             protocol: "kafka"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
+                bindingVersion: "0.4.0"
                 schemaRegistryUrl: "http://localhost:8080"
                 schemaRegistryVendor: "apicurio"
         channels:
@@ -67,7 +67,7 @@ public class ZillabaseAsyncapiCommandIT
                 $ref: "#/components/messages/StreampayRepliesMessage"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
+                bindingVersion: "0.4.0"
                 topicConfiguration:
                   cleanup.policy:
                   - "delete"
@@ -78,7 +78,7 @@ public class ZillabaseAsyncapiCommandIT
                 $ref: "#/components/messages/StreampayCommandsMessage"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
+                bindingVersion: "0.4.0"
                 topicConfiguration:
                   cleanup.policy:
                   - "compact"
@@ -89,7 +89,7 @@ public class ZillabaseAsyncapiCommandIT
                 $ref: "#/components/messages/EventsMessage"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
+                bindingVersion: "0.4.0"
                 topicConfiguration:
                   cleanup.policy:
                   - "delete"
@@ -241,6 +241,10 @@ public class ZillabaseAsyncapiCommandIT
             action: "receive"
             channel:
               $ref: "#/channels/events-item"
+            bindings:
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"  
             messages:
             - $ref: "#/channels/events-item/messages/EventsMessage"
           doStreampayCommandsUpdate:
@@ -261,18 +265,30 @@ public class ZillabaseAsyncapiCommandIT
             action: "receive"
             channel:
               $ref: "#/channels/streampay-commands"
+            bindings:
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"
             messages:
             - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
           onStreampayCommandsReadItem:
             action: "receive"
             channel:
               $ref: "#/channels/streampay-commands-item"
+            bindings:
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"  
             messages:
             - $ref: "#/channels/streampay-commands-item/messages/StreampayCommandsMessage"
           onEventsRead:
             action: "receive"
             channel:
               $ref: "#/channels/events"
+            bindings:
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"  
             messages:
             - $ref: "#/channels/events/messages/EventsMessage"
           doStreampayCommandsCreate:
@@ -402,7 +418,7 @@ public class ZillabaseAsyncapiCommandIT
 
         ZillabaseStopCommand stop = new ZillabaseStopCommand();
         stop.helpOption = new HelpOption<>();
-        Thread.sleep(10000);
+        Thread.sleep(15000);
         stop.run();
 
         assertEquals(KAFKA_SPEC, actualKafkaSpec);

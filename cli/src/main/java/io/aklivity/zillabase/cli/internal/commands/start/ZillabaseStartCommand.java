@@ -304,7 +304,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 zillaConfig = Files.readString(zillaConfigPath);
             }
-            else
+            else if (!operations.isEmpty())
             {
                 List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete");
 
@@ -438,11 +438,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         CRC32C crc32c = new CRC32C();
-        byte[] kafkaSpecBytes = kafkaSpec.getBytes();
-        crc32c.update(kafkaSpecBytes, 0, kafkaSpecBytes.length);
-        kafkaArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
+        if (kafkaSpec != null)
+        {
+            byte[] kafkaSpecBytes = kafkaSpec.getBytes();
+            crc32c.update(kafkaSpecBytes, 0, kafkaSpecBytes.length);
+            kafkaArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
 
-        registerAsyncApiSpec(kafkaSpec);
+            registerAsyncApiSpec(kafkaSpec);
+        }
 
         Path httpSpecPath = Paths.get("asyncapi-http.yaml");
         String httpSpec = null;
@@ -462,18 +465,21 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             httpSpec = generateHttpAsyncApiSpecs(config, kafkaSpec);
         }
 
-        crc32c.reset();
-        byte[] httpSpecBytes = httpSpec.getBytes();
-        crc32c.update(httpSpecBytes, 0, httpSpecBytes.length);
-        httpArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
-
-        registerAsyncApiSpec(httpSpec);
-
-        JsonValue jsonValue = Json.createReader(new StringReader(httpSpec)).readValue();
-        JsonObject operations = jsonValue.asJsonObject().getJsonObject("operations");
-        for (Map.Entry<String, JsonValue> operation : operations.entrySet())
+        if (httpSpec != null)
         {
-            this.operations.add(operation.getKey());
+            crc32c.reset();
+            byte[] httpSpecBytes = httpSpec.getBytes();
+            crc32c.update(httpSpecBytes, 0, httpSpecBytes.length);
+            httpArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
+
+            registerAsyncApiSpec(httpSpec);
+
+            JsonValue jsonValue = Json.createReader(new StringReader(httpSpec)).readValue();
+            JsonObject operations = jsonValue.asJsonObject().getJsonObject("operations");
+            for (Map.Entry<String, JsonValue> operation : operations.entrySet())
+            {
+                this.operations.add(operation.getKey());
+            }
         }
     }
 
