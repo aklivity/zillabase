@@ -411,6 +411,9 @@ public class ZillabaseAsyncapiCommandIT
         start.helpOption = new HelpOption<>();
         start.kafkaSeedFilePath = "src/test/resources/zillabase/seed-kafka.yaml";
         System.setProperty("jdk.httpclient.allowRestrictedHeaders", "Content-Length");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.AdminClientConfig", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.internals.AdminMetadataManager", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.common.utils.AppInfoParser", "error");
         start.run();
 
         String actualKafkaSpec = resolveAsyncApiSpec(6);
