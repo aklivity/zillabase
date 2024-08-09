@@ -386,6 +386,36 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 if (httpResponse.statusCode() == 204)
                 {
                     System.out.println("Config Server is populated with zilla.yaml");
+
+                    Path zillaFilesPath = Paths.get("zillabase/zilla/");
+
+                    Files.walk(zillaFilesPath)
+                        .filter(Files::isRegularFile)
+                        .filter(file -> !file.endsWith("zilla.yaml"))
+                        .forEach(file ->
+                        {
+                            try
+                            {
+                                Path relativePath = zillaFilesPath.relativize(file);
+                                byte[] content = Files.readAllBytes(file);
+                                HttpRequest zillaFileRequest = HttpRequest
+                                    .newBuilder(toURI("http://localhost:%d".formatted(config.port),
+                                        "/v1/config/%s".formatted(relativePath)))
+                                    .header("Content-Length", String.valueOf(content.length))
+                                    .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
+                                    .build();
+
+                                if (client.send(zillaFileRequest, HttpResponse.BodyHandlers.ofString()).statusCode() == 204)
+                                {
+                                    System.out.println("Config Server is populated with %s".formatted(relativePath));
+                                }
+                            }
+                            catch (IOException | InterruptedException ex)
+                            {
+                                System.err.println("Failed to process file: %s : %s".formatted(file, ex.getMessage()));
+                                ex.printStackTrace();
+                            }
+                        });
                 }
             }
         }
