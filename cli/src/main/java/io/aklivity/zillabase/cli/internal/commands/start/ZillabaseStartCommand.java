@@ -19,8 +19,10 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.P
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
+import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_REGISTRY_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
+import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
@@ -311,7 +313,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
                 ZillaCatalogConfig catalog = new ZillaCatalogConfig();
                 catalog.type = "apicurio";
-                catalog.options = Map.of("url", config.admin.registryUrl, "group-id", config.admin.registryGroupId);
+                catalog.options = Map.of("url", config.registry.url, "group-id", config.registry.groupId);
 
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
                     "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
@@ -375,7 +377,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             if (zillaConfig != null)
             {
                 HttpRequest httpRequest = HttpRequest
-                    .newBuilder(toURI("http://localhost:%d".formatted(config.port), "/v1/config/zilla.yaml"))
+                    .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port), "/v1/config/zilla.yaml"))
                     .header("Content-Length", String.valueOf(zillaConfig.getBytes(StandardCharsets.UTF_8).length))
                     .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
                     .build();
@@ -399,7 +401,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                                 Path relativePath = zillaFilesPath.relativize(file);
                                 byte[] content = Files.readAllBytes(file);
                                 HttpRequest zillaFileRequest = HttpRequest
-                                    .newBuilder(toURI("http://localhost:%d".formatted(config.port),
+                                    .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port),
                                         "/v1/config/%s".formatted(relativePath)))
                                     .header("Content-Length", String.valueOf(content.length))
                                     .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
@@ -429,7 +431,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ZillabaseConfig config)
     {
         try (AdminClient adminClient = AdminClient.create(Map.of(
-            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl)))
+            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
+                ? "localhost:9092" : config.kafka.bootstrapUrl)))
         {
             NewTopic configTopic = new NewTopic(ZILLABASE_CONFIG_KAFKA_TOPIC, 1, (short) 1);
             configTopic.configs(Map.of("cleanup.policy", "compact"));
@@ -529,7 +532,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 Thread.sleep(delay);
                 try (AdminClient adminClient = AdminClient.create(Map.of(
-                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl)))
+                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
+                        ? "localhost:9092" : config.kafka.bootstrapUrl)))
                 {
                     List<NewTopic> topics = new ArrayList<>();
                     for (KafkaTopicRecord record : records.topics)
@@ -600,7 +604,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         String subject,
         String schema) throws IOException, InterruptedException
     {
-        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.url,
+        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
+                    ? "http://localhost:8080" : config.registry.url,
                 "/apis/registry/v2/groups/%s/artifacts".formatted(config.registry.groupId)))
             .header("X-Registry-ArtifactId", subject)
             .POST(HttpRequest.BodyPublishers.ofString(schema))
@@ -648,7 +653,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         List<KafkaTopicSchemaRecord> records = new ArrayList<>();
         try (AdminClient adminClient = AdminClient.create(Map.of(
-            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl)))
+            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
+                ? "localhost:9092" : config.kafka.bootstrapUrl)))
         {
             final HttpClient client = HttpClient.newHttpClient();
 
@@ -820,12 +826,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             info.setLicense(license);
 
             Server server = new Server();
-            server.setHost(config.httpEndpoints);
+            server.setHost("localhost:9090");
             server.setProtocol("sse");
             servers.put("sse", server);
 
             server = new Server();
-            server.setHost(config.httpEndpoints);
+            server.setHost("localhost:9090");
             server.setProtocol("http");
             servers.put("http", server);
 
@@ -1004,7 +1010,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.url,
+                .newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
+                        ? "http://localhost:8080" : config.registry.url,
                     "/apis/registry/v2/groups/%s/artifacts/%s/meta".formatted(config.registry.groupId, subject)))
                 .GET()
                 .build();
@@ -1033,7 +1040,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.url,
+                .newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
+                        ? "http://localhost:8080" : config.registry.url,
                     "/apis/registry/v2/groups/%s/artifacts/%s".formatted(config.registry.groupId, subject)))
                 .GET()
                 .build();
@@ -1396,13 +1404,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             ZillabaseConfig config)
         {
             List<String> envVars = Arrays.asList(
-                "ADMIN_PORT=%d".formatted(config.port),
-                "REGISTRY_URL=%s".formatted(config.admin.registryUrl),
-                "REGISTRY_GROUP_ID=%s".formatted(config.admin.registryGroupId),
+                "ADMIN_PORT=%d".formatted(config.admin.port),
+                "REGISTRY_URL=%s".formatted(config.registry.url),
+                "REGISTRY_GROUP_ID=%s".formatted(config.registry.groupId),
                 "CONFIG_SERVER_URL=%s".formatted(config.admin.configServerUrl),
                 "DEBUG=%s".formatted(true));
 
-            int port = config.port;
+            int port = config.admin.port;
             ExposedPort exposedPort = ExposedPort.tcp(port);
             return client
                 .createContainerCmd(image)
@@ -1431,7 +1439,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             ZillabaseConfig config)
         {
             List<String> envVars = Arrays.asList(
-                "KAFKA_BOOTSTRAP_SERVER=%s".formatted("kafka.zillabase.dev:29092"));
+                "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl));
 
             CreateContainerCmd container = client
                 .createContainerCmd(image)
