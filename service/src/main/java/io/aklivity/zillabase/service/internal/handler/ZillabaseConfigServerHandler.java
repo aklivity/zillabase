@@ -30,12 +30,15 @@ public class ZillabaseConfigServerHandler extends ZillabaseServerHandler
 
     private final HttpClient client;
     private final Matcher matcher;
+    private final String configServerUrl;
 
     public ZillabaseConfigServerHandler(
-        HttpClient client)
+        HttpClient client,
+        String configServerUrl)
     {
         this.client = client;
         this.matcher = PATH_PATTERN.matcher("");
+        this.configServerUrl = configServerUrl;
     }
 
     @Override
@@ -51,8 +54,7 @@ public class ZillabaseConfigServerHandler extends ZillabaseServerHandler
 
             try
             {
-                HttpRequest.Builder builder = HttpRequest.newBuilder(toURI("http://config.zillabase.dev:7114",
-                    "/config/%s".formatted(key)));
+                HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(configServerUrl, "/config/%s".formatted(key)));
 
                 switch (method)
                 {

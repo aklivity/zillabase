@@ -391,7 +391,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                     Files.walk(zillaFilesPath)
                         .filter(Files::isRegularFile)
-                        .filter(file -> !file.endsWith("zilla.yaml"))
+                        .filter(file -> !(file.endsWith("zilla.yaml") || file.getFileName().toString().startsWith(".")))
                         .forEach(file ->
                         {
                             try
@@ -1399,6 +1399,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "ADMIN_PORT=%d".formatted(config.port),
                 "REGISTRY_URL=%s".formatted(config.admin.registryUrl),
                 "REGISTRY_GROUP_ID=%s".formatted(config.admin.registryGroupId),
+                "CONFIG_SERVER_URL=%s".formatted(config.admin.configServerUrl),
                 "DEBUG=%s".formatted(true));
 
             int port = config.port;
