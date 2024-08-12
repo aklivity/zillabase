@@ -52,12 +52,12 @@ public class ZillabaseAsyncapiCommandIT
             url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
         servers:
           plain:
-            host: "localhost:9092"
+            host: "kafka.zillabase.dev:29092"
             protocol: "kafka"
             bindings:
               kafka:
                 bindingVersion: "0.4.0"
-                schemaRegistryUrl: "http://localhost:8080"
+                schemaRegistryUrl: "http://apicurio.zillabase.dev:8080"
                 schemaRegistryVendor: "apicurio"
         channels:
           streampay-replies:
@@ -228,10 +228,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/events"
             bindings:
-              x-zilla-http-kafka:
-                method: "POST"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "POST"
@@ -252,10 +248,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands-item"
             bindings:
-              x-zilla-http-kafka:
-                method: "PUT"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "PUT"
@@ -296,10 +288,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands"
             bindings:
-              x-zilla-http-kafka:
-                method: "POST"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "POST"
