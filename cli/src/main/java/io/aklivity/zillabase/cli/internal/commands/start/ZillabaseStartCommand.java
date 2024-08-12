@@ -65,10 +65,13 @@ import java.util.zip.CRC32C;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
+import jakarta.json.spi.JsonProvider;
+import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParsingException;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -80,6 +83,10 @@ import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 import org.fusesource.jansi.Ansi;
+import org.leadpony.justify.api.JsonSchema;
+import org.leadpony.justify.api.JsonSchemaReader;
+import org.leadpony.justify.api.JsonValidationService;
+import org.leadpony.justify.api.ProblemHandler;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
@@ -193,14 +200,44 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         ZillabaseConfig config;
         Path configPath = Paths.get("zillabase/config.yaml");
+        Path schemaPath = Paths.get("cli/src/main/scripts/io/aklivity/zillabase/cli/zillabase.schema.json");
 
-        try (InputStream inputStream = Files.newInputStream(configPath))
+        try
         {
-            Jsonb jsonb = JsonbBuilder.create();
-            config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
+            if (Files.size(configPath) == 0 || Files.readAllLines(configPath)
+                .stream().allMatch(line -> line.trim().isEmpty() || line.trim().startsWith("#")))
+            {
+                config = new ZillabaseConfig();
+            }
+            else
+            {
+                try (InputStream inputStream = Files.newInputStream(configPath);
+                     InputStream schemaStream = Files.newInputStream(schemaPath))
+                {
+                    JsonProvider schemaProvider = JsonProvider.provider();
+                    JsonReader schemaReader = schemaProvider.createReader(schemaStream);
+                    JsonObject schemaObject = schemaReader.readObject();
+
+                    JsonParser schemaParser = schemaProvider.createParserFactory(null)
+                        .createParser(new StringReader(schemaObject.toString()));
+
+                    JsonValidationService service = JsonValidationService.newInstance();
+                    JsonSchemaReader reader = service.createSchemaReader(schemaParser);
+                    JsonSchema schema = reader.read();
+
+                    JsonProvider provider = service.createJsonProvider(schema, parser -> ProblemHandler.throwing());
+
+                    Jsonb jsonb = JsonbBuilder.newBuilder()
+                        .withProvider(provider)
+                        .build();
+                    config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
+                }
+            }
         }
         catch (IOException | JsonbException ex)
         {
+            System.err.println("Error resolving config, reverting to default.");
+            ex.printStackTrace(System.err);
             config = new ZillabaseConfig();
         }
 

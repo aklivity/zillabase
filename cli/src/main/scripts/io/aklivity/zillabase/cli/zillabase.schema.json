@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Zillabase Config Schema",
+  "type": "object",
+  "properties":
+  {
+    "admin":
+    {
+      "type": "object",
+      "properties":
+      {
+        "port":
+        {
+          "type": "integer"
+        },
+        "configServerUrl":
+        {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "kafka":
+    {
+      "type": "object",
+      "properties":
+      {
+        "bootstrapUrl":
+        {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required":
+      [
+        "bootstrapUrl"
+      ]
+    },
+    "registry":
+    {
+      "type": "object",
+      "properties":
+      {
+        "url":
+        {
+          "type": "string"
+        },
+        "groupId":
+        {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required":
+      [
+        "url"
+      ]
+    },
+    "risingWave":
+    {
+      "type": "object",
+      "properties":
+      {
+        "url":
+        {
+          "type": "string"
+        },
+        "db":
+        {
+          "type": "string"
+        }
+      },
+      "required":
+      [
+        "url"
+      ]
+    },
+    "zilla":
+    {
+      "type": "object",
+      "properties":
+      {
+        "ports":
+        {
+          "type": "array",
+          "items":
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "required":
+      [
+        "ports"
+      ]
+    }
+  }
+}
