@@ -245,16 +245,3 @@ WITH (
     schema.registry = 'http://schema-registry:8081'
 );
 
-drop table balances;
-drop table users;
-drop table commands;
-
-drop MATERIALIZED VIEW valid_commands;
-drop MATERIALIZED VIEW invalid_commands;
-drop MATERIALIZED VIEW request_payment;
-drop MATERIALIZED VIEW withdrawals_transaction;
-drop MATERIALIZED VIEW deposit_transaction;
-
-drop sink invalid_replies;
-drop sink valid_replies;
-drop sink request_payment_sink;
