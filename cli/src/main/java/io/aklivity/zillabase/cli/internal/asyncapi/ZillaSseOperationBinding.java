@@ -12,24 +12,21 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal;
+package io.aklivity.zillabase.cli.internal.asyncapi;
 
-import com.github.rvesse.airline.Cli;
+import com.asyncapi.bindings.OperationBinding;
+import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.aklivity.zillabase.cli.internal.util.ZillabaseSystemPropertyUtil;
-
-public final class ZillabaseMain
+public final class ZillaSseOperationBinding extends OperationBinding
 {
-    public static void main(
-        String[] args)
+    @JsonProperty("method")
+    private HTTPOperationMethod method;
+
+    public ZillaSseOperationBinding(
+        HTTPOperationMethod method)
     {
-        ZillabaseSystemPropertyUtil.initialize();
-        Cli<Runnable> parser = new Cli<>(ZillabaseCli.class);
-        parser.parse(args).run();
+        this.method = method;
     }
 
-    private ZillabaseMain()
-    {
-        // utility class
-    }
 }

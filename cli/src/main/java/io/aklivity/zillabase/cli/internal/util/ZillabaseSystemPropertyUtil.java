@@ -12,24 +12,18 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal;
+package io.aklivity.zillabase.cli.internal.util;
 
-import com.github.rvesse.airline.Cli;
-
-import io.aklivity.zillabase.cli.internal.util.ZillabaseSystemPropertyUtil;
-
-public final class ZillabaseMain
+public final class ZillabaseSystemPropertyUtil
 {
-    public static void main(
-        String[] args)
+    public static void initialize()
     {
-        ZillabaseSystemPropertyUtil.initialize();
-        Cli<Runnable> parser = new Cli<>(ZillabaseCli.class);
-        parser.parse(args).run();
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.AdminClientConfig", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.internals.AdminMetadataManager", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.common.utils.AppInfoParser", "error");
     }
 
-    private ZillabaseMain()
+    private ZillabaseSystemPropertyUtil()
     {
-        // utility class
     }
 }

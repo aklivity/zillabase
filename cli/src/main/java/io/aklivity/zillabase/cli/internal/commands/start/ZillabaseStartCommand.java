@@ -37,7 +37,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -123,6 +122,7 @@ import com.github.rvesse.airline.annotations.Command;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
+import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseOperationBinding;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaAsyncApiConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
@@ -205,7 +205,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         List<String> containerIds = new LinkedList<>();
-        String zillaContainerId = null;
         for (CreateContainerFactory factory : factories)
         {
             try (CreateContainerCmd command = factory.createContainer(client, config))
@@ -213,19 +212,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CreateContainerResponse response = command.exec();
                 String responseId = response.getId();
                 containerIds.add(responseId);
-                if (factory.name.equals("zillabase_zilla"))
-                {
-                    zillaContainerId = responseId;
-                }
             }
         }
 
         for (String containerId : containerIds)
         {
-            if (containerId.equals(zillaContainerId))
-            {
-                continue;
-            }
             try (StartContainerCmd command = client.startContainerCmd(containerId))
             {
                 command.exec();
@@ -284,14 +275,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         createConfigServerKafkaTopic(config);
 
         publishZillaConfig(config);
-
-        if (zillaContainerId != null)
-        {
-            try (StartContainerCmd command = client.startContainerCmd(zillaContainerId))
-            {
-                command.exec();
-            }
-        }
     }
 
     private void publishZillaConfig(
@@ -378,7 +361,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 HttpRequest httpRequest = HttpRequest
                     .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port), "/v1/config/zilla.yaml"))
-                    .header("Content-Length", String.valueOf(zillaConfig.getBytes(StandardCharsets.UTF_8).length))
                     .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
                     .build();
 
@@ -405,7 +387,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                                     HttpRequest zillaFileRequest = HttpRequest
                                         .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port),
                                             "/v1/config/%s".formatted(relativePath)))
-                                        .header("Content-Length", String.valueOf(content.length))
                                         .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
                                         .build();
 
@@ -830,11 +811,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             Server server = new Server();
             server.setHost("localhost:9090");
-            server.setProtocol("sse");
-            servers.put("sse", server);
-
-            server = new Server();
-            server.setHost("localhost:9090");
             server.setProtocol("http");
             servers.put("http", server);
 
@@ -933,7 +909,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setMessages(Collections.singletonList(reference));
                 httpBinding = new HTTPOperationBinding();
                 httpBinding.setMethod(GET);
-                operation.setBindings(Map.of("http", httpBinding));
+                ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding(GET);
+                operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
                 operations.put("on%sRead".formatted(label), operation);
 
                 operation = new Operation();
@@ -944,7 +921,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setMessages(Collections.singletonList(reference));
                 httpBinding = new HTTPOperationBinding();
                 httpBinding.setMethod(GET);
-                operation.setBindings(Map.of("http", httpBinding));
+                sseBinding = new ZillaSseOperationBinding(GET);
+                operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
                 operations.put("on%sReadItem".formatted(label), operation);
             }
 
