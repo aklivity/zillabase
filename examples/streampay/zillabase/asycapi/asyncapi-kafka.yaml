@@ -1,0 +1,802 @@
+asyncapi: 3.0.0
+info:
+  title: API Document for Confluent Cluster
+  version: 1.0.0
+servers:
+  plain:
+    host: localhost:9092
+    protocol: kafka
+    bindings:
+      kafka:
+        schemaRegistryUrl: 'http://localhost:8081'
+channels:
+  streampay-commands:
+    address: streampay-commands
+    messages:
+      StreampayCommands.value:
+        $ref: '#/components/messages/StreampayCommandsMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - delete
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-replies:
+    address: streampay-replies
+    messages:
+      StreampayReplies.value:
+        $ref: '#/components/messages/StreampayRepliesMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - delete
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-balances:
+    address: streampay-balances
+    messages:
+      StreampayBalances.value:
+        $ref: '#/components/messages/StreampayBalancesMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - compact
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-request-payments:
+    address: streampay-request-payments
+    messages:
+      StreampayRequestPayments.value:
+        $ref: '#/components/messages/StreampayRequestPaymentsMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - compact
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-users:
+    address: streampay-users
+    messages:
+      StreampayUsers.value:
+        $ref: '#/components/messages/StreampayUsersMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - compact
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-total-transactions:
+    address: streampay-total-transactions
+    messages:
+      StreampayTotalTransaction.value:
+        $ref: '#/components/messages/StreampayTotalTransactionMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - compact
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-average-transactions:
+    address: streampay-average-transactions
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - compact
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-activities:
+    address: streampay-activities
+    messages:
+      StreampayActivity.value:
+        $ref: '#/components/messages/StreampayActivityMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - compact
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+  streampay-balance-histories:
+    address: streampay-balance-histories
+    messages:
+      StreampayBalanceHistory.value:
+        $ref: '#/components/messages/StreampayBalancesMessage'
+    description: <nil>
+    bindings:
+      kafka:
+        bindingVersion: 0.4.0
+        partitions: 1
+        topicConfiguration:
+          cleanup.policy:
+            - compact
+          retention.ms: 604800000
+          retention.bytes: -1
+          delete.retention.ms: 86400000
+          max.message.bytes: 2097164
+        x-configs:
+          compression.type: producer
+          file.delete.delay.ms: '60000'
+          flush.values: '9223372036854775807'
+          flush.ms: '9223372036854775807'
+          follower.replication.throttled.replicas: ''
+          index.interval.bytes: '4096'
+          leader.replication.throttled.replicas: ''
+          local.retention.bytes: '-2'
+          local.retention.ms: '-2'
+          max.compaction.lag.ms: '9223372036854775807'
+          message.downconversion.enable: 'true'
+          message.format.version: 3.0-IV1
+          message.timestamp.after.max.ms: '9223372036854775807'
+          message.timestamp.before.max.ms: '9223372036854775807'
+          message.timestamp.difference.max.ms: '9223372036854775807'
+          message.timestamp.type: CreateTime
+          min.cleanable.dirty.ratio: '0.5'
+          min.compaction.lag.ms: '0'
+          min.insync.replicas: '2'
+          preallocate: 'false'
+          remote.storage.enable: 'false'
+          segment.bytes: '104857600'
+          segment.index.bytes: '10485760'
+          segment.jitter.ms: '0'
+          segment.ms: '604800000'
+          unclean.leader.election.enable: 'false'
+    x-messageCompatibility: BACKWARD
+operations:
+  doStreampayCommands:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-commands'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-commands/messages/StreampayCommands.value'
+    reply:
+      channel:
+        $ref: '#/channels/streampay-replies'
+  onStreampayRequestPayments:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-request-payments'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-request-payments/messages/StreampayRequestPayments.value'
+  doStreampayUsers:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-users'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-users/messages/StreampayUsers.value'
+  onStreampayUsers:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-users'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-users/messages/StreampayUsers.value'
+  doStreampayBalances:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-balances'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-balances/messages/StreampayBalances.value'
+  onStreampayBalances:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-balances'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-balances/messages/StreampayBalances.value'
+  doStreampayBalanceHistories:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-balance-histories'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-balance-histories/messages/StreampayBalanceHistory.value'
+  onStreampayBalanceHistories:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-balance-histories'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-balance-histories/messages/StreampayBalanceHistory.value'
+  doStreampayActivities:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-activities'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-activities/messages/StreampayActivity.value'
+  onStreampayActivities:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-activities'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-activities/messages/StreampayActivity.value'
+  doStreampayTotalTransactions:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-total-transactions'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-total-transactions/messages/StreampayTotalTransaction.value'
+  onStreampayTotalTransactions:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-total-transactions'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+    messages:
+      - $ref: '#/channels/streampay-total-transactions/messages/StreampayTotalTransaction.value'
+  doStreampayAverageTransactions:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-average-transactions'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+  onStreampayAverageTransactions:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-average-transactions'
+    bindings:
+      kafka:
+        bindingVersion: 0.3.0
+        groupId:
+          type: string
+        clientId:
+          type: string
+components:
+  messages:
+    StreampayCommandsMessage:
+      contentType: application/avro
+      payload:
+        $ref: '#/components/schemas/streampay-commands-value'
+      name: StreampayCommandsMessage
+      bindings:
+        kafka:
+          bindingVersion: 0.3.0
+    StreampayRepliesMessage:
+      contentType: application/avro
+      payload:
+        $ref: '#/components/schemas/streampay-replies-value'
+      name: StreampayRepliesMessage
+      bindings:
+        kafka:
+          bindingVersion: 0.3.0
+    StreampayBalancesMessage:
+      contentType: application/avro
+      payload:
+        $ref: '#/components/schemas/streampay-balances-value'
+      name: StreampayBalancesMessage
+      bindings:
+        kafka:
+          bindingVersion: 0.3.0
+    StreampayRequestPaymentsKey:
+      contentType: application/avro
+      payload:
+        $ref: '#/components/schemas/streampay-request-payments-key'
+      name: StreampayPaymentRequestsKey
+      bindings:
+        kafka:
+          bindingVersion: 0.3.0
+    StreampayRequestPaymentsMessage:
+      contentType: application/avro
+      payload:
+        $ref: '#/components/schemas/streampay-request-payments-value'
+      name: StreampayPaymentRequestsMessage
+      bindings:
+        kafka:
+          key:
+            $ref: '#/components/schemas/streampay-request-payments-key'
+          bindingVersion: 0.3.0
+    StreampayUsersMessage:
+      contentType: application/avro
+      payload:
+        $ref: '#/components/schemas/streampay-users-value'
+      name: StreampayUsersMessage
+      bindings:
+        kafka:
+          key:
+            $ref: '#/components/schemas/streampay-users-key'
+          bindingVersion: 0.3.0
+    StreampayTotalTransactionMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/streampay-total-transaction-value'
+      name: StreampayTotalTransactionMessage
+      bindings:
+        kafka:
+          bindingVersion: 0.3.0
+    StreampayAverageTransactionMessage:
+      contentType: application/json
+      name: StreampayTotalTransactionMessage
+      bindings:
+        kafka:
+          bindingVersion: 0.3.0
+    StreampayActivityMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/streampay-activity-value'
+      name: StreampayActivityMessage
+      bindings:
+        kafka:
+          bindingVersion: 0.3.0
+  schemas:
+    streampay-commands-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        fields:
+          - name: type
+            type: string
+          - name: userid
+            type: string
+          - name: requestid
+            type: string
+          - name: amount
+            type: double
+          - name: notes
+            type: string
+        name: PaymentCommand
+        namespace: io.aklivity.streampay
+        type: record
+    streampay-replies-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        fields:
+          - name: status
+            type: string
+          - name: correlationid
+            type: string
+        name: Replies
+        namespace: io.aklivity.streampay
+        type: record
+    streampay-users-key:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        type: string
+    streampay-users-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        fields:
+          - name: id
+            type: string
+          - name: name
+            type: string
+          - name: username
+            type: string
+        name: User
+        namespace: io.aklivity.streampay
+        type: record
+    streampay-balances-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        fields:
+          - name: balance
+            type: double
+          - name: timestamp
+            type: long
+        name: Balance
+        namespace: io.aklivity.streampay
+        type: record
+    streampay-request-payments-key:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        fields:
+          - name: id
+            type: string
+        name: RequestPaymentKey
+        namespace: io.aklivity.streampay
+        type: record
+    streampay-request-payments-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        fields:
+          - name: id
+            type: string
+          - name: fromuserid
+            type: string
+          - name: fromusername
+            type: string
+          - name: touserid
+            type: string
+          - name: tousername
+            type: string
+          - name: amount
+            type: double
+          - name: notes
+            type: string
+        name: RequestPayment
+        namespace: io.aklivity.streampay
+        type: record
+    streampay-balance-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        type: record
+        fields:
+          - name: balance
+            type: number
+          - name: timestamp
+            type: number
+        name: StreampayBalance
+        namespace: io.aklivity.streampay
+    streampay-total-transaction-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        type: record
+        fields:
+          - name: total
+            type: number
+          - name: timestamp
+            type: number
+        name: StreampayTotalTransaction
+        namespace: io.aklivity.streampay
+    streampay-activity-value:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        type: record
+        fields:
+          - name: eventName
+            type: string
+          - name: fromUserId
+            type: string
+          - name: fromUserName
+            type: string
+          - name: toUserId
+            type: string
+          - name: toUserName
+            type: string
+          - name: amount
+            type: number
+          - name: timestamp
+            type: number
+        name: StreampayActivity
+        namespace: io.aklivity.streampay

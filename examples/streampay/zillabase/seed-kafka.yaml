@@ -1,0 +1,179 @@
+# topics
+# topics
+
+topics:
+  - name: streampay-users
+    config:
+      replication_factor: 1
+      partitions: 1
+      cleanup.policy: compact
+    schema:
+      key: |
+        {
+          "type": "string"
+        }
+      value: |
+        {
+            "type": "record",
+            "name": "User",
+            "namespace": "io.aklivity.demos.streampay",
+            "fields": [
+                {
+                  "name": "id",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "username",
+                  "type": "string"
+                }
+            ]
+        }
+  - name: streampay-balances
+    config:
+      replication_factor: 1
+      partitions: 1
+      cleanup.policy: compact
+    schema:
+      key: |
+        {
+          "type": "string"
+        }
+      value: |
+        {
+            "type": "record",
+            "name": "UserBalance",
+            "namespace": "io.aklivity.demos.streampay",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "double"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "long"
+                }
+            ]
+        }
+  - name: streampay-request-payments
+    config:
+      replication_factor: 1
+      partitions: 1
+    schema:
+      key: |
+        {
+            "type": "record",
+            "name": "RequestPaymentKey",
+            "namespace": "io.aklivity.demos.streampay",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "string"
+                }
+            ]
+        }
+      value: |
+        {
+            "type": "record",
+            "name": "RequestPayment",
+            "namespace": "io.aklivity.demos.streampay",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "string"
+                },
+                {
+                    "name": "from_user_id",
+                    "type": "string"
+                },
+                {
+                    "name": "from_username",
+                    "type": "string"
+                },
+                {
+                    "name": "to_user_id",
+                    "type": "string"
+                },
+                {
+                    "name": "to_username",
+                    "type": "string"
+                },
+                {
+                    "name": "amount",
+                    "type": "double"
+                },
+                {
+                    "name": "notes",
+                    "type": "string"
+                }
+            ]
+        }
+  - name: streampay-commands
+    config:
+      replication_factor: 1
+      partitions: 1
+    schema:
+      value: |
+        {
+            "type": "record",
+            "name": "PaymentCommand",
+            "namespace": "io.aklivity.demos.streampay",
+            "fields": [
+                {
+                    "name": "type",
+                    "type": "string"
+                },
+                {
+                    "name": "user_id",
+                    "type": "string"
+                },
+                {
+                    "name": "request_id",
+                    "type": "string"
+                },
+                {
+                    "name": "amount",
+                    "type": "double"
+                },
+                {
+                    "name": "notes",
+                    "type": "string"
+                }
+            ]
+        }
+  - name: streampay-replies
+    config:
+      replication_factor: 1
+      partitions: 1
+    schema:
+      key: |
+        {
+            "type": "record",
+            "name": "RepliesKey",
+            "namespace": "io.aklivity.demos.streampay",
+            "fields": [
+                {
+                    "name": "correlation_id",
+                    "type": "string"
+                }
+            ]
+        }
+      value: |
+        {
+            "type": "record",
+            "name": "Replies",
+            "namespace": "io.aklivity.demos.streampay",
+            "fields": [
+                {
+                    "name": "status",
+                    "type": "string"
+                },
+                {
+                    "name": "correlation_id",
+                    "type": "string"
+                }
+            ]
+        }

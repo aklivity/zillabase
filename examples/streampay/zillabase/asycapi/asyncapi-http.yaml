@@ -1,0 +1,464 @@
+asyncapi: 3.0.0
+id: 'tag:stream.oay.im,2023:api'
+info:
+  title: StreamPay API
+  version: 1.0.0
+servers:
+  secure_http:
+    host: localhost:9090
+    protocol: https
+    security:
+      - $ref: '#/components/securitySchemes/httpOauth'
+channels:
+  streampay-commands:
+    address: '/streampay-commands'
+    messages:
+      StreampayCommands.message:
+        $ref: '#/components/messages/StreampayCommandsMessage'
+    description: <nil>
+  streampay-commands-item:
+    address: '/streampay-commands/{id}'
+    messages:
+      StreampayCommands.message:
+        $ref: '#/components/messages/StreampayCommandsMessage'
+      StreampayEmpty.message:
+        $ref: '#/components/messages/StreampayEmptyMessage'
+    description: <nil>
+    parameters:
+      id:
+        description: Id of the streampay commands item.
+  streampay-users:
+    address: '/streampay-users'
+    messages:
+      StreampayUsers.message:
+        $ref: '#/components/messages/StreampayUsersMessage'
+      StreampayItemsUsers.message:
+        $ref: '#/components/messages/StreampayUsersItemsMessage'
+    description: <nil>
+  streampay-users-item:
+    address: '/streampay-users/{id}'
+    messages:
+      StreampayUsers.message:
+        $ref: '#/components/messages/StreampayUsersMessage'
+      StreampayEmpty.message:
+        $ref: '#/components/messages/StreampayEmptyMessage'
+    description: <nil>
+    parameters:
+      id:
+        description: Id of the streampay users item.
+        examples:
+          - 53307860c3599d1de448e19d
+  streampay-balances:
+    address: '/streampay-balances'
+    messages:
+      StreampayBalances.message:
+        $ref: '#/components/messages/StreampayBalancesMessage'
+    description: <nil>
+  streampay-balances-item:
+    address: '/streampay-balances/{id}'
+    messages:
+      StreampayBalances.message:
+        $ref: '#/components/messages/StreampayBalancesMessage'
+      StreampayEmpty.message:
+        $ref: '#/components/messages/StreampayEmptyMessage'
+    description: <nil>
+    parameters:
+      id:
+        description: Id of the streampay balance item.
+        examples:
+          - 53307860c3599d1de448e19d
+  streampay-request-payment:
+    address: '/streampay-request-payment'
+    messages:
+      StreampayRequestPayment.message:
+        $ref: '#/components/messages/StreampayRequestPaymentMessage'
+    description: <nil>
+  streampay-request-payments:
+    address: '/streampay-request-payments'
+    messages:
+      StreampayRequestPayment.message:
+        $ref: '#/components/messages/StreampayRequestPaymentMessage'
+      StreampayRequestPaymentsItemsMessage.message:
+        $ref: '#/components/messages/StreampayRequestPaymentsItemsMessage'
+    description: <nil>
+  streampay-request-payments-item:
+    address: '/streampay-request-payments/{id}'
+    messages:
+      StreampayRequestPayment.message:
+        $ref: '#/components/messages/StreampayRequestPaymentMessage'
+      StreampayEmpty.message:
+        $ref: '#/components/messages/StreampayEmptyMessage'
+    description: <nil>
+    parameters:
+      id:
+        description: Id of the streampay balance item.
+        examples:
+          - 53307860c3599d1de448e19d
+  streampay-activities:
+    address: '/streampay-activities'
+    messages:
+      StreampayActivity.message:
+        $ref: '#/components/messages/StreampayActivityMessage'
+    description: <nil>
+operations:
+  doStreampayCommandsCreate:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-commands'
+    bindings:
+      x-zilla-http-kafka:
+        overrides:
+          zilla:identity: "{identity}"
+      http:
+        method: POST
+    messages:
+      - $ref: '#/channels/streampay-commands/messages/StreampayCommands.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  doStreampayUsersCreate:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-users'
+    bindings:
+      x-zilla-http-kafka:
+        overrides:
+          zilla:identity: "{identity}"
+      http:
+        method: POST
+    messages:
+      - $ref: '#/channels/streampay-users/messages/StreampayUsers.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  onStreampayUserRead:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-users'
+    bindings:
+      http:
+        method: GET
+    messages:
+      - $ref: '#/channels/streampay-users/messages/StreampayItemsUsers.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  onStreampayUsersRead:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-users'
+    bindings:
+      http:
+        method: GET
+    messages:
+      - $ref: '#/channels/streampay-users/messages/StreampayItemsUsers.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  doStreampayUserUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/streampay-users-item'
+    bindings:
+      x-zilla-http-kafka:
+        overrides:
+          zilla:identity: "{identity}"
+      http:
+        method: PUT
+    messages:
+      - $ref: '#/channels/streampay-users-item/messages/StreampayUsers.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  onStreampayBalances:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-balances'
+    bindings:
+      x-zilla-sse:
+        bindingVersion: latest
+      x-zilla-sse-kafka:
+        filters:
+          - key: "{identity}"
+    messages:
+      - $ref: '#/channels/streampay-balances/messages/StreampayBalances.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  onStreampayRequestPayment:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-request-payment'
+    bindings:
+      x-zilla-sse:
+        bindingVersion: latest
+      x-zilla-sse-kafka:
+        filters:
+          - headers:
+              "zilla:identiy": "{identity}"
+    messages:
+      - $ref: '#/channels/streampay-request-payment/messages/StreampayRequestPayment.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  onStreampayRequestPaymentReads:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-request-payments'
+    bindings:
+      x-zilla-http-kafka:
+        filters:
+          - headers:
+              "zilla:identiy": "{identity}"
+      http:
+        method: GET
+    messages:
+      - $ref: '#/channels/streampay-request-payments/messages/StreampayRequestPaymentsItemsMessage.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  onStreampayRequestPaymentRead:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-request-payments-item'
+    bindings:
+      http:
+        method: GET
+    messages:
+      - $ref: '#/channels/streampay-request-payments-item/messages/StreampayRequestPayment.message'
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+  onStreampayActivitiesRead:
+    action: receive
+    channel:
+      $ref: '#/channels/streampay-activities'
+    messages:
+      - $ref: '#/channels/streampay-activities/messages/StreampayActivity.message'
+    bindings:
+      x-zilla-sse:
+        bindingVersion: latest
+    security:
+     - $ref: '#/components/securitySchemes/httpOauth'
+components:
+  securitySchemes:
+    httpOauth:
+      type: oauth2
+      flows: {}
+      scopes:
+        - write:pay
+        - write:request
+        - write:users
+        - read:users
+        - read:activities
+        - read:payment-requests
+        - read:balances
+  messages:
+    StreampayCommandsMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayCommand'
+      name: StreampayCommandsMessage
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+    StreampayUsersMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayUser'
+      name: StreampayUsersMessage
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+    StreampayUsersItemsMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayUsers'
+      name: StreampayUsersMessage
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+    StreampayBalancesMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayBalance'
+      name: StreampayBalancesMessage
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+    StreampayRequestPaymentsItemsMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayRequestPayments'
+      name: StreampayRequestPayments
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+    StreampayRequestPaymentMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayRequestPayment'
+      name: StreampayRequestPaymentMessage
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+    StreampayActivityMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayActivity'
+      name: StreampayActivityMessage
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+    StreampayEmptyMessage:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StreampayEmpty'
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Transfer-Encoding:
+                type: string
+                const: chunked
+              Trailer:
+                type: string
+                const: \r\n
+  schemas:
+    StreampayCommand:
+      type: object
+      properties:
+        type:
+          type: string
+        user_id:
+          type: string
+        request_id:
+          type: string
+        amount:
+          type: number
+        notes:
+          type: string
+      name: PaymentCommand
+      namespace: com.example
+    StreampayUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        username:
+          type: string
+      name: User
+      namespace: com.example
+    StreampayUsers:
+      type: array
+      items:
+        $ref: "#/components/schemas/StreampayUser"
+      name: Users
+      namespace: com.example
+    StreampayBalance:
+      type: object
+      properties:
+        balance:
+          type: number
+        timestamp:
+          type: number
+      name: Balance
+      namespace: com.example
+    StreampayRequestPayment:
+      type: object
+      properties:
+        id:
+          type: string
+        from_user_id:
+          type: string
+        from_username:
+          type: string
+        to_user_id:
+          type: string
+        to_username:
+          type: string
+        amount:
+          type: number
+        notes:
+          type: string
+      name: RequestPayment
+      namespace: com.example
+    StreampayRequestPayments:
+      type: array
+      items:
+        $ref: "#/components/schemas/StreampayRequestPayment"
+      name: RequestPayments
+      namespace: com.example
+    StreampayActivity:
+      type: object
+      properties:
+        event_name:
+          type: string
+        from_user_id:
+          type: string
+        from_username:
+          type: string
+        to_user_id:
+          type: string
+        to_username:
+          type: string
+        amount:
+          type: number
+        timestamp:
+          type: number
+      name: StreampayActivity
+      namespace: com.example
+    StreampayEmpty:
+      type: object
+      name: Empty
+      namespace: com.example
