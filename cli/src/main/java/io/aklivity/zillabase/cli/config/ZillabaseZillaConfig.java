@@ -14,11 +14,11 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseAdminConfig
-{
-    private static final int DEFAULT_ADMIN_PORT = 7184;
-    private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
+import java.util.List;
 
-    public int port = DEFAULT_ADMIN_PORT;
-    public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
+public class ZillabaseZillaConfig
+{
+    private static final List<Integer> DEFAULT_PORT_LIST = List.of(9090, 7114, 7143);
+
+    public List<Integer> ports = DEFAULT_PORT_LIST;
 }

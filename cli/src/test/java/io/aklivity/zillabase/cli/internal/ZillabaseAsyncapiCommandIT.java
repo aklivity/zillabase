@@ -38,6 +38,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsynca
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
 import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
+import io.aklivity.zillabase.cli.internal.util.ZillabaseSystemPropertyUtil;
 
 public class ZillabaseAsyncapiCommandIT
 {
@@ -52,12 +53,12 @@ public class ZillabaseAsyncapiCommandIT
             url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
         servers:
           plain:
-            host: "localhost:9092"
+            host: "kafka.zillabase.dev:29092"
             protocol: "kafka"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
-                schemaRegistryUrl: "http://localhost:8080"
+                bindingVersion: "0.4.0"
+                schemaRegistryUrl: "http://apicurio.zillabase.dev:8080"
                 schemaRegistryVendor: "apicurio"
         channels:
           streampay-replies:
@@ -67,7 +68,7 @@ public class ZillabaseAsyncapiCommandIT
                 $ref: "#/components/messages/StreampayRepliesMessage"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
+                bindingVersion: "0.4.0"
                 topicConfiguration:
                   cleanup.policy:
                   - "delete"
@@ -78,7 +79,7 @@ public class ZillabaseAsyncapiCommandIT
                 $ref: "#/components/messages/StreampayCommandsMessage"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
+                bindingVersion: "0.4.0"
                 topicConfiguration:
                   cleanup.policy:
                   - "compact"
@@ -89,7 +90,7 @@ public class ZillabaseAsyncapiCommandIT
                 $ref: "#/components/messages/EventsMessage"
             bindings:
               kafka:
-                bindingVersion: "0.5.0"
+                bindingVersion: "0.4.0"
                 topicConfiguration:
                   cleanup.policy:
                   - "delete"
@@ -143,7 +144,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-commands-value:
               fields:
               - name: "id"
@@ -152,7 +153,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-replies-value:
               fields:
               - name: "price"
@@ -161,7 +162,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Product"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
           messages:
             StreampayRepliesMessage:
               payload:
@@ -189,9 +190,6 @@ public class ZillabaseAsyncapiCommandIT
             name: "Aklivity Community License"
             url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
         servers:
-          sse:
-            host: "localhost:9090"
-            protocol: "secure"
           http:
             host: "localhost:9090"
             protocol: "http"
@@ -228,10 +226,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/events"
             bindings:
-              x-zilla-http-kafka:
-                method: "POST"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "POST"
@@ -241,38 +235,58 @@ public class ZillabaseAsyncapiCommandIT
             action: "receive"
             channel:
               $ref: "#/channels/events-item"
+            bindings:
+              x-zilla-sse:
+                method: "GET"
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"
             messages:
-            - $ref: "#/channels/events/messages/EventsMessage"
+            - $ref: "#/channels/events-item/messages/EventsMessage"
           doStreampayCommandsUpdate:
             action: "send"
             channel:
               $ref: "#/channels/streampay-commands-item"
             bindings:
-              x-zilla-http-kafka:
-                method: "PUT"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "PUT"
             messages:
-            - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
+            - $ref: "#/channels/streampay-commands-item/messages/StreampayCommandsMessage"
           onStreampayCommandsRead:
             action: "receive"
             channel:
               $ref: "#/channels/streampay-commands"
+            bindings:
+              x-zilla-sse:
+                method: "GET"
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"
             messages:
             - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
           onStreampayCommandsReadItem:
             action: "receive"
             channel:
               $ref: "#/channels/streampay-commands-item"
+            bindings:
+              x-zilla-sse:
+                method: "GET"
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"
             messages:
-            - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
+            - $ref: "#/channels/streampay-commands-item/messages/StreampayCommandsMessage"
           onEventsRead:
             action: "receive"
             channel:
               $ref: "#/channels/events"
+            bindings:
+              x-zilla-sse:
+                method: "GET"
+              http:
+                bindingVersion: "0.3.0"
+                method: "GET"
             messages:
             - $ref: "#/channels/events/messages/EventsMessage"
           doStreampayCommandsCreate:
@@ -280,10 +294,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands"
             bindings:
-              x-zilla-http-kafka:
-                method: "POST"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "POST"
@@ -299,7 +309,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-commands-value:
               fields:
               - name: "id"
@@ -308,7 +318,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Event"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
             streampay-replies-value:
               fields:
               - name: "price"
@@ -317,7 +327,7 @@ public class ZillabaseAsyncapiCommandIT
                 type: "string"
               name: "Product"
               namespace: "io.aklivity.example"
-              type: "record"
+              type: "object"
           messages:
             StreampayRepliesMessage:
               payload:
@@ -335,6 +345,8 @@ public class ZillabaseAsyncapiCommandIT
               contentType: "application/avro"
               name: "EventsMessage"
         """;
+    private static final int ZILLA_CONFIG_UPDATE_DELAY = 15000;
+
     private final K3poRule k3po = new K3poRule()
         .addScriptRoot("server", "io/aklivity/zillabase/cli/internal/streams");
 
@@ -394,10 +406,13 @@ public class ZillabaseAsyncapiCommandIT
         ZillabaseStartCommand start = new ZillabaseStartCommand();
         start.helpOption = new HelpOption<>();
         start.kafkaSeedFilePath = "src/test/resources/zillabase/seed-kafka.yaml";
+        ZillabaseSystemPropertyUtil.initialize();
         start.run();
 
         String actualKafkaSpec = resolveAsyncApiSpec(6);
         String actualHttpSpec = resolveAsyncApiSpec(7);
+
+        Thread.sleep(ZILLA_CONFIG_UPDATE_DELAY);
 
         ZillabaseStopCommand stop = new ZillabaseStopCommand();
         stop.helpOption = new HelpOption<>();

@@ -16,14 +16,9 @@ package io.aklivity.zillabase.cli.config;
 
 public final class ZillabaseConfig
 {
-    public static final int DEFAULT_ADMIN_PORT = 7184;
-
-    private static final String DEFAULT_HTTP_URL = "localhost:9090";
-
-    public int port = DEFAULT_ADMIN_PORT;
-    public String httpEndpoints = DEFAULT_HTTP_URL;
     public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
     public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
     public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
     public ZillabaseRisingWaveConfig risingWave = new ZillabaseRisingWaveConfig();
+    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
 }

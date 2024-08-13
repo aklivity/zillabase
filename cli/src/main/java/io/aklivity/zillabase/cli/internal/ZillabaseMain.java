@@ -16,11 +16,14 @@ package io.aklivity.zillabase.cli.internal;
 
 import com.github.rvesse.airline.Cli;
 
+import io.aklivity.zillabase.cli.internal.util.ZillabaseSystemPropertyUtil;
+
 public final class ZillabaseMain
 {
     public static void main(
         String[] args)
     {
+        ZillabaseSystemPropertyUtil.initialize();
         Cli<Runnable> parser = new Cli<>(ZillabaseCli.class);
         parser.parse(args).run();
     }

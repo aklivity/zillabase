@@ -12,13 +12,15 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.config;
+package io.aklivity.zillabase.cli.internal.asyncapi.zilla;
 
-public final class ZillabaseAdminConfig
+import java.util.List;
+
+public class ZillaBindingConfig
 {
-    private static final int DEFAULT_ADMIN_PORT = 7184;
-    private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
-
-    public int port = DEFAULT_ADMIN_PORT;
-    public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
+    public String type;
+    public String kind;
+    public ZillaBindingOptionsConfig options;
+    public List<ZillaBindingRouteConfig> routes;
+    public String exit;
 }
