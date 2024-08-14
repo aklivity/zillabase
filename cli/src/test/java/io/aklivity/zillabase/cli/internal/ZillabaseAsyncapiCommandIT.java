@@ -38,6 +38,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsynca
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
 import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
+import io.aklivity.zillabase.cli.internal.util.ZillabaseSystemPropertyUtil;
 
 public class ZillabaseAsyncapiCommandIT
 {
@@ -52,12 +53,12 @@ public class ZillabaseAsyncapiCommandIT
             url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
         servers:
           plain:
-            host: "localhost:9092"
+            host: "kafka.zillabase.dev:29092"
             protocol: "kafka"
             bindings:
               kafka:
                 bindingVersion: "0.4.0"
-                schemaRegistryUrl: "http://localhost:8080"
+                schemaRegistryUrl: "http://apicurio.zillabase.dev:8080"
                 schemaRegistryVendor: "apicurio"
         channels:
           streampay-replies:
@@ -189,9 +190,6 @@ public class ZillabaseAsyncapiCommandIT
             name: "Aklivity Community License"
             url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
         servers:
-          sse:
-            host: "localhost:9090"
-            protocol: "sse"
           http:
             host: "localhost:9090"
             protocol: "http"
@@ -228,10 +226,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/events"
             bindings:
-              x-zilla-http-kafka:
-                method: "POST"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "POST"
@@ -242,6 +236,8 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/events-item"
             bindings:
+              x-zilla-sse:
+                method: "GET"
               http:
                 bindingVersion: "0.3.0"
                 method: "GET"
@@ -252,10 +248,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands-item"
             bindings:
-              x-zilla-http-kafka:
-                method: "PUT"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "PUT"
@@ -266,6 +258,8 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands"
             bindings:
+              x-zilla-sse:
+                method: "GET"
               http:
                 bindingVersion: "0.3.0"
                 method: "GET"
@@ -276,6 +270,8 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands-item"
             bindings:
+              x-zilla-sse:
+                method: "GET"
               http:
                 bindingVersion: "0.3.0"
                 method: "GET"
@@ -286,6 +282,8 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/events"
             bindings:
+              x-zilla-sse:
+                method: "GET"
               http:
                 bindingVersion: "0.3.0"
                 method: "GET"
@@ -296,10 +294,6 @@ public class ZillabaseAsyncapiCommandIT
             channel:
               $ref: "#/channels/streampay-commands"
             bindings:
-              x-zilla-http-kafka:
-                method: "POST"
-                overrides:
-                  zilla:identity: "{identity}"
               http:
                 bindingVersion: "0.3.0"
                 method: "POST"
@@ -351,6 +345,8 @@ public class ZillabaseAsyncapiCommandIT
               contentType: "application/avro"
               name: "EventsMessage"
         """;
+    private static final int ZILLA_CONFIG_UPDATE_DELAY = 15000;
+
     private final K3poRule k3po = new K3poRule()
         .addScriptRoot("server", "io/aklivity/zillabase/cli/internal/streams");
 
@@ -410,18 +406,16 @@ public class ZillabaseAsyncapiCommandIT
         ZillabaseStartCommand start = new ZillabaseStartCommand();
         start.helpOption = new HelpOption<>();
         start.kafkaSeedFilePath = "src/test/resources/zillabase/seed-kafka.yaml";
-        System.setProperty("jdk.httpclient.allowRestrictedHeaders", "Content-Length");
-        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.AdminClientConfig", "error");
-        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.internals.AdminMetadataManager", "error");
-        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.common.utils.AppInfoParser", "error");
+        ZillabaseSystemPropertyUtil.initialize();
         start.run();
 
         String actualKafkaSpec = resolveAsyncApiSpec(6);
         String actualHttpSpec = resolveAsyncApiSpec(7);
 
+        Thread.sleep(ZILLA_CONFIG_UPDATE_DELAY);
+
         ZillabaseStopCommand stop = new ZillabaseStopCommand();
         stop.helpOption = new HelpOption<>();
-        Thread.sleep(15000);
         stop.run();
 
         assertEquals(KAFKA_SPEC, actualKafkaSpec);

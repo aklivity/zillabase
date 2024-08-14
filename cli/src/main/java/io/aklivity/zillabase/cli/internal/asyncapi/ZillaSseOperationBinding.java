@@ -12,13 +12,21 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.config;
+package io.aklivity.zillabase.cli.internal.asyncapi;
 
-public final class ZillabaseConfig
+import com.asyncapi.bindings.OperationBinding;
+import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public final class ZillaSseOperationBinding extends OperationBinding
 {
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingWave = new ZillabaseRisingWaveConfig();
-    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
+    @JsonProperty("method")
+    private HTTPOperationMethod method;
+
+    public ZillaSseOperationBinding(
+        HTTPOperationMethod method)
+    {
+        this.method = method;
+    }
+
 }

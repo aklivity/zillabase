@@ -62,8 +62,7 @@ public class ZillabaseConfigServerHandler extends ZillabaseServerHandler
                     builder.GET();
                     break;
                 case "PUT":
-                    builder.header("Content-Length", exchange.getRequestHeaders().getFirst("Content-Length"))
-                        .PUT(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes()));
+                    builder.PUT(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes()));
                     break;
                 default:
                     exchange.sendResponseHeaders(HTTP_BAD_METHOD, NO_RESPONSE_BODY);

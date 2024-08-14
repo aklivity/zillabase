@@ -14,11 +14,11 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseConfig
+import java.util.List;
+
+public class ZillabaseZillaConfig
 {
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingWave = new ZillabaseRisingWaveConfig();
-    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
+    private static final List<Integer> DEFAULT_PORT_LIST = List.of(9090, 7114, 7143);
+
+    public List<Integer> ports = DEFAULT_PORT_LIST;
 }

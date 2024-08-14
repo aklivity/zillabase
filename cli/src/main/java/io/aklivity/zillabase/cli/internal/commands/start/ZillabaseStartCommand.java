@@ -37,7 +37,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -65,13 +64,10 @@ import java.util.zip.CRC32C;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
-import jakarta.json.spi.JsonProvider;
-import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParsingException;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -83,10 +79,6 @@ import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 import org.fusesource.jansi.Ansi;
-import org.leadpony.justify.api.JsonSchema;
-import org.leadpony.justify.api.JsonSchemaReader;
-import org.leadpony.justify.api.JsonValidationService;
-import org.leadpony.justify.api.ProblemHandler;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
@@ -130,6 +122,7 @@ import com.github.rvesse.airline.annotations.Command;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
+import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseOperationBinding;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaAsyncApiConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
@@ -200,49 +193,18 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         ZillabaseConfig config;
         Path configPath = Paths.get("zillabase/config.yaml");
-        Path schemaPath = Paths.get("cli/src/main/scripts/io/aklivity/zillabase/cli/zillabase.schema.json");
 
-        try
+        try (InputStream inputStream = Files.newInputStream(configPath))
         {
-            if (Files.size(configPath) == 0 || Files.readAllLines(configPath)
-                .stream().allMatch(line -> line.trim().isEmpty() || line.trim().startsWith("#")))
-            {
-                config = new ZillabaseConfig();
-            }
-            else
-            {
-                try (InputStream inputStream = Files.newInputStream(configPath);
-                     InputStream schemaStream = Files.newInputStream(schemaPath))
-                {
-                    JsonProvider schemaProvider = JsonProvider.provider();
-                    JsonReader schemaReader = schemaProvider.createReader(schemaStream);
-                    JsonObject schemaObject = schemaReader.readObject();
-
-                    JsonParser schemaParser = schemaProvider.createParserFactory(null)
-                        .createParser(new StringReader(schemaObject.toString()));
-
-                    JsonValidationService service = JsonValidationService.newInstance();
-                    JsonSchemaReader reader = service.createSchemaReader(schemaParser);
-                    JsonSchema schema = reader.read();
-
-                    JsonProvider provider = service.createJsonProvider(schema, parser -> ProblemHandler.throwing());
-
-                    Jsonb jsonb = JsonbBuilder.newBuilder()
-                        .withProvider(provider)
-                        .build();
-                    config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
-                }
-            }
+            Jsonb jsonb = JsonbBuilder.create();
+            config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
         }
         catch (IOException | JsonbException ex)
         {
-            System.err.println("Error resolving config, reverting to default.");
-            ex.printStackTrace(System.err);
             config = new ZillabaseConfig();
         }
 
         List<String> containerIds = new LinkedList<>();
-        String zillaContainerId = null;
         for (CreateContainerFactory factory : factories)
         {
             try (CreateContainerCmd command = factory.createContainer(client, config))
@@ -250,19 +212,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CreateContainerResponse response = command.exec();
                 String responseId = response.getId();
                 containerIds.add(responseId);
-                if (factory.name.equals("zillabase_zilla"))
-                {
-                    zillaContainerId = responseId;
-                }
             }
         }
 
         for (String containerId : containerIds)
         {
-            if (containerId.equals(zillaContainerId))
-            {
-                continue;
-            }
             try (StartContainerCmd command = client.startContainerCmd(containerId))
             {
                 command.exec();
@@ -321,14 +275,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         createConfigServerKafkaTopic(config);
 
         publishZillaConfig(config);
-
-        if (zillaContainerId != null)
-        {
-            try (StartContainerCmd command = client.startContainerCmd(zillaContainerId))
-            {
-                command.exec();
-            }
-        }
     }
 
     private void publishZillaConfig(
@@ -415,7 +361,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 HttpRequest httpRequest = HttpRequest
                     .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port), "/v1/config/zilla.yaml"))
-                    .header("Content-Length", String.valueOf(zillaConfig.getBytes(StandardCharsets.UTF_8).length))
                     .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
                     .build();
 
@@ -428,33 +373,35 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                     Path zillaFilesPath = Paths.get("zillabase/zilla/");
 
-                    Files.walk(zillaFilesPath)
-                        .filter(Files::isRegularFile)
-                        .filter(file -> !(file.endsWith("zilla.yaml") || file.getFileName().toString().startsWith(".")))
-                        .forEach(file ->
-                        {
-                            try
+                    if (Files.exists(zillaFilesPath))
+                    {
+                        Files.walk(zillaFilesPath)
+                            .filter(Files::isRegularFile)
+                            .filter(file -> !(file.endsWith("zilla.yaml") || file.getFileName().toString().startsWith(".")))
+                            .forEach(file ->
                             {
-                                Path relativePath = zillaFilesPath.relativize(file);
-                                byte[] content = Files.readAllBytes(file);
-                                HttpRequest zillaFileRequest = HttpRequest
-                                    .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port),
-                                        "/v1/config/%s".formatted(relativePath)))
-                                    .header("Content-Length", String.valueOf(content.length))
-                                    .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
-                                    .build();
-
-                                if (client.send(zillaFileRequest, HttpResponse.BodyHandlers.ofString()).statusCode() == 204)
+                                try
                                 {
-                                    System.out.println("Config Server is populated with %s".formatted(relativePath));
+                                    Path relativePath = zillaFilesPath.relativize(file);
+                                    byte[] content = Files.readAllBytes(file);
+                                    HttpRequest zillaFileRequest = HttpRequest
+                                        .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port),
+                                            "/v1/config/%s".formatted(relativePath)))
+                                        .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
+                                        .build();
+
+                                    if (client.send(zillaFileRequest, HttpResponse.BodyHandlers.ofString()).statusCode() == 204)
+                                    {
+                                        System.out.println("Config Server is populated with %s".formatted(relativePath));
+                                    }
                                 }
-                            }
-                            catch (IOException | InterruptedException ex)
-                            {
-                                System.err.println("Failed to process file: %s : %s".formatted(file, ex.getMessage()));
-                                ex.printStackTrace();
-                            }
-                        });
+                                catch (IOException | InterruptedException ex)
+                                {
+                                    System.err.println("Failed to process file: %s : %s".formatted(file, ex.getMessage()));
+                                    ex.printStackTrace();
+                                }
+                            });
+                    }
                 }
             }
         }
@@ -485,7 +432,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private void processAsyncApiSpecs(
         ZillabaseConfig config)
     {
-        Path kafkaSpecPath = Paths.get("asyncapi-kafka.yaml");
+        Path kafkaSpecPath = Paths.get("zillabase/specs/kafka-asyncapi.yaml");
         String kafkaSpec = null;
         if (Files.exists(kafkaSpecPath))
         {
@@ -517,7 +464,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             registerAsyncApiSpec(kafkaSpec);
         }
 
-        Path httpSpecPath = Paths.get("asyncapi-http.yaml");
+        Path httpSpecPath = Paths.get("zillabase/specs/http-asyncapi.yaml");
         String httpSpec = null;
         if (Files.exists(kafkaSpecPath))
         {
@@ -864,11 +811,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             Server server = new Server();
             server.setHost("localhost:9090");
-            server.setProtocol("sse");
-            servers.put("sse", server);
-
-            server = new Server();
-            server.setHost("localhost:9090");
             server.setProtocol("http");
             servers.put("http", server);
 
@@ -937,7 +879,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     new ZillaHttpOperationBinding(POST, Map.of("zilla:identity", "{identity}"));
                 Map<String, Object> bindings = new HashMap<>();
                 bindings.put("http", httpBinding);
-                bindings.put("x-zilla-http-kafka", zillaHttpBinding);
+                //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
                 operation.setBindings(bindings);
                 operations.put(compact ? "do%sCreate".formatted(label) : "do%s".formatted(label), operation);
 
@@ -954,7 +896,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     zillaHttpBinding = new ZillaHttpOperationBinding(PUT, Map.of("zilla:identity", "{identity}"));
                     bindings = new HashMap<>();
                     bindings.put("http", httpBinding);
-                    bindings.put("x-zilla-http-kafka", zillaHttpBinding);
+                    //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
                     operation.setBindings(bindings);
                     operations.put("do%sUpdate".formatted(label), operation);
                 }
@@ -967,7 +909,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setMessages(Collections.singletonList(reference));
                 httpBinding = new HTTPOperationBinding();
                 httpBinding.setMethod(GET);
-                operation.setBindings(Map.of("http", httpBinding));
+                ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding(GET);
+                operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
                 operations.put("on%sRead".formatted(label), operation);
 
                 operation = new Operation();
@@ -978,7 +921,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setMessages(Collections.singletonList(reference));
                 httpBinding = new HTTPOperationBinding();
                 httpBinding.setMethod(GET);
-                operation.setBindings(Map.of("http", httpBinding));
+                sseBinding = new ZillaSseOperationBinding(GET);
+                operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
                 operations.put("on%sReadItem".formatted(label), operation);
             }
 
@@ -1291,13 +1235,24 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client,
             ZillabaseConfig config)
         {
+            List<ExposedPort> exposedPorts = config.zilla.ports.stream()
+                .map(ExposedPort::tcp)
+                .toList();
+
+            List<PortBinding> portBindings = config.zilla.ports.stream()
+                .map(port -> new PortBinding(Ports.Binding.bindPort(port), ExposedPort.tcp(port)))
+                .toList();
+
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network))
+                        .withNetworkMode(network)
+                        .withPortBindings(portBindings))
+                .withExposedPorts(exposedPorts)
                 .withCmd("start", "-v", "-e", "-c", "%s/config/zilla.yaml".formatted(config.admin.configServerUrl))
                 .withTty(true);
         }

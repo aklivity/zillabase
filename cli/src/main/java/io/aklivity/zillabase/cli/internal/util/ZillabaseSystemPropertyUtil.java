@@ -12,13 +12,18 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.config;
+package io.aklivity.zillabase.cli.internal.util;
 
-public final class ZillabaseConfig
+public final class ZillabaseSystemPropertyUtil
 {
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingWave = new ZillabaseRisingWaveConfig();
-    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
+    public static void initialize()
+    {
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.AdminClientConfig", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.clients.admin.internals.AdminMetadataManager", "error");
+        System.setProperty("org.slf4j.simpleLogger.log.org.apache.kafka.common.utils.AppInfoParser", "error");
+    }
+
+    private ZillabaseSystemPropertyUtil()
+    {
+    }
 }
