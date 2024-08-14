@@ -33,6 +33,7 @@ This project includes:
   docker-java-transport under The Apache Software License, Version 2.0
   docker-java-transport-httpclient5 under The Apache Software License, Version 2.0
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
+  ICU4J under Unicode/ICU License
   IntelliJ IDEA Annotations under The Apache Software License, Version 2.0
   Jackson-annotations under The Apache Software License, Version 2.0
   Jackson-core under The Apache Software License, Version 2.0
@@ -49,6 +50,7 @@ This project includes:
   org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
   org.leadpony.joy.core under The Apache Software License, Version 2.0
   org.leadpony.joy.yaml under The Apache Software License, Version 2.0
+  org.leadpony.justify under The Apache Software License, Version 2.0
   PostgreSQL JDBC Driver under BSD-2-Clause
   Project Lombok under The MIT License
   SLF4J API Module under MIT License

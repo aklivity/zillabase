@@ -18,7 +18,29 @@ import java.util.List;
 
 public class ZillabaseZillaConfig
 {
-    private static final List<Integer> DEFAULT_PORT_LIST = List.of(9090, 7114, 7143);
+    private static final List<ZillabaseZillaPortConfig> DEFAULT_PORT_LIST = List.of(
+        new ZillabaseZillaPortConfig()
+        {
+            {
+                port = 9090;
+                label = "http";
+            }
+        },
+        new ZillabaseZillaPortConfig()
+        {
+            {
+                port = 7114;
+                label = "http";
+            }
+        },
+        new ZillabaseZillaPortConfig()
+        {
+            {
+                port = 7143;
+                label = "http";
+            }
+        }
+    );
 
-    public List<Integer> ports = DEFAULT_PORT_LIST;
+    public List<ZillabaseZillaPortConfig> ports = DEFAULT_PORT_LIST;
 }
