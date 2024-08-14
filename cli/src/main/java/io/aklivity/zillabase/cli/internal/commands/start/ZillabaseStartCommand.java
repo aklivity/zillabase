@@ -200,8 +200,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         ZillabaseConfig config;
         Path configPath = Paths.get("zillabase/config.yaml");
-        Path schemaPath = Paths.get("cli/src/main/scripts/io/aklivity/zillabase/cli/zillabase.schema.json");
-
         try
         {
             if (Files.size(configPath) == 0 || Files.readAllLines(configPath)
@@ -212,7 +210,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             else
             {
                 try (InputStream inputStream = Files.newInputStream(configPath);
-                     InputStream schemaStream = Files.newInputStream(schemaPath))
+                     InputStream schemaStream = getClass().getResourceAsStream("/internal/schema/zillabase.schema.json"))
                 {
                     JsonProvider schemaProvider = JsonProvider.provider();
                     JsonReader schemaReader = schemaProvider.createReader(schemaStream);
@@ -261,9 +259,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         Path kafkaSeedPath = Paths.get(kafkaSeedFilePath);
-        if (Files.exists(kafkaSeedPath))
+        try
         {
-            try
+            if (Files.exists(kafkaSeedPath) && Files.size(kafkaSeedPath) != 0 && Files.readAllLines(kafkaSeedPath)
+                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("#")))
             {
                 String content = Files.readString(kafkaSeedPath);
                 Jsonb jsonb = JsonbBuilder.create();
@@ -277,16 +276,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     System.err.println("Failed to process seed-kafka.yaml");
                 }
             }
-            catch (IOException | JsonParsingException ex)
-            {
-                System.err.println("Failed to process seed-kafka.yaml : %s".formatted(ex.getMessage()));
-            }
+        }
+        catch (IOException | JsonParsingException ex)
+        {
+            System.err.println("Failed to process seed-kafka.yaml : %s".formatted(ex.getMessage()));
         }
 
         Path seedPath = Paths.get("zillabase/seed.sql");
-        if (Files.exists(seedPath))
+        try
         {
-            try
+            if (Files.exists(seedPath) && Files.size(seedPath) != 0 && Files.readAllLines(seedPath)
+                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
             {
                 String content = Files.readString(seedPath);
                 Properties props = new Properties();
@@ -300,16 +300,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 {
                     System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
                 }
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
+
             }
         }
-
-        processAsyncApiSpecs(config);
+        catch (IOException ex)
+        {
+            ex.printStackTrace(System.err);
+        }
 
         createConfigServerKafkaTopic(config);
+
+        processAsyncApiSpecs(config);
 
         publishZillaConfig(config);
     }
@@ -451,19 +452,34 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private void createConfigServerKafkaTopic(
         ZillabaseConfig config)
     {
-        try (AdminClient adminClient = AdminClient.create(Map.of(
-            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
-                ? "localhost:9092" : config.kafka.bootstrapUrl)))
-        {
-            NewTopic configTopic = new NewTopic(ZILLABASE_CONFIG_KAFKA_TOPIC, 1, (short) 1);
-            configTopic.configs(Map.of("cleanup.policy", "compact"));
-            adminClient.createTopics(List.of(configTopic)).all().get();
-        }
-        catch (Exception ex)
-        {
-            System.err.println("Error creating Zillabase Config Server topic : %s".formatted(ex.getMessage()));
-        }
+        int retries = 0;
+        int delay = SERVICE_INITIALIZATION_DELAY_MS;
 
+        while (retries < MAX_RETRIES)
+        {
+            try
+            {
+                Thread.sleep(delay);
+                try (AdminClient adminClient = AdminClient.create(Map.of(
+                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
+                        ? "localhost:9092" : config.kafka.bootstrapUrl)))
+                {
+                    NewTopic configTopic = new NewTopic(ZILLABASE_CONFIG_KAFKA_TOPIC, 1, (short) 1);
+                    configTopic.configs(Map.of("cleanup.policy", "compact"));
+                    adminClient.createTopics(List.of(configTopic)).all().get();
+                    break;
+                }
+            }
+            catch (Exception ex)
+            {
+                retries++;
+                delay *= 2;
+                if (retries >= MAX_RETRIES)
+                {
+                    System.err.println("Error creating Zillabase Config Server topic : %s".formatted(ex.getMessage()));
+                }
+            }
+        }
     }
 
     private void processAsyncApiSpecs(
@@ -1096,7 +1112,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 Thread.sleep(delay);
                 try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
-                    .formatted(config.risingWave.url, config.risingWave.db), props);
+                    .formatted(config.risingwave.url, config.risingwave.db), props);
                      Statement stmt = conn.createStatement())
                 {
                     String[] sqlCommands = content.split(";");
@@ -1273,11 +1289,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             ZillabaseConfig config)
         {
             List<ExposedPort> exposedPorts = config.zilla.ports.stream()
-                .map(ExposedPort::tcp)
+                .map(portConfig -> ExposedPort.tcp(portConfig.port))
                 .toList();
 
             List<PortBinding> portBindings = config.zilla.ports.stream()
-                .map(port -> new PortBinding(Ports.Binding.bindPort(port), ExposedPort.tcp(port)))
+                .map(portConfig -> new PortBinding(Ports.Binding.bindPort(portConfig.port), ExposedPort.tcp(portConfig.port)))
                 .toList();
 
 
