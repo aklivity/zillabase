@@ -21,8 +21,6 @@ public final class ZillabaseServerMain
     public static void main(
         String[] args)
     {
-        System.setProperty("jdk.httpclient.allowRestrictedHeaders", "Content-Length");
-
         ZillabaseServer server = new ZillabaseServer();
 
         server.run();
