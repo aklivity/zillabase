@@ -64,6 +64,9 @@ public class ZillabaseConfigServerHandler extends ZillabaseServerHandler
                 case "PUT":
                     builder.PUT(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes()));
                     break;
+                case "DELETE":
+                    builder.DELETE();
+                    break;
                 default:
                     exchange.sendResponseHeaders(HTTP_BAD_METHOD, NO_RESPONSE_BODY);
                     badMethod = true;
