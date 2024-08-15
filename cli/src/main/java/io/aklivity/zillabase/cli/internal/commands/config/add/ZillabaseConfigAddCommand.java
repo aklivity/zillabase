@@ -39,7 +39,7 @@ public final class ZillabaseConfigAddCommand extends ZillabaseConfigCommand
         description = "Config location")
     public String config;
 
-    @Option(name = {"-id"},
+    @Option(name = {"--id"},
         description = "Config identifier")
     public String id;
 

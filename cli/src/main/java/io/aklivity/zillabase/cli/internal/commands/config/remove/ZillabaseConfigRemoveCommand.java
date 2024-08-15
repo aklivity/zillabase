@@ -33,7 +33,7 @@ public final class ZillabaseConfigRemoveCommand extends ZillabaseConfigCommand
     private static final String SUCCESSFULLY_DELETED = "The config was successfully deleted";
 
     @Required
-    @Option(name = {"-id"},
+    @Option(name = {"--id"},
         description = "Config identifier")
     public String id;
 

@@ -31,7 +31,7 @@ import io.aklivity.zillabase.cli.internal.commands.config.ZillabaseConfigCommand
 public final class ZillabaseConfigListCommand extends ZillabaseConfigCommand
 {
     @Required
-    @Option(name = {"-id"},
+    @Option(name = {"--id"},
         description = "Config identifier")
     public String id;
 

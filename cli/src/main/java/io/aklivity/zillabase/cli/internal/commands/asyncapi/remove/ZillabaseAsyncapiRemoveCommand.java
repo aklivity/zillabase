@@ -33,7 +33,7 @@ public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiComma
     private static final String SUCCESSFULLY_DELETED = "The artifact was successfully deleted";
 
     @Required
-    @Option(name = {"-id"},
+    @Option(name = {"--id"},
         description = "AsyncAPI specification identifier")
     public String id;
 
