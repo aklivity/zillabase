@@ -62,6 +62,14 @@ public final class ZillabaseConfigServerConfig
                   topic: _zillabase.config
                   filters:
                     - key: ${params.id}
+              - when:
+                  - method: DELETE
+                    path: /config/{id}
+                exit: north_kafka_cache_client
+                with:
+                  capability: produce
+                  topic: _zillabase.config
+                  key: ${params.id}
           north_kafka_cache_client:
             type: kafka
             kind: cache_client

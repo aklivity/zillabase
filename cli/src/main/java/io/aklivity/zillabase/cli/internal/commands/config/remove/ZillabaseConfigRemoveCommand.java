@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.asyncapi.remove;
+package io.aklivity.zillabase.cli.internal.commands.config.remove;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,18 +23,18 @@ import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.restrictions.Required;
 
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.ZillabaseConfigCommand;
 
 @Command(
     name = "remove",
-    description = "Delete an AsyncAPI specification")
-public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
+    description = "Delete a Config")
+public final class ZillabaseConfigRemoveCommand extends ZillabaseConfigCommand
 {
-    private static final String SUCCESSFULLY_DELETED = "The artifact was successfully deleted";
+    private static final String SUCCESSFULLY_DELETED = "The config was successfully deleted";
 
     @Required
     @Option(name = {"--id"},
-        description = "AsyncAPI specification identifier")
+        description = "Config identifier")
     public String id;
 
     @Option(name = {"-u", "--url"},
@@ -49,7 +49,7 @@ public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiComma
     protected void invoke()
     {
         HttpClient client = HttpClient.newHttpClient();
-        String response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, ASYNCAPI_PATH, id), client);
+        String response = sendHttpRequest(CONFIG_ID_PATH.formatted(id), client);
 
         if (response != null)
         {

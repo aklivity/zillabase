@@ -12,29 +12,35 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.asyncapi.remove;
+package io.aklivity.zillabase.cli.internal.commands.config.add;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.restrictions.Required;
 
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.ZillabaseConfigCommand;
 
 @Command(
-    name = "remove",
-    description = "Delete an AsyncAPI specification")
-public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
+    name = "add",
+    description = "Add or Update a config")
+public final class ZillabaseConfigAddCommand extends ZillabaseConfigCommand
 {
-    private static final String SUCCESSFULLY_DELETED = "The artifact was successfully deleted";
-
     @Required
+    @Option(name = {"-c", "--config"},
+        description = "Config location")
+    public String config;
+
     @Option(name = {"--id"},
-        description = "AsyncAPI specification identifier")
+        description = "Config identifier")
     public String id;
 
     @Option(name = {"-u", "--url"},
@@ -48,17 +54,32 @@ public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiComma
     @Override
     protected void invoke()
     {
-        HttpClient client = HttpClient.newHttpClient();
-        String response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, ASYNCAPI_PATH, id), client);
-
-        if (response != null)
+        Path path = Path.of(config);
+        if (Files.exists(path))
         {
-            System.out.println(response);
+            try
+            {
+                HttpClient client = HttpClient.newHttpClient();
+
+                if (sendHttpRequest(CONFIG_ID_PATH.formatted(id != null ? id : path), Files.newInputStream(path), client))
+                {
+                    System.out.println("Config Server is populated with %s".formatted(path));
+                }
+                else
+                {
+                    System.out.println("error");
+                }
+            }
+            catch (IOException ex)
+            {
+                System.out.println("Failed to load: " + path);
+            }
         }
     }
 
-    private String sendHttpRequest(
+    private boolean sendHttpRequest(
         String path,
+        InputStream content,
         HttpClient client)
     {
         if (serverURL == null)
@@ -68,23 +89,22 @@ public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiComma
 
         HttpRequest httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(path))
-            .DELETE()
+            .PUT(HttpRequest.BodyPublishers.ofInputStream(() -> content))
             .build();
 
-        String responseBody;
+        boolean status = false;
         try
         {
             HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            responseBody = httpResponse.statusCode() == 204 ? SUCCESSFULLY_DELETED : null;
+            status = httpResponse.statusCode() == 204;
         }
         catch (Exception ex)
         {
-            responseBody = null;
             if (verbose)
             {
                 ex.printStackTrace();
             }
         }
-        return responseBody;
+        return status;
     }
 }

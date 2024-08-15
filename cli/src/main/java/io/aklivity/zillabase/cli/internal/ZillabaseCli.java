@@ -21,6 +21,9 @@ import com.github.rvesse.airline.help.Help;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsyncapiListCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.add.ZillabaseConfigAddCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.list.ZillabaseConfigListCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.remove.ZillabaseConfigRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
 import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
 import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
@@ -39,6 +42,16 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
                 ZillabaseAsyncapiAddCommand.class,
                 ZillabaseAsyncapiListCommand.class,
                 ZillabaseAsyncapiRemoveCommand.class
+            }),
+        @Group(
+            name = "config",
+            description = "Zilla Config",
+            defaultCommand = Help.class,
+            commands =
+            {
+                ZillabaseConfigAddCommand.class,
+                ZillabaseConfigListCommand.class,
+                ZillabaseConfigRemoveCommand.class
             })
     },
     commands =

@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.asyncapi.remove;
+package io.aklivity.zillabase.cli.internal.commands.config.list;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,18 +23,16 @@ import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.restrictions.Required;
 
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.ZillabaseConfigCommand;
 
 @Command(
-    name = "remove",
-    description = "Delete an AsyncAPI specification")
-public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiCommand
+    name = "list",
+    description = "List a config")
+public final class ZillabaseConfigListCommand extends ZillabaseConfigCommand
 {
-    private static final String SUCCESSFULLY_DELETED = "The artifact was successfully deleted";
-
     @Required
     @Option(name = {"--id"},
-        description = "AsyncAPI specification identifier")
+        description = "Config identifier")
     public String id;
 
     @Option(name = {"-u", "--url"},
@@ -48,8 +46,9 @@ public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiComma
     @Override
     protected void invoke()
     {
+        String response;
         HttpClient client = HttpClient.newHttpClient();
-        String response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, ASYNCAPI_PATH, id), client);
+        response = sendHttpRequest(CONFIG_ID_PATH.formatted(id), client);
 
         if (response != null)
         {
@@ -68,14 +67,14 @@ public final class ZillabaseAsyncapiRemoveCommand extends ZillabaseAsyncapiComma
 
         HttpRequest httpRequest = HttpRequest
             .newBuilder(serverURL.resolve(path))
-            .DELETE()
+            .GET()
             .build();
 
         String responseBody;
         try
         {
             HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            responseBody = httpResponse.statusCode() == 204 ? SUCCESSFULLY_DELETED : null;
+            responseBody = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
         }
         catch (Exception ex)
         {
