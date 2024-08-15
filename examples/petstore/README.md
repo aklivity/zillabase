@@ -4,113 +4,24 @@ This is an implementation of the common Petstore example where requests are prox
 
 Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automatically based on the Kafka Cluster metadata information.
 
-### Prepare
-
-Step 1: Build the `zillabase` jar following instructions in zillabase root directory.
+#### Install `zillabase`
 
 ```bash
-./mvnw clean install
+$ brew tap aklivity/tap
+
+$ brew install zillabase
 ```
 
-Step 2: Copy `zillabase` jar to petstore example directory.
+Note: Until the Homebrew tap for zillabase is released, you can define an alias to use a local build:
 
 ```bash
-cp ../../cli/target/cli-develop-SNAPSHOT.jar zillabase-cli.jar
+$ alias zillabase="java -jar `pwd`/cli/target/cli-develop-SNAPSHOT.jar"
 ```
 
-Step 3: Initialize `zillabase` to create require directories & files
+#### Start `zillabase` stack:
 
 ```bash
-java -jar zillabase-cli.jar init
-```
-
-output:
-
-```text
-Finished zillabase init
-```
-
-Once `init` command is executed successfully. You can find a `zillabase` directory under `examples/petstore/`.
-
-Step 4: Update the `zillabase/seed-kafka.yaml` file with mentioned content.
-
-```text
-topics:
-  - name: petstore-pets
-    config:
-      replication_factor: 1
-      partitions: 1
-      cleanup.policy: compact
-    schema:
-      key: |
-        {
-          "type": "string"
-        }
-      value: |
-        {
-          "fields": [
-            {
-              "name": "id",
-              "type": "string"
-            },
-            {
-              "name": "breed",
-              "type": "string"
-            }
-          ],
-          "name": "Event",
-          "namespace": "io.aklivity.example",
-          "type": "record"
-        }
-  - name: petstore-customers
-    schema:
-      value: |
-        {
-          "fields": [
-            {
-              "name": "name",
-              "type": "string"
-            },
-            {
-              "name": "status",
-              "type": "string"
-            }
-          ],
-          "name": "Product",
-          "namespace": "io.aklivity.example",
-          "type": "record"
-        }
-  - name: petstore-verified-customers
-    config:
-      replication_factor: 1
-      partitions: 1
-    schema:
-      key: |
-        {
-          "type": "string"
-        }
-      value: |
-        {
-          "fields": [
-            {
-              "name": "id",
-              "type": "string"
-            },
-            {
-              "name": "points",
-              "type": "string"
-            }
-          ],
-          "name": "Event",
-          "namespace": "io.aklivity.example",
-          "type": "record"
-        }
-```
-
-Step 4: Start `zillabase` stack:
-
-```bash
-java -jar zillabase-cli.jar start
+$ zillabase start
 ```
 
 Output:
@@ -212,8 +123,8 @@ Output:
 {"id":"123","breed":"Common Dog"}%
 ```
 
-### Stop `zillabase` stack
+#### Stop `zillabase` stack
 
 ```bash
-java -jar zillabase-cli.jar stop
+zillabase stop
 ```
