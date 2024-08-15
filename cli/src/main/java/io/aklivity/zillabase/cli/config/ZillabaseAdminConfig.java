@@ -19,6 +19,7 @@ public final class ZillabaseAdminConfig
     private static final int DEFAULT_ADMIN_PORT = 7184;
     private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
 
+    public String tag = "latest";
     public int port = DEFAULT_ADMIN_PORT;
     public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
 }

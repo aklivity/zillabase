@@ -16,6 +16,10 @@
         "configServerUrl":
         {
           "type": "string"
+        },
+        "tag":
+        {
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -104,13 +108,13 @@
             ]
           },
           "minItems": 1
+        },
+        "tag":
+        {
+          "type": "string"
         }
       },
-      "additionalProperties": false,
-      "required":
-      [
-        "ports"
-      ]
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
