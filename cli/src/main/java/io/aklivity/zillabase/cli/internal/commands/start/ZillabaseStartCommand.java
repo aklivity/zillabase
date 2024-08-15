@@ -157,25 +157,23 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private String kafkaArtifactId;
     private String httpArtifactId;
-    private ObjectMapper mapper;
 
     @Override
     protected void invoke(
         DockerClient client)
     {
-        this.mapper = new ObjectMapper(new YAMLFactory());
-        mapper.setSerializationInclusion(NON_NULL);
+        final ZillabaseConfig config = readZillabaseConfig();
 
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
-        factories.add(new CreateAdminFactory());
-        factories.add(new CreateConfigFactory());
-        factories.add(new CreateZillaFactory());
-        factories.add(new CreateKafkaFactory());
-        factories.add(new CreateRisingWaveFactory());
-        factories.add(new CreateApicurioFactory());
-        factories.add(new CreateKeycloakFactory());
+        factories.add(new CreateAdminFactory(config));
+        factories.add(new CreateConfigFactory(config));
+        factories.add(new CreateZillaFactory(config));
+        factories.add(new CreateKafkaFactory(config));
+        factories.add(new CreateRisingWaveFactory(config));
+        factories.add(new CreateApicurioFactory(config));
+        factories.add(new CreateKeycloakFactory(config));
 
         for (CreateContainerFactory factory : factories)
         {
@@ -198,7 +196,80 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        List<String> containerIds = new LinkedList<>();
+        for (CreateContainerFactory factory : factories)
+        {
+            try (CreateContainerCmd command = factory.createContainer(client))
+            {
+                CreateContainerResponse response = command.exec();
+                String responseId = response.getId();
+                containerIds.add(responseId);
+            }
+        }
+
+        for (String containerId : containerIds)
+        {
+            try (StartContainerCmd command = client.startContainerCmd(containerId))
+            {
+                command.exec();
+            }
+        }
+
+        seedKafkaAndRegistry(config);
+
+        seedSql(config);
+
+        createConfigServerKafkaTopic(config);
+
+        processAsyncApiSpecs(config);
+
+        publishZillaConfig(config);
+    }
+
+    private String readSeedSql()
+    {
+        String content = null;
+        Path seedPath = Paths.get("zillabase/seed.sql");
+        try
+        {
+            if (Files.exists(seedPath) && Files.size(seedPath) != 0 && Files.readAllLines(seedPath)
+                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
+            {
+                content = Files.readString(seedPath);
+            }
+        }
+        catch (IOException ex)
+        {
+            ex.printStackTrace(System.err);
+        }
+        return content;
+    }
+
+    private KafkaBootstrapRecords readKafkaBootstrapRecords()
+    {
+        KafkaBootstrapRecords records = null;
+        Path kafkaSeedPath = Paths.get(kafkaSeedFilePath);
+        try
+        {
+            if (Files.exists(kafkaSeedPath) && Files.size(kafkaSeedPath) != 0 && Files.readAllLines(kafkaSeedPath)
+                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("#")))
+            {
+                String content = Files.readString(kafkaSeedPath);
+                Jsonb jsonb = JsonbBuilder.create();
+                records = jsonb.fromJson(content, KafkaBootstrapRecords.class);
+            }
+        }
+        catch (IOException | JsonParsingException ex)
+        {
+            System.err.println("Failed to process seed-kafka.yaml : %s".formatted(ex.getMessage()));
+        }
+        return records;
+    }
+
+    private ZillabaseConfig readZillabaseConfig()
+    {
         ZillabaseConfig config;
+
         Path configPath = Paths.get("zillabase/config.yaml");
         try
         {
@@ -239,80 +310,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             config = new ZillabaseConfig();
         }
 
-        List<String> containerIds = new LinkedList<>();
-        for (CreateContainerFactory factory : factories)
-        {
-            try (CreateContainerCmd command = factory.createContainer(client, config))
-            {
-                CreateContainerResponse response = command.exec();
-                String responseId = response.getId();
-                containerIds.add(responseId);
-            }
-        }
-
-        for (String containerId : containerIds)
-        {
-            try (StartContainerCmd command = client.startContainerCmd(containerId))
-            {
-                command.exec();
-            }
-        }
-
-        Path kafkaSeedPath = Paths.get(kafkaSeedFilePath);
-        try
-        {
-            if (Files.exists(kafkaSeedPath) && Files.size(kafkaSeedPath) != 0 && Files.readAllLines(kafkaSeedPath)
-                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("#")))
-            {
-                String content = Files.readString(kafkaSeedPath);
-                Jsonb jsonb = JsonbBuilder.create();
-                KafkaBootstrapRecords records = jsonb.fromJson(content, KafkaBootstrapRecords.class);
-                if (records != null && !records.topics.isEmpty() && seedKafkaAndRegistry(records, config))
-                {
-                    System.out.println("seed-kafka.yaml processed successfully!");
-                }
-                else
-                {
-                    System.err.println("Failed to process seed-kafka.yaml");
-                }
-            }
-        }
-        catch (IOException | JsonParsingException ex)
-        {
-            System.err.println("Failed to process seed-kafka.yaml : %s".formatted(ex.getMessage()));
-        }
-
-        Path seedPath = Paths.get("zillabase/seed.sql");
-        try
-        {
-            if (Files.exists(seedPath) && Files.size(seedPath) != 0 && Files.readAllLines(seedPath)
-                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
-            {
-                String content = Files.readString(seedPath);
-                Properties props = new Properties();
-                props.setProperty("user", "root");
-
-                if (processSeedSql(content, props, config))
-                {
-                    System.out.println("seed.sql processed successfully!");
-                }
-                else
-                {
-                    System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
-                }
-
-            }
-        }
-        catch (IOException ex)
-        {
-            ex.printStackTrace(System.err);
-        }
-
-        createConfigServerKafkaTopic(config);
-
-        processAsyncApiSpecs(config);
-
-        publishZillaConfig(config);
+        return config;
     }
 
     private void publishZillaConfig(
@@ -391,6 +389,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 zilla.name = "zilla-http-kafka-asyncapi";
                 zilla.catalogs = Map.of("apicurio_catalog", catalog);
                 zilla.bindings = bindings;
+
+                ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+                        .setSerializationInclusion(NON_NULL);
 
                 zillaConfig = mapper.writeValueAsString(zilla);
             }
@@ -553,86 +554,98 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private boolean seedKafkaAndRegistry(
-        KafkaBootstrapRecords records,
+    private void seedKafkaAndRegistry(
         ZillabaseConfig config)
     {
-        final HttpClient client = HttpClient.newHttpClient();
-
-        boolean status = false;
-        int retries = 0;
-        int delay = SERVICE_INITIALIZATION_DELAY_MS;
-
-        while (retries < MAX_RETRIES)
+        KafkaBootstrapRecords records = readKafkaBootstrapRecords();
+        if (records != null && !records.topics.isEmpty())
         {
-            try
-            {
-                Thread.sleep(delay);
-                try (AdminClient adminClient = AdminClient.create(Map.of(
-                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
-                        ? "localhost:9092" : config.kafka.bootstrapUrl)))
-                {
-                    List<NewTopic> topics = new ArrayList<>();
-                    for (KafkaTopicRecord record : records.topics)
-                    {
-                        String name = record.name;
-                        Map<String, String> topicConfig = record.config;
-                        int partition = 1;
-                        short replication = 1;
+            final HttpClient client = HttpClient.newHttpClient();
 
-                        Map<String, String> configs = new HashMap<>();
-                        if (topicConfig != null && !topicConfig.isEmpty())
+            boolean status = false;
+            int retries = 0;
+            int delay = SERVICE_INITIALIZATION_DELAY_MS;
+
+            while (retries < MAX_RETRIES)
+            {
+                try
+                {
+                    Thread.sleep(delay);
+                    try (AdminClient adminClient = AdminClient.create(Map.of(
+                        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
+                            ? "localhost:9092" : config.kafka.bootstrapUrl)))
+                    {
+                        List<NewTopic> topics = new ArrayList<>();
+                        for (KafkaTopicRecord record : records.topics)
                         {
-                            for (Map.Entry<String, String> entry : topicConfig.entrySet())
+                            String name = record.name;
+                            Map<String, String> topicConfig = record.config;
+                            int partition = 1;
+                            short replication = 1;
+
+                            Map<String, String> configs = new HashMap<>();
+                            if (topicConfig != null && !topicConfig.isEmpty())
                             {
-                                String key = entry.getKey();
-                                switch (key)
+                                for (Map.Entry<String, String> entry : topicConfig.entrySet())
                                 {
-                                case "partitions":
-                                    partition = Integer.parseInt(topicConfig.get("partitions"));
-                                    break;
-                                case "replication_factor":
-                                    replication = Short.parseShort(topicConfig.get("replication_factor"));
-                                    break;
-                                default:
-                                    configs.put(key, entry.getValue());
-                                    break;
+                                    String key = entry.getKey();
+                                    switch (key)
+                                    {
+                                    case "partitions":
+                                        partition = Integer.parseInt(topicConfig.get("partitions"));
+                                        break;
+                                    case "replication_factor":
+                                        replication = Short.parseShort(topicConfig.get("replication_factor"));
+                                        break;
+                                    default:
+                                        configs.put(key, entry.getValue());
+                                        break;
+                                    }
+                                }
+                            }
+                            NewTopic newTopic = new NewTopic(name, partition, replication);
+                            newTopic.configs(configs);
+                            topics.add(newTopic);
+
+                            KafkaTopicSchema schema = record.schema;
+                            if (schema != null)
+                            {
+                                if (schema.key != null)
+                                {
+                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key);
+                                }
+
+                                if (schema.value != null)
+                                {
+                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value);
                                 }
                             }
                         }
-                        NewTopic newTopic = new NewTopic(name, partition, replication);
-                        newTopic.configs(configs);
-                        topics.add(newTopic);
-
-                        KafkaTopicSchema schema = record.schema;
-                        if (schema != null)
-                        {
-                            if (schema.key != null)
-                            {
-                                registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key);
-                            }
-
-                            if (schema.value != null)
-                            {
-                                registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value);
-                            }
-                        }
+                        status = adminClient.createTopics(topics).all().get() == null;
+                        break;
                     }
-                    status = adminClient.createTopics(topics).all().get() == null;
-                    break;
                 }
-            }
-            catch (Exception ex)
-            {
-                retries++;
-                delay *= 2;
-                if (retries >= MAX_RETRIES)
+                catch (Exception ex)
                 {
-                    System.err.println("Error creating Kafka topics : %s".formatted(ex.getMessage()));
+                    retries++;
+                    delay *= 2;
+                    if (retries >= MAX_RETRIES)
+                    {
+                        System.err.println("Error creating Kafka topics : %s".formatted(ex.getMessage()));
+                    }
                 }
             }
+
+            if (status)
+            {
+                System.out.println("seed-kafka.yaml processed successfully!");
+            }
+            else
+            {
+                System.err.println("Failed to process seed-kafka.yaml");
+            }
+
         }
-        return status;
     }
 
     private void registerKafkaTopicSchema(
@@ -1025,6 +1038,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             asyncAPI.setChannels(channels);
             asyncAPI.setOperations(operations);
 
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+                    .setSerializationInclusion(NON_NULL);
+
             spec = mapper.writeValueAsString(asyncAPI);
         }
         catch (JsonProcessingException ex)
@@ -1097,43 +1113,56 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return URI.create(baseUrl).resolve(path);
     }
 
-    private boolean processSeedSql(
-        String content,
-        Properties props,
+    private void seedSql(
         ZillabaseConfig config)
     {
-        boolean status = false;
-        int retries = 0;
-        int delay = SERVICE_INITIALIZATION_DELAY_MS;
-
-        while (retries < MAX_RETRIES)
+        String content = readSeedSql();
+        if (content != null)
         {
-            try
+            Properties props = new Properties();
+            props.setProperty("user", "root");
+
+            boolean status = false;
+            int retries = 0;
+            int delay = SERVICE_INITIALIZATION_DELAY_MS;
+
+            while (retries < MAX_RETRIES)
             {
-                Thread.sleep(delay);
-                try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
-                    .formatted(config.risingwave.url, config.risingwave.db), props);
-                     Statement stmt = conn.createStatement())
+                try
                 {
-                    String[] sqlCommands = content.split(";");
-                    for (String command : sqlCommands)
+                    Thread.sleep(delay);
+                    try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
+                        .formatted(config.risingwave.url, config.risingwave.db), props);
+                         Statement stmt = conn.createStatement())
                     {
-                        if (!command.trim().isEmpty())
+                        String[] sqlCommands = content.split(";");
+                        for (String command : sqlCommands)
                         {
-                            stmt.execute(command);
+                            if (!command.trim().isEmpty())
+                            {
+                                stmt.execute(command);
+                            }
                         }
+                        status = true;
+                        break;
                     }
-                    status = true;
-                    break;
+                }
+                catch (InterruptedException | SQLException ex)
+                {
+                    retries++;
+                    delay *= 2;
                 }
             }
-            catch (InterruptedException | SQLException ex)
+
+            if (status)
             {
-                retries++;
-                delay *= 2;
+                System.out.println("seed.sql processed successfully!");
+            }
+            else
+            {
+                System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
             }
         }
-        return status;
     }
 
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
@@ -1256,15 +1285,18 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         private static final String ZILLABASE_HOSTNAME_FORMAT = "%s.zillabase.dev";
 
+        final ZillabaseConfig config;
         final Map<String, String> project;
         final String name;
         final String image;
         final String hostname;
 
         CreateContainerFactory(
+            ZillabaseConfig config,
             String name,
             String image)
         {
+            this.config = config;
             this.project = Map.of("com.docker.compose.project", "zillabase");
             this.name = String.format(ZILLABASE_NAME_FORMAT, name);
             this.image = image;
@@ -1272,21 +1304,20 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         abstract CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config);
+            DockerClient client);
     }
 
     private static final class CreateZillaFactory extends CreateContainerFactory
     {
-        CreateZillaFactory()
+        CreateZillaFactory(
+            ZillabaseConfig config)
         {
-            super("zilla", "ghcr.io/aklivity/zilla:latest");
+            super(config, "zilla", "ghcr.io/aklivity/zilla:%s".formatted(config.zilla.tag));
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<ExposedPort> exposedPorts = config.zilla.ports.stream()
                 .map(portConfig -> ExposedPort.tcp(portConfig.port))
@@ -1313,15 +1344,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private static final class CreateKafkaFactory extends CreateContainerFactory
     {
-        CreateKafkaFactory()
+        CreateKafkaFactory(
+            ZillabaseConfig config)
         {
-            super("kafka", "bitnami/kafka:3.2.3");
+            super(config, "kafka", "bitnami/kafka:3.2.3");
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(9092);
 
@@ -1355,15 +1386,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private static final class CreateApicurioFactory extends CreateContainerFactory
     {
-        CreateApicurioFactory()
+        CreateApicurioFactory(
+            ZillabaseConfig config)
         {
-            super("apicurio", "apicurio/apicurio-registry-mem:latest-release");
+            super(config, "apicurio", "apicurio/apicurio-registry-mem:latest-release");
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(8080);
 
@@ -1383,15 +1414,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private static final class CreateRisingWaveFactory extends CreateContainerFactory
     {
-        CreateRisingWaveFactory()
+        CreateRisingWaveFactory(
+            ZillabaseConfig config)
         {
-            super("risingwave", "risingwavelabs/risingwave:latest");
+            super(config, "risingwave", "risingwavelabs/risingwave:latest");
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(DEFAULT_RISINGWAVE_PORT);
 
@@ -1412,15 +1443,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private static final class CreateKeycloakFactory extends CreateContainerFactory
     {
-        CreateKeycloakFactory()
+        CreateKeycloakFactory(
+            ZillabaseConfig config)
         {
-            super("keycloak", "bitnami/keycloak:latest");
+            super(config, "keycloak", "bitnami/keycloak:latest");
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             return client
                 .createContainerCmd(image)
@@ -1428,8 +1459,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withRestartPolicy(unlessStoppedRestart()))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file");
@@ -1438,15 +1469,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private static final class CreateAdminFactory extends CreateContainerFactory
     {
-        CreateAdminFactory()
+        CreateAdminFactory(
+            ZillabaseConfig config)
         {
-            super("admin", "ghcr.io/aklivity/zillabase/admin:latest");
+            super(config, "admin", "ghcr.io/aklivity/zillabase/admin:%s".formatted(config.admin.tag));
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<String> envVars = Arrays.asList(
                 "ADMIN_PORT=%d".formatted(config.admin.port),
@@ -1473,15 +1504,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private static final class CreateConfigFactory extends CreateContainerFactory
     {
-        CreateConfigFactory()
+        CreateConfigFactory(
+            ZillabaseConfig config)
         {
-            super("config", "ghcr.io/aklivity/zilla:latest");
+            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.zilla.tag));
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<String> envVars = Arrays.asList(
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl));
