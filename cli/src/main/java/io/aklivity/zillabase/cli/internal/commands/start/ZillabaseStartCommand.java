@@ -149,6 +149,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
     private static final int MAX_RETRIES = 5;
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
+    private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
+    private static final String KEYCLOAK_ADMIN_PASSWORD = "KEYCLOAK_ADMIN_PASSWORD";
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
@@ -224,6 +226,83 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         processAsyncApiSpecs(config);
 
         publishZillaConfig(config);
+
+        initializeKeycloakService(config);
+    }
+
+    private void initializeKeycloakService(
+        ZillabaseConfig config)
+    {
+        if (config.keycloak.realm != null)
+        {
+            boolean status = false;
+            int retries = 0;
+            int delay = SERVICE_INITIALIZATION_DELAY_MS;
+
+            while (retries < MAX_RETRIES)
+            {
+                try
+                {
+                    Thread.sleep(delay);
+                    HttpClient client = HttpClient.newHttpClient();
+                    String form = "client_id=admin-cli&username=%s&password=%s&grant_type=password"
+                        .formatted(System.getenv(KEYCLOAK_ADMIN), System.getenv(KEYCLOAK_ADMIN_PASSWORD));
+
+                    HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create("http://localhost:8180" + "/realms/master/protocol/openid-connect/token"))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(form))
+                        .build();
+
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    String responseBody = response.body();
+                    if (responseBody != null)
+                    {
+                        JsonReader reader = Json.createReader(new StringReader(responseBody));
+                        JsonObject object = reader.readObject();
+
+                        if (object.containsKey("access_token"))
+                        {
+                            String realmRequestBody = """
+                               {
+                                "realm": "%s",
+                                "enabled": true
+                               }
+                                """.formatted(config.keycloak.realm);
+
+                            request = HttpRequest.newBuilder()
+                                .uri(URI.create("http://localhost:8180" + "/admin/realms"))
+                                .header("Authorization", "Bearer " + object.getString("access_token"))
+                                .header("Content-Type", "application/json")
+                                .POST(HttpRequest.BodyPublishers.ofString(realmRequestBody))
+                                .build();
+
+                            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                            if (response.statusCode() == 201)
+                            {
+                                status = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    retries++;
+                    delay *= 2;
+                }
+            }
+
+            if (status)
+            {
+                System.out.println("Realm: %s created successfully.".formatted(config.keycloak.realm));
+            }
+            else
+            {
+                System.out.println("Failed to initialize Keycloak Service");
+            }
+        }
     }
 
     private String readSeedSql()
@@ -1453,6 +1532,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
+            ExposedPort exposedPort = ExposedPort.tcp(8180);
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -1460,10 +1541,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
+                    .withPortBindings(new PortBinding(Ports.Binding.bindPort(8180), exposedPort))
                     .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPort)
                 .withTty(true)
                 .withEnv(
-                    "KEYCLOAK_DATABASE_VENDOR=dev-file");
+                    "KEYCLOAK_DATABASE_VENDOR=dev-file",
+                    "KEYCLOAK_HTTP_PORT=8180",
+                    "KEYCLOAK_ADMIN=%s".formatted(System.getenv(KEYCLOAK_ADMIN)),
+                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(System.getenv(KEYCLOAK_ADMIN_PASSWORD)));
         }
     }
 

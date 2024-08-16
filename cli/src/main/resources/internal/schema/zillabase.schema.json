@@ -115,6 +115,22 @@
         }
       },
       "additionalProperties": false
+    },
+    "keycloak":
+    {
+      "type": "object",
+      "properties":
+      {
+        "realm":
+        {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required":
+      [
+        "realm"
+      ]
     }
   },
   "additionalProperties": false
