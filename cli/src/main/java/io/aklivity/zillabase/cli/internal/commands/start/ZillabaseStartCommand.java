@@ -238,13 +238,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             boolean status = false;
             int retries = 0;
             int delay = SERVICE_INITIALIZATION_DELAY_MS;
+            String token = null;
+            HttpClient client = HttpClient.newHttpClient();
 
             while (retries < MAX_RETRIES)
             {
                 try
                 {
                     Thread.sleep(delay);
-                    HttpClient client = HttpClient.newHttpClient();
                     String form = "client_id=admin-cli&username=%s&password=%s&grant_type=password"
                         .formatted(System.getenv(KEYCLOAK_ADMIN), System.getenv(KEYCLOAK_ADMIN_PASSWORD));
 
@@ -270,9 +271,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                                }
                                 """.formatted(config.keycloak.realm);
 
+                            token = object.getString("access_token");
                             request = HttpRequest.newBuilder()
                                 .uri(URI.create("http://localhost:8180" + "/admin/realms"))
-                                .header("Authorization", "Bearer " + object.getString("access_token"))
+                                .header("Authorization", "Bearer " + token)
                                 .header("Content-Type", "application/json")
                                 .POST(HttpRequest.BodyPublishers.ofString(realmRequestBody))
                                 .build();
@@ -297,11 +299,40 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             if (status)
             {
                 System.out.println("Realm: %s created successfully.".formatted(config.keycloak.realm));
+                createKeycloakClient(config, client, token);
             }
             else
             {
                 System.out.println("Failed to initialize Keycloak Service");
             }
+        }
+    }
+
+    private void createKeycloakClient(
+        ZillabaseConfig config,
+        HttpClient client,
+        String token)
+    {
+        try
+        {
+            Jsonb jsonb = JsonbBuilder.create();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(toURI("http://localhost:8180", "/admin/realms/%s/clients".formatted(config.keycloak.realm)))
+                .header("Authorization", "Bearer " + token)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonb.toJson(config.keycloak.client)))
+                .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 201)
+            {
+                System.out.println("Client: %s created successfully.".formatted(config.keycloak.client.clientId));
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace(System.err);
         }
     }
 

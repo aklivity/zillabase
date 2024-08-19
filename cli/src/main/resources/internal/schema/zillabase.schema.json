@@ -124,6 +124,51 @@
         "realm":
         {
           "type": "string"
+        },
+        "client":
+        {
+          "type": "object",
+          "properties":
+          {
+            "clientId":
+            {
+              "type": "string"
+            },
+            "rootUrl":
+            {
+              "type": "string"
+            },
+            "redirectUris":
+            {
+              "type": "array",
+              "items":
+              {
+                "type": "string"
+              }
+            },
+            "webOrigins":
+            {
+              "type": "array",
+              "items":
+              {
+                "type": "string"
+              }
+            },
+            "directAccessGrantsEnabled":
+            {
+              "type": "boolean"
+            },
+            "secret":
+            {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required":
+          [
+            "clientId",
+            "redirectUris"
+          ]
         }
       },
       "additionalProperties": false,

@@ -14,8 +14,14 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseKeycloakConfig
+import java.util.List;
+
+public final class ZillabaseKeycloakClientConfig
 {
-    public String realm;
-    public ZillabaseKeycloakClientConfig client;
+    public String clientId;
+    public List<String> webOrigins = List.of("*");
+    public boolean directAccessGrantsEnabled = true;
+    public String rootUrl;
+    public List<String> redirectUris;
+    public String secret = System.getenv("CLIENT_SECRET");
 }
