@@ -14,8 +14,13 @@
  */
 package io.aklivity.zillabase.cli.config;
 
+import java.util.List;
+
 public final class ZillabaseKeycloakConfig
 {
+    public static final String KEYCLOAK_DEFAULT_URL = "http://localhost:8180";
+
     public String realm;
     public ZillabaseKeycloakClientConfig client;
+    public List<String> roles;
 }

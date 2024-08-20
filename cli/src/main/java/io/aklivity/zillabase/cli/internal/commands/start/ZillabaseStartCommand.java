@@ -23,6 +23,7 @@ import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_R
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig.KEYCLOAK_DEFAULT_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
@@ -151,6 +152,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
     private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_ADMIN_PASSWORD = "KEYCLOAK_ADMIN_PASSWORD";
+    private static final String ADMIN_REALMS_PATH = "/admin/realms";
+    private static final String ADMIN_REALMS_CLIENTS_PATH = "/admin/realms/%s/clients";
+    private static final String ADMIN_REALMS_CLIENTS_ROLES_PATH = "/admin/realms/%s/clients/%s/roles";
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
@@ -250,7 +254,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .formatted(System.getenv(KEYCLOAK_ADMIN), System.getenv(KEYCLOAK_ADMIN_PASSWORD));
 
                     HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8180" + "/realms/master/protocol/openid-connect/token"))
+                        .uri(URI.create(KEYCLOAK_DEFAULT_URL + "/realms/master/protocol/openid-connect/token"))
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .POST(HttpRequest.BodyPublishers.ofString(form))
                         .build();
@@ -273,8 +277,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                             token = object.getString("access_token");
                             request = HttpRequest.newBuilder()
-                                .uri(URI.create("http://localhost:8180" + "/admin/realms"))
-                                .header("Authorization", "Bearer " + token)
+                                .uri(URI.create(KEYCLOAK_DEFAULT_URL + ADMIN_REALMS_PATH))
+                                .header("Authorization", "Bearer %s".formatted(token))
                                 .header("Content-Type", "application/json")
                                 .POST(HttpRequest.BodyPublishers.ofString(realmRequestBody))
                                 .build();
@@ -317,9 +321,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             Jsonb jsonb = JsonbBuilder.create();
 
+            String realm = config.keycloak.realm;
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(toURI("http://localhost:8180", "/admin/realms/%s/clients".formatted(config.keycloak.realm)))
-                .header("Authorization", "Bearer " + token)
+                .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_PATH.formatted(realm)))
+                .header("Authorization", "Bearer %s".formatted(token))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonb.toJson(config.keycloak.client)))
                 .build();
@@ -327,7 +332,45 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 201)
             {
-                System.out.println("Client: %s created successfully.".formatted(config.keycloak.client.clientId));
+                String clientId = config.keycloak.client.clientId;
+                System.out.println("Client: %s created successfully.".formatted(clientId));
+
+                request = HttpRequest.newBuilder()
+                    .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_PATH.formatted(realm)))
+                    .header("Authorization", "Bearer %s".formatted(token))
+                    .header("Content-Type", "application/json")
+                    .GET()
+                    .build();
+                response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.body() != null)
+                {
+                    JsonReader reader = Json.createReader(new StringReader(response.body()));
+                    JsonArray clients = reader.readArray();
+
+                    for (JsonValue clientObject: clients)
+                    {
+                        JsonObject keyCloakClient = clientObject.asJsonObject();
+                        if (clientId.equals(keyCloakClient.getString("clientId")))
+                        {
+                            for (String role : config.keycloak.roles)
+                            {
+                                request = HttpRequest.newBuilder()
+                                    .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_ROLES_PATH
+                                        .formatted(realm, keyCloakClient.getString("id"))))
+                                    .header("Authorization", "Bearer %s".formatted(token))
+                                    .header("Content-Type", "application/json")
+                                    .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"" + role + "\"}"))
+                                    .build();
+                                response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                                if (response.statusCode() == 201)
+                                {
+                                    System.out.println("Role: %s created successfully.".formatted(role));
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         catch (Exception ex)
