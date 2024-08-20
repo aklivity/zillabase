@@ -23,6 +23,8 @@ import com.sun.net.httpserver.HttpServer;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseConfigServerHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApiSpecificationIdHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseServerAsyncApisHandler;
+import io.aklivity.zillabase.service.internal.handler.ZillabaseSsoAliasHandler;
+import io.aklivity.zillabase.service.internal.handler.ZillabaseSsoHandler;
 
 public class ZillabaseServer implements Runnable
 {
@@ -33,7 +35,9 @@ public class ZillabaseServer implements Runnable
     private static final String DEFAULT_GROUP_ID = "default";
     private static final String DEFAULT_REGISTRY_URL = "http://apicurio.zillabase.dev:8080";
     private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
+    private static final String DEFAULT_KEYCLOAK_URL = "http://keycloak.zillabase.dev::8180";
     private static final String CONFIG_SERVER_URL = "CONFIG_SERVER_URL";
+    private static final String KEYCLOAK_URL = "KEYCLOAK_URL";
 
     private final HttpServer server;
     private final HttpClient client;
@@ -42,6 +46,7 @@ public class ZillabaseServer implements Runnable
     private final int port;
     private final boolean debug;
     private final String configServerUrl;
+    private final String keycloakUrl;
 
     public ZillabaseServer()
     {
@@ -55,6 +60,8 @@ public class ZillabaseServer implements Runnable
 
         String configServerUrl = System.getenv(CONFIG_SERVER_URL);
         this.configServerUrl = configServerUrl != null ? configServerUrl : DEFAULT_CONFIG_SERVER_URL;
+        String keycloakUrl = System.getenv(KEYCLOAK_URL);
+        this.keycloakUrl = keycloakUrl != null ? KEYCLOAK_URL : DEFAULT_KEYCLOAK_URL;
 
         try
         {
@@ -75,6 +82,8 @@ public class ZillabaseServer implements Runnable
         server.createContext("/v1/asyncapis", new ZillabaseServerAsyncApisHandler(client, baseUrl, groupId));
         server.createContext("/v1/asyncapis/", new ZillabaseServerAsyncApiSpecificationIdHandler(client, baseUrl, groupId));
         server.createContext("/v1/config/", new ZillabaseConfigServerHandler(client, configServerUrl));
+        server.createContext("/v1/sso", new ZillabaseSsoHandler(client, keycloakUrl));
+        server.createContext("/v1/sso/", new ZillabaseSsoAliasHandler(client, keycloakUrl));
 
         server.start();
 
