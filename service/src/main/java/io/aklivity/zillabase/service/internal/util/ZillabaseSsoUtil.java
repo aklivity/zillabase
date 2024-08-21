@@ -29,13 +29,17 @@ public class ZillabaseSsoUtil
     private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_ADMIN_PASSWORD = "KEYCLOAK_ADMIN_PASSWORD";
     private static final String DEFAULT_ADMIN_CREDENTIAL = "admin";
+    public static final String CONNECT_TOKEN_PATH = "/realms/master/protocol/openid-connect/token";
 
     private final HttpClient client;
+    private final URI baseUrl;
 
     public ZillabaseSsoUtil(
-        HttpClient client)
+        HttpClient client,
+        String keycloakUrl)
     {
         this.client = client;
+        this.baseUrl = URI.create(keycloakUrl);
     }
 
     public String fetchAccessToken()
@@ -50,7 +54,7 @@ public class ZillabaseSsoUtil
                     password != null ? password : DEFAULT_ADMIN_CREDENTIAL);
 
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://keycloak.zillabase.dev::8180").resolve("/realms/master/protocol/openid-connect/token"))
+                .uri(baseUrl.resolve(CONNECT_TOKEN_PATH))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(form))
                 .build();

@@ -35,7 +35,7 @@ public class ZillabaseServer implements Runnable
     private static final String DEFAULT_GROUP_ID = "default";
     private static final String DEFAULT_REGISTRY_URL = "http://apicurio.zillabase.dev:8080";
     private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
-    private static final String DEFAULT_KEYCLOAK_URL = "http://keycloak.zillabase.dev::8180";
+    private static final String DEFAULT_KEYCLOAK_URL = "http://keycloak.zillabase.dev:8180";
     private static final String CONFIG_SERVER_URL = "CONFIG_SERVER_URL";
     private static final String KEYCLOAK_URL = "KEYCLOAK_URL";
 

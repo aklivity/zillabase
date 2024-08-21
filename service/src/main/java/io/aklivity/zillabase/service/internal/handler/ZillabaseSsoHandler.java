@@ -31,10 +31,11 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
     private final String keycloakUrl;
 
     public ZillabaseSsoHandler(
-        HttpClient client, String keycloakUrl)
+        HttpClient client,
+        String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseSsoUtil(client);
+        this.util = new ZillabaseSsoUtil(client, keycloakUrl);
         this.keycloakUrl = keycloakUrl;
     }
 

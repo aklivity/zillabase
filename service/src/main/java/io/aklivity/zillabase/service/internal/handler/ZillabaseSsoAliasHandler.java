@@ -40,7 +40,7 @@ public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseSsoUtil(client);
+        this.util = new ZillabaseSsoUtil(client, keycloakUrl);
         this.matcher = PATH_PATTERN.matcher("");
         this.keycloakUrl = keycloakUrl;
     }
