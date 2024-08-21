@@ -14,12 +14,15 @@
  */
 package io.aklivity.zillabase.cli.internal.asyncapi.zilla;
 
-import java.util.Map;
-
-public class ZillaAsyncApiConfig
+public class ZillaGuardConfig
 {
-    public String name;
-    public Map<String, ZillaCatalogConfig> catalogs;
-    public Map<String, ZillaGuardConfig> guards;
-    public Map<String, ZillaBindingConfig> bindings;
+    public String type;
+    public ZillaGuardConfigOptions options;
+
+    public class ZillaGuardConfigOptions
+    {
+        public String issuer;
+        public String audience;
+        public String keys;
+    }
 }

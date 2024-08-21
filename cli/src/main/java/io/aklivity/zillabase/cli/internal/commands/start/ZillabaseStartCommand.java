@@ -135,6 +135,7 @@ import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingRouteConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaCatalogConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
@@ -334,6 +335,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 catalog.type = "apicurio";
                 catalog.options = Map.of("url", config.registry.url, "group-id", config.registry.groupId);
 
+                ZillaGuardConfig guard = new ZillaGuardConfig();
+                guard.type = "jwt";
+                guard.options.issuer = "%s/realms/%s".formatted("http://keycloak.zillabase.dev:8180", "zillabase");
+                guard.options.audience = "http://localhost:8000";
+                guard.options.keys = "%s/protocol/openid-connect/certs"
+                    .formatted(guard.options.issuer);
+
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
                     "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
                 Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
@@ -388,6 +396,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                 zilla.name = "zilla-http-kafka-asyncapi";
                 zilla.catalogs = Map.of("apicurio_catalog", catalog);
+                zilla.guards = Map.of("authn_jwt", guard);
                 zilla.bindings = bindings;
 
                 ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
