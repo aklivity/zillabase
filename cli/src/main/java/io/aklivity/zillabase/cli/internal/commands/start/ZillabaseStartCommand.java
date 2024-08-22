@@ -93,6 +93,8 @@ import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolic
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguration;
 import com.asyncapi.bindings.kafka.v0._4_0.server.KafkaServerBinding;
 import com.asyncapi.schemas.asyncapi.Reference;
+import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuth2SecurityScheme;
+import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuthFlows;
 import com.asyncapi.v2._6_0.model.channel.message.Message;
 import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.channel.Channel;
@@ -153,6 +155,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
+    private final List<String> scopes = new ArrayList<>();
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
 
@@ -335,6 +338,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 catalog.type = "apicurio";
                 catalog.options = Map.of("url", config.registry.url, "group-id", config.registry.groupId);
 
+                // TODO: add check if realm is configured
                 ZillaGuardConfig guard = new ZillaGuardConfig();
                 guard.type = "jwt";
                 guard.options.issuer = "%s/realms/%s".formatted("http://keycloak.zillabase.dev:8180", "zillabase");
@@ -396,6 +400,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                 zilla.name = "zilla-http-kafka-asyncapi";
                 zilla.catalogs = Map.of("apicurio_catalog", catalog);
+                // TODO: add check if realm is configured
                 zilla.guards = Map.of("authn_jwt", guard);
                 zilla.bindings = bindings;
 
@@ -884,9 +889,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "https://github.com/aklivity/zillabase/blob/develop/LICENSE");
             info.setLicense(license);
 
+            String securitySchemaName = "httpOauth";
+            Reference security = new Reference("#/components/securitySchemes/%s".formatted(securitySchemaName));
+
             Server server = new Server();
             server.setHost("localhost:9090");
-            server.setProtocol("http");
+            server.setProtocol("https");
+            server.setSecurity(List.of(security));
             servers.put("http", server);
 
             JsonValue jsonValue = Json.createReader(new StringReader(kafkaSpec)).readValue();
@@ -901,6 +910,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     continue;
                 }
                 String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
+                scopes.add("%s:read".formatted(label));
+                scopes.add("%s:write".formatted(label));
                 String messageName = "%sMessage".formatted(label);
                 JsonValue channelValue = channelJson.getValue();
                 Channel channel = new Channel();
@@ -956,6 +967,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 bindings.put("http", httpBinding);
                 //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
                 operation.setBindings(bindings);
+                operation.setSecurity(List.of(security));
                 operations.put(compact ? "do%sCreate".formatted(label) : "do%s".formatted(label), operation);
 
                 if (compact)
@@ -973,6 +985,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     bindings.put("http", httpBinding);
                     //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
                     operation.setBindings(bindings);
+                    operation.setSecurity(List.of(security));
                     operations.put("do%sUpdate".formatted(label), operation);
                 }
 
@@ -986,6 +999,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 httpBinding.setMethod(GET);
                 ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding(GET);
                 operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
+                operation.setSecurity(List.of(security));
                 operations.put("on%sRead".formatted(label), operation);
 
                 operation = new Operation();
@@ -998,6 +1012,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 httpBinding.setMethod(GET);
                 sseBinding = new ZillaSseOperationBinding(GET);
                 operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
+                operation.setSecurity(List.of(security));
                 operations.put("on%sReadItem".formatted(label), operation);
             }
 
@@ -1013,6 +1028,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 schemas.put(schemaJson.getKey(), schemaMapper.readTree(schemaJson.getValue().toString()));
             }
+
+            // TODO: add check if realm is configured
+            OAuth2SecurityScheme securityScheme = OAuth2SecurityScheme.oauth2Builder()
+                .flows(new OAuthFlows())
+                .scopes(scopes)
+                .build();
+            components.setSecuritySchemes(Map.of(securitySchemaName, securityScheme));
 
             components.setSchemas(schemas);
             components.setMessages(messages);

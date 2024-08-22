@@ -17,7 +17,7 @@ package io.aklivity.zillabase.cli.internal.asyncapi.zilla;
 public class ZillaGuardConfig
 {
     public String type;
-    public ZillaGuardConfigOptions options;
+    public ZillaGuardConfigOptions options = new ZillaGuardConfigOptions();
 
     public class ZillaGuardConfigOptions
     {
