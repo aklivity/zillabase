@@ -22,5 +22,5 @@ public final class ZillabaseKeycloakConfig
 
     public String realm;
     public ZillabaseKeycloakClientConfig client;
-    public List<String> roles;
+    public List<String> scopes;
 }

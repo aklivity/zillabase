@@ -153,14 +153,6 @@
               {
                 "type": "string"
               }
-            },
-            "directAccessGrantsEnabled":
-            {
-              "type": "boolean"
-            },
-            "secret":
-            {
-              "type": "string"
             }
           },
           "additionalProperties": false,
@@ -169,14 +161,6 @@
             "clientId",
             "redirectUris"
           ]
-        },
-        "roles":
-        {
-          "type": "array",
-          "items":
-          {
-            "type": "string"
-          }
         }
       },
       "additionalProperties": false,

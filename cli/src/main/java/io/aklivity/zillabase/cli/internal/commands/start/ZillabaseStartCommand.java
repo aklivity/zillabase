@@ -108,6 +108,7 @@ import com.asyncapi.v3._0_0.model.server.Server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
@@ -152,9 +153,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
     private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_ADMIN_PASSWORD = "KEYCLOAK_ADMIN_PASSWORD";
+    private static final String DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL = "admin";
     private static final String ADMIN_REALMS_PATH = "/admin/realms";
     private static final String ADMIN_REALMS_CLIENTS_PATH = "/admin/realms/%s/clients";
-    private static final String ADMIN_REALMS_CLIENTS_ROLES_PATH = "/admin/realms/%s/clients/%s/roles";
+    private static final String ADMIN_REALMS_CLIENTS_SCOPE_PATH = "/admin/realms/%s/clients/%s/default-client-scopes/%s";
+    private static final String ADMIN_REALMS_SCOPE_PATH = "/admin/realms/%s/client-scopes";
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
@@ -237,7 +240,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private void initializeKeycloakService(
         ZillabaseConfig config)
     {
-        if (config.keycloak.realm != null)
+        String realm = config.keycloak.realm;
+        if (realm != null)
         {
             boolean status = false;
             int retries = 0;
@@ -250,8 +254,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 try
                 {
                     Thread.sleep(delay);
+
+                    String username = System.getenv(KEYCLOAK_ADMIN);
+                    String password = System.getenv(KEYCLOAK_ADMIN_PASSWORD);
+
                     String form = "client_id=admin-cli&username=%s&password=%s&grant_type=password"
-                        .formatted(System.getenv(KEYCLOAK_ADMIN), System.getenv(KEYCLOAK_ADMIN_PASSWORD));
+                        .formatted(username != null ? username : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL,
+                            password != null ? password : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL);
 
                     HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(KEYCLOAK_DEFAULT_URL + "/realms/master/protocol/openid-connect/token"))
@@ -273,7 +282,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                                 "realm": "%s",
                                 "enabled": true
                                }
-                                """.formatted(config.keycloak.realm);
+                                """.formatted(realm);
 
                             token = object.getString("access_token");
                             request = HttpRequest.newBuilder()
@@ -302,7 +311,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             if (status)
             {
-                System.out.println("Realm: %s created successfully.".formatted(config.keycloak.realm));
+                System.out.println("Realm: %s created successfully.".formatted(realm));
+                createKeycloakClientScope(config, client, token, realm);
                 createKeycloakClient(config, client, token);
             }
             else
@@ -335,40 +345,114 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 String clientId = config.keycloak.client.clientId;
                 System.out.println("Client: %s created successfully.".formatted(clientId));
 
-                request = HttpRequest.newBuilder()
-                    .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_PATH.formatted(realm)))
-                    .header("Authorization", "Bearer %s".formatted(token))
-                    .header("Content-Type", "application/json")
-                    .GET()
-                    .build();
-                response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                if (response.body() != null)
+                if (config.keycloak.scopes != null && !config.keycloak.scopes.isEmpty())
                 {
-                    JsonReader reader = Json.createReader(new StringReader(response.body()));
-                    JsonArray clients = reader.readArray();
+                    linkScopeWithClient(config, client, token);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace(System.err);
+        }
+    }
 
-                    for (JsonValue clientObject: clients)
+    private void linkScopeWithClient(
+        ZillabaseConfig config,
+        HttpClient client,
+        String token)
+    {
+        String realm = config.keycloak.realm;
+        String clientId = config.keycloak.client.clientId;
+        HttpResponse<String> response;
+        HttpRequest request;
+        try
+        {
+            request = HttpRequest.newBuilder()
+                .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_PATH.formatted(realm)))
+                .header("Authorization", "Bearer %s".formatted(token))
+                .header("Content-Type", "application/json")
+                .GET()
+                .build();
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.body() != null)
+            {
+                JsonReader reader = Json.createReader(new StringReader(response.body()));
+                JsonArray clients = reader.readArray();
+
+                for (JsonValue clientObject: clients)
+                {
+                    JsonObject keyCloakClient = clientObject.asJsonObject();
+                    if (clientId.equals(keyCloakClient.getString("clientId")))
                     {
-                        JsonObject keyCloakClient = clientObject.asJsonObject();
-                        if (clientId.equals(keyCloakClient.getString("clientId")))
+                        request = HttpRequest.newBuilder()
+                            .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_SCOPE_PATH.formatted(realm)))
+                            .header("Authorization", "Bearer " + token)
+                            .build();
+
+                        response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                        if (response.body() != null)
                         {
-                            for (String role : config.keycloak.roles)
+                            reader = Json.createReader(new StringReader(response.body()));
+                            JsonArray scopes = reader.readArray();
+                            for (JsonValue scope : scopes)
                             {
-                                request = HttpRequest.newBuilder()
-                                    .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_ROLES_PATH
-                                        .formatted(realm, keyCloakClient.getString("id"))))
-                                    .header("Authorization", "Bearer %s".formatted(token))
-                                    .header("Content-Type", "application/json")
-                                    .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"" + role + "\"}"))
-                                    .build();
-                                response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                                if (response.statusCode() == 201)
+                                JsonObject scopeObject = scope.asJsonObject();
+                                if (config.keycloak.scopes.contains(scopeObject.getString("name")))
                                 {
-                                    System.out.println("Role: %s created successfully.".formatted(role));
+                                    request = HttpRequest.newBuilder()
+                                        .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_SCOPE_PATH
+                                            .formatted(realm, keyCloakClient.getString("id"), scopeObject.getString("id"))))
+                                        .header("Authorization", "Bearer %s".formatted(token))
+                                        .header("Content-Type", "application/json")
+                                        .PUT(HttpRequest.BodyPublishers.noBody())
+                                        .build();
+                                    client.send(request, HttpResponse.BodyHandlers.ofString());
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace(System.err);
+        }
+    }
+
+    private void createKeycloakClientScope(
+        ZillabaseConfig config,
+        HttpClient client,
+        String token,
+        String realm)
+    {
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode idpNode = mapper.createObjectNode();
+            idpNode.put("protocol", "openid-connect");
+            idpNode.putPOJO("attributes", Map.of("include.in.token.scope", "true"));
+
+            List<String> scopes = config.keycloak.scopes;
+            if (scopes != null && !scopes.isEmpty())
+            {
+                for (String scope : scopes)
+                {
+                    idpNode.put("name", scope);
+
+                    HttpRequest request = HttpRequest.newBuilder()
+                        .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_SCOPE_PATH.formatted(realm)))
+                        .header("Authorization", "Bearer " + token)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(idpNode)))
+                        .build();
+
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    if (response.statusCode() == 201)
+                    {
+                        System.out.println("Scope: %s created successfully".formatted(scope));
                     }
                 }
             }
@@ -1606,6 +1690,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
+            String username = System.getenv(KEYCLOAK_ADMIN);
+            String password = System.getenv(KEYCLOAK_ADMIN_PASSWORD);
+
             ExposedPort exposedPort = ExposedPort.tcp(8180);
 
             return client
@@ -1622,8 +1709,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file",
                     "KEYCLOAK_HTTP_PORT=8180",
-                    "KEYCLOAK_ADMIN=%s".formatted(System.getenv(KEYCLOAK_ADMIN)),
-                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(System.getenv(KEYCLOAK_ADMIN_PASSWORD)));
+                    "KEYCLOAK_ADMIN=%s".formatted(username != null ? username : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
+                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(password != null ? password : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL));
         }
     }
 

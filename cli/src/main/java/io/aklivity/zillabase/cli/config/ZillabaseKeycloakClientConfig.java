@@ -21,6 +21,7 @@ public final class ZillabaseKeycloakClientConfig
     public String clientId;
     public List<String> webOrigins = List.of("*");
     public boolean directAccessGrantsEnabled = true;
+    public boolean publicClient = true;
     public String rootUrl;
     public List<String> redirectUris;
     public String secret = System.getenv("CLIENT_SECRET");
