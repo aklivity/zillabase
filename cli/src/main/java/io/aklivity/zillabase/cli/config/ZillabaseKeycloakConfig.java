@@ -14,6 +14,7 @@
  */
 package io.aklivity.zillabase.cli.config;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ZillabaseKeycloakConfig
@@ -22,5 +23,5 @@ public final class ZillabaseKeycloakConfig
 
     public String realm;
     public ZillabaseKeycloakClientConfig client;
-    public List<String> scopes;
+    public List<String> scopes = new ArrayList<>();
 }
