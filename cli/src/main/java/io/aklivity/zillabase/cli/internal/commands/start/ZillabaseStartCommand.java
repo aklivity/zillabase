@@ -155,7 +155,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
-    private final List<String> scopes = new ArrayList<>();
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
 
@@ -338,13 +337,20 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 catalog.type = "apicurio";
                 catalog.options = Map.of("url", config.registry.url, "group-id", config.registry.groupId);
 
-                // TODO: add check if realm is configured
-                ZillaGuardConfig guard = new ZillaGuardConfig();
-                guard.type = "jwt";
-                guard.options.issuer = "%s/realms/%s".formatted("http://keycloak.zillabase.dev:8180", "zillabase");
-                guard.options.audience = "http://localhost:8000";
-                guard.options.keys = "%s/protocol/openid-connect/certs"
-                    .formatted(guard.options.issuer);
+                String realm = config.keycloak.realm;
+                String authnJwt = "authn_jwt";
+                if (realm != null)
+                {
+                    ZillaGuardConfig guard = new ZillaGuardConfig();
+                    guard.type = "jwt";
+                    guard.options.issuer = "%s/realms/%s".formatted("http://keycloak.zillabase.dev:8180", "zillabase");
+                    guard.options.audience = "http://localhost:8000";
+                    guard.options.keys = "%s/protocol/openid-connect/certs"
+                        .formatted(guard.options.issuer);
+
+
+                    zilla.guards = Map.of(authnJwt, guard);
+                }
 
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
                     "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
@@ -377,6 +383,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 northHttpServer.kind = "server";
                 ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
                 optionsConfig.specs = Map.of("http_api", httpApi);
+                if (realm != null)
+                {
+                    optionsConfig.http = new ZillaBindingOptionsConfig.HttpAuthorizationOptionsConfig();
+                    optionsConfig.http.authorization = Map.of(authnJwt,
+                        Map.of("credentials",
+                            Map.of("headers",
+                                Map.of("authorization", "Bearer {credentials}"))));
+                }
                 northHttpServer.options = optionsConfig;
                 northHttpServer.exit = "south_kafka_proxy";
                 bindings.put("north_http_server", northHttpServer);
@@ -400,8 +414,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
                 zilla.name = "zilla-http-kafka-asyncapi";
                 zilla.catalogs = Map.of("apicurio_catalog", catalog);
-                // TODO: add check if realm is configured
-                zilla.guards = Map.of("authn_jwt", guard);
                 zilla.bindings = bindings;
 
                 ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
@@ -889,13 +901,18 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "https://github.com/aklivity/zillabase/blob/develop/LICENSE");
             info.setLicense(license);
 
+            boolean secure = config.keycloak.realm != null;
+
             String securitySchemaName = "httpOauth";
             Reference security = new Reference("#/components/securitySchemes/%s".formatted(securitySchemaName));
 
             Server server = new Server();
             server.setHost("localhost:9090");
-            server.setProtocol("https");
-            server.setSecurity(List.of(security));
+            server.setProtocol(secure ? "https" : "http");
+            if (secure)
+            {
+                server.setSecurity(List.of(security));
+            }
             servers.put("http", server);
 
             JsonValue jsonValue = Json.createReader(new StringReader(kafkaSpec)).readValue();
@@ -910,8 +927,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     continue;
                 }
                 String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
-                scopes.add("%s:read".formatted(label));
-                scopes.add("%s:write".formatted(label));
+                if (secure)
+                {
+                    config.keycloak.scopes.add("%s:read".formatted(label));
+                    config.keycloak.scopes.add("%s:write".formatted(label));
+                }
                 String messageName = "%sMessage".formatted(label);
                 JsonValue channelValue = channelJson.getValue();
                 Channel channel = new Channel();
@@ -953,67 +973,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     }
                 }
 
-                operation = new Operation();
-                operation.setAction(OperationAction.SEND);
-                reference = new Reference("#/channels/%s".formatted(name));
-                operation.setChannel(reference);
-                reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
-                operation.setMessages(Collections.singletonList(reference));
-                HTTPOperationBinding httpBinding = new HTTPOperationBinding();
-                httpBinding.setMethod(POST);
-                ZillaHttpOperationBinding zillaHttpBinding =
-                    new ZillaHttpOperationBinding(POST, Map.of("zilla:identity", "{identity}"));
-                Map<String, Object> bindings = new HashMap<>();
-                bindings.put("http", httpBinding);
-                //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
-                operation.setBindings(bindings);
-                operation.setSecurity(List.of(security));
-                operations.put(compact ? "do%sCreate".formatted(label) : "do%s".formatted(label), operation);
-
-                if (compact)
-                {
-                    operation = new Operation();
-                    operation.setAction(OperationAction.SEND);
-                    reference = new Reference("#/channels/%s-item".formatted(name));
-                    operation.setChannel(reference);
-                    reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
-                    operation.setMessages(Collections.singletonList(reference));
-                    httpBinding = new HTTPOperationBinding();
-                    httpBinding.setMethod(PUT);
-                    zillaHttpBinding = new ZillaHttpOperationBinding(PUT, Map.of("zilla:identity", "{identity}"));
-                    bindings = new HashMap<>();
-                    bindings.put("http", httpBinding);
-                    //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
-                    operation.setBindings(bindings);
-                    operation.setSecurity(List.of(security));
-                    operations.put("do%sUpdate".formatted(label), operation);
-                }
-
-                operation = new Operation();
-                operation.setAction(OperationAction.RECEIVE);
-                reference = new Reference("#/channels/%s".formatted(name));
-                operation.setChannel(reference);
-                reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
-                operation.setMessages(Collections.singletonList(reference));
-                httpBinding = new HTTPOperationBinding();
-                httpBinding.setMethod(GET);
-                ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding(GET);
-                operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
-                operation.setSecurity(List.of(security));
-                operations.put("on%sRead".formatted(label), operation);
-
-                operation = new Operation();
-                operation.setAction(OperationAction.RECEIVE);
-                reference = new Reference("#/channels/%s-item".formatted(name));
-                operation.setChannel(reference);
-                reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
-                operation.setMessages(Collections.singletonList(reference));
-                httpBinding = new HTTPOperationBinding();
-                httpBinding.setMethod(GET);
-                sseBinding = new ZillaSseOperationBinding(GET);
-                operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
-                operation.setSecurity(List.of(security));
-                operations.put("on%sReadItem".formatted(label), operation);
+                generateHttpOperations(operations, secure, security, name, label, messageName, compact);
             }
 
             JsonObject componentsJson = jsonValue.asJsonObject().getJsonObject("components");
@@ -1029,12 +989,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 schemas.put(schemaJson.getKey(), schemaMapper.readTree(schemaJson.getValue().toString()));
             }
 
-            // TODO: add check if realm is configured
-            OAuth2SecurityScheme securityScheme = OAuth2SecurityScheme.oauth2Builder()
-                .flows(new OAuthFlows())
-                .scopes(scopes)
-                .build();
-            components.setSecuritySchemes(Map.of(securitySchemaName, securityScheme));
+            if (secure)
+            {
+                OAuth2SecurityScheme securityScheme = OAuth2SecurityScheme.oauth2Builder()
+                    .flows(new OAuthFlows())
+                    .scopes(config.keycloak.scopes)
+                    .build();
+                components.setSecuritySchemes(Map.of(securitySchemaName, securityScheme));
+            }
 
             components.setSchemas(schemas);
             components.setMessages(messages);
@@ -1048,6 +1010,90 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         return spec;
+    }
+
+    private void generateHttpOperations(
+        Map<String, Object> operations,
+        boolean secure,
+        Reference security,
+        String name,
+        String label,
+        String messageName,
+        boolean compact)
+    {
+        Operation operation = new Operation();
+        operation.setAction(OperationAction.SEND);
+        Reference reference = new Reference("#/channels/%s".formatted(name));
+        operation.setChannel(reference);
+        reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
+        operation.setMessages(Collections.singletonList(reference));
+        HTTPOperationBinding httpBinding = new HTTPOperationBinding();
+        httpBinding.setMethod(POST);
+        ZillaHttpOperationBinding zillaHttpBinding =
+            new ZillaHttpOperationBinding(POST, Map.of("zilla:identity", "{identity}"));
+        Map<String, Object> bindings = new HashMap<>();
+        bindings.put("http", httpBinding);
+        //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
+        operation.setBindings(bindings);
+        if (secure)
+        {
+            operation.setSecurity(List.of(security));
+        }
+        operations.put(compact ? "do%sCreate".formatted(label) : "do%s".formatted(label), operation);
+
+        if (compact)
+        {
+            operation = new Operation();
+            operation.setAction(OperationAction.SEND);
+            reference = new Reference("#/channels/%s-item".formatted(name));
+            operation.setChannel(reference);
+            reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
+            operation.setMessages(Collections.singletonList(reference));
+            httpBinding = new HTTPOperationBinding();
+            httpBinding.setMethod(PUT);
+            zillaHttpBinding = new ZillaHttpOperationBinding(PUT, Map.of("zilla:identity", "{identity}"));
+            bindings = new HashMap<>();
+            bindings.put("http", httpBinding);
+            //bindings.put("x-zilla-http-kafka", zillaHttpBinding);
+            operation.setBindings(bindings);
+            if (secure)
+            {
+                operation.setSecurity(List.of(security));
+            }
+            operations.put("do%sUpdate".formatted(label), operation);
+        }
+
+        operation = new Operation();
+        operation.setAction(OperationAction.RECEIVE);
+        reference = new Reference("#/channels/%s".formatted(name));
+        operation.setChannel(reference);
+        reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
+        operation.setMessages(Collections.singletonList(reference));
+        httpBinding = new HTTPOperationBinding();
+        httpBinding.setMethod(GET);
+        ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding(GET);
+        operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
+        if (secure)
+        {
+            operation.setSecurity(List.of(security));
+        }
+        operations.put("on%sRead".formatted(label), operation);
+
+        operation = new Operation();
+        operation.setAction(OperationAction.RECEIVE);
+        reference = new Reference("#/channels/%s-item".formatted(name));
+        operation.setChannel(reference);
+        reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
+        operation.setMessages(Collections.singletonList(reference));
+        httpBinding = new HTTPOperationBinding();
+        httpBinding.setMethod(GET);
+        sseBinding = new ZillaSseOperationBinding(GET);
+        operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
+        if (secure)
+        {
+            operation.setSecurity(List.of(security));
+        }
+        operations.put("on%sReadItem".formatted(label), operation);
     }
 
     private String buildAsyncApiSpec(
