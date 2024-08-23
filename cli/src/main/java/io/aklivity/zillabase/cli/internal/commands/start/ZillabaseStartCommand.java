@@ -233,9 +233,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         processAsyncApiSpecs(config);
 
-        publishZillaConfig(config);
-
         initializeKeycloakService(config);
+
+        publishZillaConfig(config);
     }
 
     private void initializeKeycloakService(
