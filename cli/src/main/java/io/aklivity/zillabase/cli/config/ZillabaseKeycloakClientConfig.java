@@ -18,11 +18,13 @@ import java.util.List;
 
 public final class ZillabaseKeycloakClientConfig
 {
+    private static final String KEYCLOAK_CLIENT_SECRET = "KEYCLOAK_CLIENT_SECRET";
+
     public String clientId;
     public List<String> webOrigins = List.of("*");
     public boolean directAccessGrantsEnabled = true;
-    public boolean publicClient = true;
+    public boolean publicClient;
     public String rootUrl;
     public List<String> redirectUris;
-    public String secret = System.getenv("CLIENT_SECRET");
+    public String secret = System.getenv(KEYCLOAK_CLIENT_SECRET);
 }

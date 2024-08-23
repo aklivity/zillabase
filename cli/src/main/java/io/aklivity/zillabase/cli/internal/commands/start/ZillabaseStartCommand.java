@@ -129,6 +129,7 @@ import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
+import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseOperationBinding;
@@ -332,17 +333,24 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             Jsonb jsonb = JsonbBuilder.create();
 
             String realm = config.keycloak.realm;
+            ZillabaseKeycloakClientConfig keycloakClient = config.keycloak.client;
+
+            if (keycloakClient.secret == null)
+            {
+                keycloakClient.publicClient = true;
+            }
+
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(toURI(KEYCLOAK_DEFAULT_URL, ADMIN_REALMS_CLIENTS_PATH.formatted(realm)))
                 .header("Authorization", "Bearer %s".formatted(token))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonb.toJson(config.keycloak.client)))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonb.toJson(keycloakClient)))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 201)
             {
-                String clientId = config.keycloak.client.clientId;
+                String clientId = keycloakClient.clientId;
                 System.out.println("Client: %s created successfully.".formatted(clientId));
 
                 if (config.keycloak.scopes != null && !config.keycloak.scopes.isEmpty())
