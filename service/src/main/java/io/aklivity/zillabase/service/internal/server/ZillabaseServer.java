@@ -61,7 +61,7 @@ public class ZillabaseServer implements Runnable
         String configServerUrl = System.getenv(CONFIG_SERVER_URL);
         this.configServerUrl = configServerUrl != null ? configServerUrl : DEFAULT_CONFIG_SERVER_URL;
         String keycloakUrl = System.getenv(KEYCLOAK_URL);
-        this.keycloakUrl = keycloakUrl != null ? KEYCLOAK_URL : DEFAULT_KEYCLOAK_URL;
+        this.keycloakUrl = keycloakUrl != null ? keycloakUrl : DEFAULT_KEYCLOAK_URL;
 
         try
         {
