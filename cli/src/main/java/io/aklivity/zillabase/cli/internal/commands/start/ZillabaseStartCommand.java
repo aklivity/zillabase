@@ -589,7 +589,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 ZillabaseKeycloakConfig keycloak = config.keycloak;
                 String realm = keycloak.realm;
                 zilla.name = "zilla-http-kafka-asyncapi";
-                String authnJwt = "%s-jwt0".formatted(zilla.name);
+                String authnJwt = "jwt0";
                 if (realm != null)
                 {
                     ZillaGuardConfig guard = new ZillaGuardConfig();
