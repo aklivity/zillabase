@@ -14,12 +14,17 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseConfig
+import java.util.List;
+
+public final class ZillabaseKeycloakClientConfig
 {
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingwave = new ZillabaseRisingWaveConfig();
-    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
-    public ZillabaseKeycloakConfig keycloak = new ZillabaseKeycloakConfig();
+    private static final String KEYCLOAK_CLIENT_SECRET = "KEYCLOAK_CLIENT_SECRET";
+
+    public String clientId;
+    public List<String> webOrigins = List.of("*");
+    public boolean directAccessGrantsEnabled = true;
+    public boolean publicClient;
+    public String rootUrl;
+    public List<String> redirectUris;
+    public String secret = System.getenv(KEYCLOAK_CLIENT_SECRET);
 }
