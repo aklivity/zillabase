@@ -73,4 +73,13 @@ public class ZillabaseServerIT
     {
         k3po.finish();
     }
+
+    @Test
+    @Specification({
+        "${app}/sso.add/client",
+        "${app}/sso.add/server"})
+    public void shouldAddIdentityProvider() throws Exception
+    {
+        k3po.finish();
+    }
 }

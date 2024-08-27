@@ -25,6 +25,9 @@ import io.aklivity.zillabase.cli.internal.commands.config.add.ZillabaseConfigAdd
 import io.aklivity.zillabase.cli.internal.commands.config.list.ZillabaseConfigListCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.remove.ZillabaseConfigRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
+import io.aklivity.zillabase.cli.internal.commands.sso.add.ZillabaseSsoAddCommand;
+import io.aklivity.zillabase.cli.internal.commands.sso.list.ZillabaseSsoListCommand;
+import io.aklivity.zillabase.cli.internal.commands.sso.remove.ZillabaseSsoRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand;
 import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
 
@@ -52,6 +55,16 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
                 ZillabaseConfigAddCommand.class,
                 ZillabaseConfigListCommand.class,
                 ZillabaseConfigRemoveCommand.class
+            }),
+        @Group(
+            name = "sso",
+            description = "Identity Provider",
+            defaultCommand = Help.class,
+            commands =
+            {
+                ZillabaseSsoAddCommand.class,
+                ZillabaseSsoListCommand.class,
+                ZillabaseSsoRemoveCommand.class
             })
     },
     commands =
