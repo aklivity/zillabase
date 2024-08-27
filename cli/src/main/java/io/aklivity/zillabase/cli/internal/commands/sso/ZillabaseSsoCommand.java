@@ -12,14 +12,15 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.config;
+package io.aklivity.zillabase.cli.internal.commands.sso;
 
-public final class ZillabaseConfig
+import java.net.URI;
+
+import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
+
+public abstract class ZillabaseSsoCommand extends ZillabaseCommand
 {
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseApicurioConfig registry = new ZillabaseApicurioConfig();
-    public ZillabaseRisingWaveConfig risingwave = new ZillabaseRisingWaveConfig();
-    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
-    public ZillabaseKeycloakConfig keycloak = new ZillabaseKeycloakConfig();
+    protected static final String SSO_PATH = "sso";
+    protected static final String SSO_ALIAS_PATH = "sso/%s";
+    protected static final URI ADMIN_SERVER_DEFAULT = URI.create("http://localhost:7184/v1/");
 }

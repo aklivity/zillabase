@@ -71,6 +71,7 @@
             <REGISTRY_URL>http://localhost:8081</REGISTRY_URL>
             <REGISTRY_GROUP_ID>zilla</REGISTRY_GROUP_ID>
             <DEBUG>true</DEBUG>
+            <KEYCLOAK_URL>http://localhost:8180</KEYCLOAK_URL>
           </environmentVariables>
         </configuration>
       </plugin>
