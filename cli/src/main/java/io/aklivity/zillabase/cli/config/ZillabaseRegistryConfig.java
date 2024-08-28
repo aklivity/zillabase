@@ -14,12 +14,8 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseConfig
+public class ZillabaseRegistryConfig
 {
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseRegistryConfig registry = new ZillabaseRegistryConfig();
-    public ZillabaseRisingWaveConfig risingwave = new ZillabaseRisingWaveConfig();
-    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
-    public ZillabaseKeycloakConfig keycloak = new ZillabaseKeycloakConfig();
+    public ZillabaseApicurioConfig apicurio = new ZillabaseApicurioConfig();
+    public ZillabaseKarapaceConfig karapace = new ZillabaseKarapaceConfig();
 }

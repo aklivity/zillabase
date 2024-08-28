@@ -19,10 +19,11 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.P
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
-import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_REGISTRY_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig.KEYCLOAK_DEFAULT_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
@@ -184,6 +185,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateRisingWaveFactory(config));
         factories.add(new CreateApicurioFactory(config));
         factories.add(new CreateKeycloakFactory(config));
+        factories.add(new CreateKarapaceFactory(config));
 
         for (CreateContainerFactory factory : factories)
         {
@@ -575,9 +577,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete");
 
                 ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
-                ZillaCatalogConfig catalog = new ZillaCatalogConfig();
-                catalog.type = "apicurio";
-                catalog.options = Map.of("url", config.registry.url, "group-id", config.registry.groupId);
+                ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
+                apicurioCatalog.type = "apicurio";
+                apicurioCatalog.options = Map.of(
+                    "url", config.registry.apicurio.url,
+                    "group-id", config.registry.apicurio.groupId);
+
+                ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
+                apicurioCatalog.type = "karapace";
+                apicurioCatalog.options = Map.of("url", config.registry.karapace.url);
 
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
                     "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
@@ -632,7 +640,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 bindings.put("south_kafka_client", southKafkaClient);
 
                 zilla.name = "zilla-http-kafka-asyncapi";
-                zilla.catalogs = Map.of("apicurio_catalog", catalog);
+                zilla.catalogs = Map.of(
+                    "apicurio_catalog", apicurioCatalog,
+                    "karapace_catalog", karapaceCatalog);
                 zilla.bindings = bindings;
 
                 ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
@@ -857,12 +867,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                             {
                                 if (schema.key != null)
                                 {
-                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key);
+                                    //registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key, "AVRO");
                                 }
 
                                 if (schema.value != null)
                                 {
-                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value);
+                                    dummy();
+                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value, "AVRO");
                                 }
                             }
                         }
@@ -897,13 +908,21 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ZillabaseConfig config,
         HttpClient client,
         String subject,
-        String schema) throws IOException, InterruptedException
+        String schema,
+        String schemaType) throws IOException, InterruptedException
     {
-        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
-                    ? "http://localhost:8080" : config.registry.url,
-                "/apis/registry/v2/groups/%s/artifacts".formatted(config.registry.groupId)))
-            .header("X-Registry-ArtifactId", subject)
-            .POST(HttpRequest.BodyPublishers.ofString(schema))
+        String schema1 = "{\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}],\"name\":\"Event\",\"namespace\":\"io.aklivity.example\",\"type\":\"record\"}";
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode idpNode = mapper.createObjectNode();
+        idpNode.put("schema", schema1);
+        idpNode.put("schemaType", schemaType);
+
+        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
+                    ? DEFAULT_CLIENT_KARAPACE_URL : config.registry.karapace.url,
+                "/subjects/%s/versions".formatted(subject)))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(idpNode)))
             .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -912,6 +931,45 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             System.err.println("Error registering schema for %s. Error code: %s"
                 .formatted(subject, response.statusCode()));
             System.err.println(response.body());
+        }
+    }
+
+    private void dummy()
+    {
+        try {
+            // Define the schema and schemaType
+            String schema = "{\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}],\"name\":\"Event\",\"namespace\":\"io.aklivity.example\",\"type\":\"record\"}";
+            String schemaType = "AVRO";
+
+            // Create JSON payload
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode jsonPayload = mapper.createObjectNode();
+            jsonPayload.put("schema", schema);
+            jsonPayload.put("schemaType", schemaType);
+
+            String payload = "{\"schema\":\"{\\\"fields\\\":[{\\\"name\\\":\\\"id\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"status\\\",\\\"type\\\":\\\"string\\\"}],\\\"name\\\":\\\"Event\\\",\\\"namespace\\\":\\\"io.aklivity.example\\\",\\\"type\\\":\\\"record\\\"}\",\"schemaType\":\"AVRO\"}";
+
+            // Build the HTTP request
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8081/subjects/items-snapshots-value/versions"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
+
+            // Send the request and get the response
+            HttpClient client = HttpClient.newHttpClient();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Check the response
+            if (response.statusCode() == 200) {
+                System.out.println("Schema registered successfully!");
+                System.out.println(response.body());
+            } else {
+                System.err.println("Error registering schema. Status code: " + response.statusCode());
+                System.err.println(response.body());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -1016,8 +1074,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             server.setProtocol("kafka");
 
             KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
-            kafkaServerBinding.setSchemaRegistryUrl(config.registry.url);
-            kafkaServerBinding.setSchemaRegistryVendor("apicurio");
+            kafkaServerBinding.setSchemaRegistryUrl(config.registry.karapace.url);
+            kafkaServerBinding.setSchemaRegistryVendor("karapace");
             server.setBindings(Map.of("kafka", kafkaServerBinding));
 
             for (KafkaTopicSchemaRecord record : records)
@@ -1301,11 +1359,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         HttpClient client,
         String subject)
     {
-        String type = null;
-        try
+        String type = "avro"; //null;
+        /*try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
+                .newBuilder(toURI(config.registry.url.equals(DEFAULT_APICURIO_URL)
                         ? "http://localhost:8080" : config.registry.url,
                     "/apis/registry/v2/groups/%s/artifacts/%s/meta".formatted(config.registry.groupId, subject)))
                 .GET()
@@ -1322,7 +1380,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         catch (Exception ex)
         {
             ex.printStackTrace(System.err);
-        }
+        }*/
         return type;
     }
 
@@ -1335,9 +1393,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
-                        ? "http://localhost:8080" : config.registry.url,
-                    "/apis/registry/v2/groups/%s/artifacts/%s".formatted(config.registry.groupId, subject)))
+                .newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
+                        ? DEFAULT_CLIENT_KARAPACE_URL : config.registry.karapace.url,
+                    "/subjects/%s/versions/latest".formatted(subject)))
                 .GET()
                 .build();
 
@@ -1657,6 +1715,47 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
+    private static final class CreateKarapaceFactory extends CreateContainerFactory
+    {
+        CreateKarapaceFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "karapace", "ghcr.io/aiven/karapace:latest");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            ExposedPort exposedPort = ExposedPort.tcp(8081);
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withPortBindings(new PortBinding(Ports.Binding.bindPort(8081), exposedPort))
+                .withExposedPorts(exposedPort)
+                .withCmd("/bin/bash", "/opt/karapace/start.sh", "registry")
+                .withEnv(
+                    "KARAPACE_ADVERTISED_HOSTNAME=karapace.zillabase.dev",
+                    "KARAPACE_BOOTSTRAP_URI=%s".formatted(config.kafka.bootstrapUrl),
+                    "KARAPACE_PORT=8081",
+                    "KARAPACE_HOST=0.0.0.0",
+                    "KARAPACE_CLIENT_ID=karapace",
+                    "KARAPACE_GROUP_ID=karapace-registry",
+                    "KARAPACE_MASTER_ELIGIBILITY=true",
+                    "KARAPACE_TOPIC_NAME=_schemas",
+                    "KARAPACE_LOG_LEVEL=WARNING",
+                    "KARAPACE_COMPATIBILITY=FULL")
+                .withTty(true);
+        }
+    }
+
+
     private static final class CreateRisingWaveFactory extends CreateContainerFactory
     {
         CreateRisingWaveFactory(
@@ -1736,8 +1835,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             List<String> envVars = Arrays.asList(
                 "ADMIN_PORT=%d".formatted(config.admin.port),
-                "REGISTRY_URL=%s".formatted(config.registry.url),
-                "REGISTRY_GROUP_ID=%s".formatted(config.registry.groupId),
+                "REGISTRY_URL=%s".formatted(config.registry.apicurio.url),
+                "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
                 "CONFIG_SERVER_URL=%s".formatted(config.admin.configServerUrl),
                 "DEBUG=%s".formatted(true));
 
