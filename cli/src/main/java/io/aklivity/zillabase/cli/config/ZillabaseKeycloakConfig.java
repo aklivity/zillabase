@@ -19,8 +19,14 @@ import java.util.List;
 
 public final class ZillabaseKeycloakConfig
 {
-    public static final String KEYCLOAK_DEFAULT_URL = "http://localhost:8180";
+    private static final String KEYCLOAK_DEFAULT_URL = "http://localhost:8180";
+    private static final String KEYCLOAK_JWKS_URL = "http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs";
+    private static final String KEYCLOAK_DEFAULT_AUD = "account";
 
+
+    public String url = KEYCLOAK_DEFAULT_URL;
+    public String audience = KEYCLOAK_DEFAULT_AUD;
+    public String jwks = KEYCLOAK_JWKS_URL;
     public String realm;
     public ZillabaseKeycloakClientConfig client;
     public List<String> scopes = new ArrayList<>();

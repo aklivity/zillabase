@@ -58,5 +58,6 @@ read closed
 
 write http:status "201" "Created"
 write http:version "HTTP/1.1"
+write http:content-length
 
-write flush
+write close

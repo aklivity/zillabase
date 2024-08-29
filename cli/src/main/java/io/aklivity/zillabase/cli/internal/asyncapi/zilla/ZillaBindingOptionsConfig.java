@@ -19,4 +19,10 @@ import java.util.Map;
 public class ZillaBindingOptionsConfig
 {
     public Map<String, Object> specs;
+    public HttpAuthorizationOptionsConfig http;
+
+    public static class HttpAuthorizationOptionsConfig
+    {
+        public Map<String, Object> authorization;
+    }
 }
