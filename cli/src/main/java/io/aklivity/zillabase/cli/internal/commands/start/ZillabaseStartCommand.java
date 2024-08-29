@@ -26,6 +26,7 @@ import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_C
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig.KEYCLOAK_DEFAULT_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
+import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
 import java.io.BufferedWriter;
@@ -150,7 +151,7 @@ import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
-    private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
+    private static final int SERVICE_INITIALIZATION_DELAY_MS = 15000;
     private static final int MAX_RETRIES = 5;
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
     private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
@@ -584,8 +585,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     "group-id", config.registry.apicurio.groupId);
 
                 ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
-                apicurioCatalog.type = "karapace";
-                apicurioCatalog.options = Map.of("url", config.registry.karapace.url);
+                karapaceCatalog.type = "karapace";
+                karapaceCatalog.options = Map.of("url", config.registry.karapace.url);
 
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
                     "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
@@ -815,7 +816,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         KafkaBootstrapRecords records = readKafkaBootstrapRecords();
         if (records != null && !records.topics.isEmpty())
         {
-            final HttpClient client = HttpClient.newHttpClient();
+            final HttpClient client = HttpClient.newBuilder()
+                .version(HTTP_1_1)
+                .build();
 
             boolean status = false;
             int retries = 0;
@@ -865,14 +868,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                             KafkaTopicSchema schema = record.schema;
                             if (schema != null)
                             {
+                                Thread.sleep(delay);
                                 if (schema.key != null)
                                 {
-                                    //registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key, "AVRO");
+                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key, "AVRO");
                                 }
 
                                 if (schema.value != null)
                                 {
-                                    dummy();
                                     registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value, "AVRO");
                                 }
                             }
@@ -911,11 +914,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         String schema,
         String schemaType) throws IOException, InterruptedException
     {
-        String schema1 = "{\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}],\"name\":\"Event\",\"namespace\":\"io.aklivity.example\",\"type\":\"record\"}";
-
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode idpNode = mapper.createObjectNode();
-        idpNode.put("schema", schema1);
+        idpNode.put("schema", schema);
         idpNode.put("schemaType", schemaType);
 
         HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
@@ -931,45 +932,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             System.err.println("Error registering schema for %s. Error code: %s"
                 .formatted(subject, response.statusCode()));
             System.err.println(response.body());
-        }
-    }
-
-    private void dummy()
-    {
-        try {
-            // Define the schema and schemaType
-            String schema = "{\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}],\"name\":\"Event\",\"namespace\":\"io.aklivity.example\",\"type\":\"record\"}";
-            String schemaType = "AVRO";
-
-            // Create JSON payload
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode jsonPayload = mapper.createObjectNode();
-            jsonPayload.put("schema", schema);
-            jsonPayload.put("schemaType", schemaType);
-
-            String payload = "{\"schema\":\"{\\\"fields\\\":[{\\\"name\\\":\\\"id\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"status\\\",\\\"type\\\":\\\"string\\\"}],\\\"name\\\":\\\"Event\\\",\\\"namespace\\\":\\\"io.aklivity.example\\\",\\\"type\\\":\\\"record\\\"}\",\"schemaType\":\"AVRO\"}";
-
-            // Build the HTTP request
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8081/subjects/items-snapshots-value/versions"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(payload))
-                .build();
-
-            // Send the request and get the response
-            HttpClient client = HttpClient.newHttpClient();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            // Check the response
-            if (response.statusCode() == 200) {
-                System.out.println("Schema registered successfully!");
-                System.out.println(response.body());
-            } else {
-                System.err.println("Error registering schema. Status code: " + response.statusCode());
-                System.err.println(response.body());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -1709,7 +1671,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
                         .withRestartPolicy(unlessStoppedRestart()))
-                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(8080), exposedPort))
+                .withPortBindings(new PortBinding(Ports.Binding.bindPort(8080), exposedPort))
                 .withExposedPorts(exposedPort)
                 .withTty(true);
         }

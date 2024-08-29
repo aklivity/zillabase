@@ -45,20 +45,48 @@
       "type": "object",
       "properties":
       {
-        "url":
+        "apicurio":
         {
-          "type": "string"
+          "type": "object",
+          "properties":
+          {
+            "url":
+            {
+              "type": "string"
+            },
+            "groupId":
+            {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required":
+          [
+            "url"
+          ]
         },
-        "groupId":
+        "karapace":
         {
-          "type": "string"
+          "type": "object",
+          "properties":
+          {
+            "url":
+            {
+              "type": "string"
+            },
+            "context":
+            {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required":
+          [
+            "url"
+          ]
         }
       },
-      "additionalProperties": false,
-      "required":
-      [
-        "url"
-      ]
+      "additionalProperties": false
     },
     "risingwave":
     {

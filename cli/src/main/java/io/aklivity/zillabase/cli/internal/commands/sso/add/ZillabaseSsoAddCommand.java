@@ -70,7 +70,7 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
         {
             Map<String, String> config = new HashMap<>();
             config.put("clientId", clientId);
-            config.put("clientSecret", System.getenv("KEYCLOAK_CLIENT_SECRET"));
+            config.put("clientSecret", System.getenv("SSO_CLIENT_SECRET"));
 
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode idpNode = mapper.createObjectNode();
