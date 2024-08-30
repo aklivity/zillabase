@@ -903,12 +903,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                                 Thread.sleep(delay);
                                 if (schema.key != null)
                                 {
-                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key, "AVRO");
+                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key,
+                                        resolveType(schema.key));
                                 }
 
                                 if (schema.value != null)
                                 {
-                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value, "AVRO");
+                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value,
+                                        resolveType(schema.value));
                                 }
                             }
                         }
@@ -949,7 +951,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode idpNode = mapper.createObjectNode();
         idpNode.put("schema", schema);
-        idpNode.put("schemaType", schemaType);
+        if (schemaType != null)
+        {
+            idpNode.put("schemaType", schemaType.toUpperCase());
+        }
 
         HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
                     ? DEFAULT_CLIENT_KARAPACE_URL : config.registry.karapace.url,
