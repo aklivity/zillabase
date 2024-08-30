@@ -170,7 +170,7 @@
             {
               "type": "string"
             },
-            "redirect":
+            "redirects":
             {
               "type": "array",
               "items":
@@ -191,7 +191,7 @@
           "required":
           [
             "client-id",
-            "redirect"
+            "redirects"
           ]
         }
       },

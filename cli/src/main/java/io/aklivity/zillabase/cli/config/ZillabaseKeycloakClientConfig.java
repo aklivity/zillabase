@@ -29,7 +29,7 @@ public final class ZillabaseKeycloakClientConfig
     @JsonbProperty("root")
     public String rootUrl;
 
-    @JsonbProperty("redirect")
+    @JsonbProperty("redirects")
     public List<String> redirectUris;
 
     public boolean directAccessGrantsEnabled = true;
