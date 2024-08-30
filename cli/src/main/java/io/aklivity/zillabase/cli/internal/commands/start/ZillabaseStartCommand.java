@@ -154,21 +154,22 @@ import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
     description = "Start containers for local development")
 public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
-    private static final int SERVICE_INITIALIZATION_DELAY_MS = 15000;
+    private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
     private static final int MAX_RETRIES = 5;
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
-    private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
-    private static final String KEYCLOAK_ADMIN_PASSWORD = "KEYCLOAK_ADMIN_PASSWORD";
     private static final String DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL = "admin";
     private static final String ADMIN_REALMS_PATH = "/admin/realms";
     private static final String ADMIN_REALMS_CLIENTS_PATH = "/admin/realms/%s/clients";
     private static final String ADMIN_REALMS_CLIENTS_SCOPE_PATH = "/admin/realms/%s/clients/%s/default-client-scopes/%s";
     private static final String ADMIN_REALMS_SCOPE_PATH = "/admin/realms/%s/client-scopes";
+    private static final Pattern EXPRESSION_PATTERN =
+        Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
+    private Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
 
     private String kafkaArtifactId;
     private String httpArtifactId;
@@ -262,13 +263,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 try
                 {
                     Thread.sleep(delay);
-
-                    String username = System.getenv(KEYCLOAK_ADMIN);
-                    String password = System.getenv(KEYCLOAK_ADMIN_PASSWORD);
-
                     String form = "client_id=admin-cli&username=%s&password=%s&grant_type=password"
-                        .formatted(username != null ? username : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL,
-                            password != null ? password : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL);
+                        .formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL, DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL);
 
                     HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(url + "/realms/master/protocol/openid-connect/token"))
@@ -338,8 +334,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         try
         {
-            Jsonb jsonb = JsonbBuilder.create();
-
             String realm = config.keycloak.realm;
             ZillabaseKeycloakClientConfig keycloakClient = config.keycloak.client;
 
@@ -347,12 +341,20 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 keycloakClient.publicClient = true;
             }
+            else
+            {
+                if (envMatcher.reset(keycloakClient.secret).matches() && "env".equals(envMatcher.group(1)))
+                {
+                    keycloakClient.secret = System.getenv(envMatcher.group(2));
+                }
+            }
 
+            ObjectMapper mapper = new ObjectMapper();
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(toURI(url, ADMIN_REALMS_CLIENTS_PATH.formatted(realm)))
                 .header("Authorization", "Bearer %s".formatted(token))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonb.toJson(keycloakClient)))
+                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(keycloakClient)))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -1021,10 +1023,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     String schema = resolveSchema(config, client, subject);
                     if (schema != null)
                     {
-                        String type = resolveType(config, client, subject);
-                        records.add(new KafkaTopicSchemaRecord(topicName, policies,
-                            matcher.reset(topicName).replaceAll(match -> match.group(2).toUpperCase()),
-                            subject, type, schema));
+                        JsonReader reader = Json.createReader(new StringReader(schema));
+                        JsonObject object = reader.readObject();
+
+                        if (object.containsKey("schema"))
+                        {
+                            String schemaStr = object.getString("schema");
+                            String type = resolveType(schemaStr);
+                            records.add(new KafkaTopicSchemaRecord(topicName, policies,
+                                matcher.reset(topicName).replaceAll(match -> match.group(2).toUpperCase()),
+                                subject, type, schemaStr));
+                        }
                     }
                 }
             }
@@ -1093,10 +1102,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 channel.setMessages(Map.of(messageName, reference));
                 channels.put(name, channel);
 
-                String schemaString = record.schema.replaceAll("\"type\": \"record\"", "\"type\": \"object\"");
-
                 ObjectMapper schemaMapper = new ObjectMapper();
-                JsonNode schemaObject = schemaMapper.readTree(schemaString);
+                JsonNode schemaObject = schemaMapper.readTree(record.schema);
+                if ("record".equals(schemaObject.get("type").asText()))
+                {
+                    ((ObjectNode) schemaObject).put("type", "object");
+                }
                 schemas.put(subject, schemaObject);
 
                 message = new Message();
@@ -1173,7 +1184,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             Reference security = new Reference("#/components/securitySchemes/%s".formatted(securitySchemaName));
 
             Server server = new Server();
-            server.setHost("localhost:9090");
+            server.setHost("localhost:8080");
             server.setProtocol("http");
             if (secure)
             {
@@ -1395,32 +1406,34 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     }
 
     private String resolveType(
-        ZillabaseConfig config,
-        HttpClient client,
-        String subject)
+        String schema)
     {
-        String type = "avro"; //null;
-        /*try
+        String type = null;
+        try
         {
-            HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.url.equals(DEFAULT_APICURIO_URL)
-                        ? "http://localhost:8080" : config.registry.url,
-                    "/apis/registry/v2/groups/%s/artifacts/%s/meta".formatted(config.registry.groupId, subject)))
-                .GET()
-                .build();
-
-            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            if (httpResponse.statusCode() == 200)
+            ObjectMapper schemaMapper = new ObjectMapper();
+            JsonNode schemaObject = schemaMapper.readTree(schema);
+            String schemaType = schemaObject.get("type").asText();
+            switch (schemaType)
             {
-                ObjectMapper objectMapper = new ObjectMapper();
-                JsonNode rootNode = objectMapper.readTree(httpResponse.body());
-                type = rootNode.path("type").asText().toLowerCase();
+            case "record":
+            case "enum":
+            case "fixed":
+                type = "avro";
+                break;
+            case "object":
+            case "array":
+                type = "json";
+                break;
+            default:
+                type = schemaType;
+                break;
             }
         }
-        catch (Exception ex)
+        catch (JsonProcessingException e)
         {
-            ex.printStackTrace(System.err);
-        }*/
+            throw new RuntimeException(e);
+        }
         return type;
     }
 
@@ -1739,8 +1752,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            ExposedPort exposedPort = ExposedPort.tcp(8080);
-
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -1749,8 +1760,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
                         .withRestartPolicy(unlessStoppedRestart()))
-                .withPortBindings(new PortBinding(Ports.Binding.bindPort(8080), exposedPort))
-                .withExposedPorts(exposedPort)
                 .withTty(true);
         }
     }
@@ -1837,9 +1846,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            String username = System.getenv(KEYCLOAK_ADMIN);
-            String password = System.getenv(KEYCLOAK_ADMIN_PASSWORD);
-
             ExposedPort exposedPort = ExposedPort.tcp(8180);
 
             return client
@@ -1856,8 +1862,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file",
                     "KEYCLOAK_HTTP_PORT=8180",
-                    "KEYCLOAK_ADMIN=%s".formatted(username != null ? username : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
-                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(password != null ? password : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL));
+                    "KEYCLOAK_ADMIN=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
+                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL));
         }
     }
 

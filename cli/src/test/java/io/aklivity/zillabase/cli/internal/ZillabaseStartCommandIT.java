@@ -47,8 +47,8 @@ public class ZillabaseStartCommandIT
             bindings:
               kafka:
                 bindingVersion: "0.4.0"
-                schemaRegistryUrl: "http://apicurio.zillabase.dev:8080"
-                schemaRegistryVendor: "apicurio"
+                schemaRegistryUrl: "http://karapace.zillabase.dev:8081"
+                schemaRegistryVendor: "karapace"
         channels:
           streampay-replies:
             address: "streampay-replies"
@@ -180,7 +180,7 @@ public class ZillabaseStartCommandIT
             url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
         servers:
           http:
-            host: "localhost:9090"
+            host: "localhost:8080"
             protocol: "http"
         channels:
           streampay-commands:
@@ -225,10 +225,10 @@ public class ZillabaseStartCommandIT
             channel:
               $ref: "#/channels/events-item"
             bindings:
-              x-zilla-sse:
-                method: "GET"
               http:
                 bindingVersion: "0.3.0"
+                method: "GET"
+              x-zilla-sse:
                 method: "GET"
             messages:
             - $ref: "#/channels/events-item/messages/EventsMessage"
@@ -247,10 +247,10 @@ public class ZillabaseStartCommandIT
             channel:
               $ref: "#/channels/streampay-commands"
             bindings:
-              x-zilla-sse:
-                method: "GET"
               http:
                 bindingVersion: "0.3.0"
+                method: "GET"
+              x-zilla-sse:
                 method: "GET"
             messages:
             - $ref: "#/channels/streampay-commands/messages/StreampayCommandsMessage"
@@ -259,10 +259,10 @@ public class ZillabaseStartCommandIT
             channel:
               $ref: "#/channels/streampay-commands-item"
             bindings:
-              x-zilla-sse:
-                method: "GET"
               http:
                 bindingVersion: "0.3.0"
+                method: "GET"
+              x-zilla-sse:
                 method: "GET"
             messages:
             - $ref: "#/channels/streampay-commands-item/messages/StreampayCommandsMessage"
@@ -271,10 +271,10 @@ public class ZillabaseStartCommandIT
             channel:
               $ref: "#/channels/events"
             bindings:
-              x-zilla-sse:
-                method: "GET"
               http:
                 bindingVersion: "0.3.0"
+                method: "GET"
+              x-zilla-sse:
                 method: "GET"
             messages:
             - $ref: "#/channels/events/messages/EventsMessage"
@@ -345,8 +345,8 @@ public class ZillabaseStartCommandIT
         ZillabaseSystemPropertyUtil.initialize();
         start.run();
 
-        String actualKafkaSpec = resolveAsyncApiSpec(6);
-        String actualHttpSpec = resolveAsyncApiSpec(7);
+        String actualKafkaSpec = resolveAsyncApiSpec(1);
+        String actualHttpSpec = resolveAsyncApiSpec(2);
 
         Thread.sleep(ZILLA_CONFIG_UPDATE_DELAY);
 
@@ -366,8 +366,8 @@ public class ZillabaseStartCommandIT
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(URI.create("http://localhost:8080")
-                    .resolve("/apis/registry/v2/ids/globalIds/%d".formatted(globalId)))
+                .newBuilder(URI.create("http://localhost:7184/v1/")
+                    .resolve("asyncapis/%d".formatted(globalId)))
                 .GET()
                 .build();
 

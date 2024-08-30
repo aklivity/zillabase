@@ -16,15 +16,23 @@ package io.aklivity.zillabase.cli.config;
 
 import java.util.List;
 
+import jakarta.json.bind.annotation.JsonbProperty;
+
 public final class ZillabaseKeycloakClientConfig
 {
-    private static final String KEYCLOAK_CLIENT_SECRET = "KEYCLOAK_CLIENT_SECRET";
-
+    @JsonbProperty("client-id")
     public String clientId;
+
+    @JsonbProperty("origins")
     public List<String> webOrigins = List.of("*");
+
+    @JsonbProperty("root")
+    public String rootUrl;
+
+    @JsonbProperty("redirect")
+    public List<String> redirectUris;
+
     public boolean directAccessGrantsEnabled = true;
     public boolean publicClient;
-    public String rootUrl;
-    public List<String> redirectUris;
-    public String secret = System.getenv(KEYCLOAK_CLIENT_SECRET);
+    public String secret;
 }

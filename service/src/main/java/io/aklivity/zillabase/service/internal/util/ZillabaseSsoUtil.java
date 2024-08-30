@@ -26,8 +26,6 @@ import jakarta.json.JsonReader;
 
 public class ZillabaseSsoUtil
 {
-    private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
-    private static final String KEYCLOAK_ADMIN_PASSWORD = "KEYCLOAK_ADMIN_PASSWORD";
     private static final String DEFAULT_ADMIN_CREDENTIAL = "admin";
     public static final String CONNECT_TOKEN_PATH = "/realms/master/protocol/openid-connect/token";
 
@@ -47,11 +45,8 @@ public class ZillabaseSsoUtil
         String token = null;
         try
         {
-            String username = System.getenv(KEYCLOAK_ADMIN);
-            String password = System.getenv(KEYCLOAK_ADMIN_PASSWORD);
             String form = "client_id=admin-cli&username=%s&password=%s&grant_type=password"
-                .formatted(username != null ? username : DEFAULT_ADMIN_CREDENTIAL,
-                    password != null ? password : DEFAULT_ADMIN_CREDENTIAL);
+                .formatted(DEFAULT_ADMIN_CREDENTIAL, DEFAULT_ADMIN_CREDENTIAL);
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(baseUrl.resolve(CONNECT_TOKEN_PATH))

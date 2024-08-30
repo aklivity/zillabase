@@ -22,8 +22,15 @@ public class ZillabaseZillaConfig
         new ZillabaseZillaPortConfig()
         {
             {
-                port = 9090;
+                port = 8080;
                 label = "http";
+            }
+        },
+        new ZillabaseZillaPortConfig()
+        {
+            {
+                port = 9090;
+                label = "https";
             }
         },
         new ZillabaseZillaPortConfig()

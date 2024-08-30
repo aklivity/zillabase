@@ -158,15 +158,19 @@
           "type": "object",
           "properties":
           {
-            "clientId":
+            "client-id":
             {
               "type": "string"
             },
-            "rootUrl":
+            "secret":
             {
               "type": "string"
             },
-            "redirectUris":
+            "root":
+            {
+              "type": "string"
+            },
+            "redirect":
             {
               "type": "array",
               "items":
@@ -174,7 +178,7 @@
                 "type": "string"
               }
             },
-            "webOrigins":
+            "origins":
             {
               "type": "array",
               "items":
@@ -186,8 +190,8 @@
           "additionalProperties": false,
           "required":
           [
-            "clientId",
-            "redirectUris"
+            "client-id",
+            "redirect"
           ]
         }
       },
