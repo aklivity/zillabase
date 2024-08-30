@@ -55,6 +55,11 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
         description = "Client Id")
     public String clientId;
 
+    @Required
+    @Option(name = {"-s", "--secret"},
+        description = "Client Secret")
+    public String secret;
+
     @Option(name = {"-u", "--url"},
         description = "Admin Server URL")
     public URI serverURL;
@@ -70,7 +75,7 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
         {
             Map<String, String> config = new HashMap<>();
             config.put("clientId", clientId);
-            config.put("clientSecret", System.getenv("KEYCLOAK_CLIENT_SECRET"));
+            config.put("clientSecret", secret);
 
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode idpNode = mapper.createObjectNode();

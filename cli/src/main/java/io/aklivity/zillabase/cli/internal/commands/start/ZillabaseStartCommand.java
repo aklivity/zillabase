@@ -19,11 +19,13 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.P
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
-import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_REGISTRY_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
+import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
 import java.io.BufferedWriter;
@@ -155,18 +157,19 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
     private static final int MAX_RETRIES = 5;
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-)(.)");
-    private static final String KEYCLOAK_ADMIN = "KEYCLOAK_ADMIN";
-    private static final String KEYCLOAK_ADMIN_PASSWORD = "KEYCLOAK_ADMIN_PASSWORD";
     private static final String DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL = "admin";
     private static final String ADMIN_REALMS_PATH = "/admin/realms";
     private static final String ADMIN_REALMS_CLIENTS_PATH = "/admin/realms/%s/clients";
     private static final String ADMIN_REALMS_CLIENTS_SCOPE_PATH = "/admin/realms/%s/clients/%s/default-client-scopes/%s";
     private static final String ADMIN_REALMS_SCOPE_PATH = "/admin/realms/%s/client-scopes";
+    private static final Pattern EXPRESSION_PATTERN =
+        Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
+    private Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
 
     private String kafkaArtifactId;
     private String httpArtifactId;
@@ -187,6 +190,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateRisingWaveFactory(config));
         factories.add(new CreateApicurioFactory(config));
         factories.add(new CreateKeycloakFactory(config));
+        factories.add(new CreateKarapaceFactory(config));
 
         for (CreateContainerFactory factory : factories)
         {
@@ -259,13 +263,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 try
                 {
                     Thread.sleep(delay);
-
-                    String username = System.getenv(KEYCLOAK_ADMIN);
-                    String password = System.getenv(KEYCLOAK_ADMIN_PASSWORD);
-
                     String form = "client_id=admin-cli&username=%s&password=%s&grant_type=password"
-                        .formatted(username != null ? username : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL,
-                            password != null ? password : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL);
+                        .formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL, DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL);
 
                     HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(url + "/realms/master/protocol/openid-connect/token"))
@@ -335,8 +334,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         try
         {
-            Jsonb jsonb = JsonbBuilder.create();
-
             String realm = config.keycloak.realm;
             ZillabaseKeycloakClientConfig keycloakClient = config.keycloak.client;
 
@@ -344,12 +341,20 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 keycloakClient.publicClient = true;
             }
+            else
+            {
+                if (envMatcher.reset(keycloakClient.secret).matches() && "env".equals(envMatcher.group(1)))
+                {
+                    keycloakClient.secret = System.getenv(envMatcher.group(2));
+                }
+            }
 
+            ObjectMapper mapper = new ObjectMapper();
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(toURI(url, ADMIN_REALMS_CLIENTS_PATH.formatted(realm)))
                 .header("Authorization", "Bearer %s".formatted(token))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonb.toJson(keycloakClient)))
+                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(keycloakClient)))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -582,13 +587,18 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete");
 
                 ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
-                ZillaCatalogConfig catalog = new ZillaCatalogConfig();
-                catalog.type = "apicurio";
-                catalog.options = Map.of("url", config.registry.url, "group-id", config.registry.groupId);
+                ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
+                apicurioCatalog.type = "apicurio";
+                apicurioCatalog.options = Map.of(
+                    "url", config.registry.apicurio.url,
+                    "group-id", config.registry.apicurio.groupId);
+
+                ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
+                karapaceCatalog.type = "karapace";
+                karapaceCatalog.options = Map.of("url", config.registry.karapace.url);
 
                 ZillabaseKeycloakConfig keycloak = config.keycloak;
                 String realm = keycloak.realm;
-                zilla.name = "zilla-http-kafka-asyncapi";
                 String authnJwt = "jwt0";
                 if (realm != null)
                 {
@@ -662,7 +672,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 southKafkaClient.options = optionsConfig;
                 bindings.put("south_kafka_client", southKafkaClient);
 
-                zilla.catalogs = Map.of("apicurio_catalog", catalog);
+                zilla.name = "zilla-http-kafka-asyncapi";
+                zilla.catalogs = Map.of(
+                    "apicurio_catalog", apicurioCatalog,
+                    "karapace_catalog", karapaceCatalog);
                 zilla.bindings = bindings;
 
                 ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
@@ -835,7 +848,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         KafkaBootstrapRecords records = readKafkaBootstrapRecords();
         if (records != null && !records.topics.isEmpty())
         {
-            final HttpClient client = HttpClient.newHttpClient();
+            final HttpClient client = HttpClient.newBuilder()
+                .version(HTTP_1_1)
+                .build();
 
             boolean status = false;
             int retries = 0;
@@ -885,14 +900,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                             KafkaTopicSchema schema = record.schema;
                             if (schema != null)
                             {
+                                Thread.sleep(delay);
                                 if (schema.key != null)
                                 {
-                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key);
+                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key,
+                                        resolveType(schema.key));
                                 }
 
                                 if (schema.value != null)
                                 {
-                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value);
+                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value,
+                                        resolveType(schema.value));
                                 }
                             }
                         }
@@ -927,13 +945,22 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ZillabaseConfig config,
         HttpClient client,
         String subject,
-        String schema) throws IOException, InterruptedException
+        String schema,
+        String schemaType) throws IOException, InterruptedException
     {
-        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
-                    ? "http://localhost:8080" : config.registry.url,
-                "/apis/registry/v2/groups/%s/artifacts".formatted(config.registry.groupId)))
-            .header("X-Registry-ArtifactId", subject)
-            .POST(HttpRequest.BodyPublishers.ofString(schema))
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode idpNode = mapper.createObjectNode();
+        idpNode.put("schema", schema);
+        if (schemaType != null)
+        {
+            idpNode.put("schemaType", schemaType.toUpperCase());
+        }
+
+        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
+                    ? DEFAULT_CLIENT_KARAPACE_URL : config.registry.karapace.url,
+                "/subjects/%s/versions".formatted(subject)))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(idpNode)))
             .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -1001,10 +1028,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     String schema = resolveSchema(config, client, subject);
                     if (schema != null)
                     {
-                        String type = resolveType(config, client, subject);
-                        records.add(new KafkaTopicSchemaRecord(topicName, policies,
-                            matcher.reset(topicName).replaceAll(match -> match.group(2).toUpperCase()),
-                            subject, type, schema));
+                        JsonReader reader = Json.createReader(new StringReader(schema));
+                        JsonObject object = reader.readObject();
+
+                        if (object.containsKey("schema"))
+                        {
+                            String schemaStr = object.getString("schema");
+                            String type = resolveType(schemaStr);
+                            records.add(new KafkaTopicSchemaRecord(topicName, policies,
+                                matcher.reset(topicName).replaceAll(match -> match.group(2).toUpperCase()),
+                                subject, type, schemaStr));
+                        }
                     }
                 }
             }
@@ -1046,8 +1080,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             server.setProtocol("kafka");
 
             KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
-            kafkaServerBinding.setSchemaRegistryUrl(config.registry.url);
-            kafkaServerBinding.setSchemaRegistryVendor("apicurio");
+            kafkaServerBinding.setSchemaRegistryUrl(config.registry.karapace.url);
+            kafkaServerBinding.setSchemaRegistryVendor("karapace");
             server.setBindings(Map.of("kafka", kafkaServerBinding));
 
             for (KafkaTopicSchemaRecord record : records)
@@ -1073,10 +1107,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 channel.setMessages(Map.of(messageName, reference));
                 channels.put(name, channel);
 
-                String schemaString = record.schema.replaceAll("\"type\": \"record\"", "\"type\": \"object\"");
-
                 ObjectMapper schemaMapper = new ObjectMapper();
-                JsonNode schemaObject = schemaMapper.readTree(schemaString);
+                JsonNode schemaObject = schemaMapper.readTree(record.schema);
+                if ("record".equals(schemaObject.get("type").asText()))
+                {
+                    ((ObjectNode) schemaObject).put("type", "object");
+                }
                 schemas.put(subject, schemaObject);
 
                 message = new Message();
@@ -1153,7 +1189,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             Reference security = new Reference("#/components/securitySchemes/%s".formatted(securitySchemaName));
 
             Server server = new Server();
-            server.setHost("localhost:9090");
+            server.setHost("localhost:8080");
             server.setProtocol("http");
             if (secure)
             {
@@ -1375,31 +1411,33 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     }
 
     private String resolveType(
-        ZillabaseConfig config,
-        HttpClient client,
-        String subject)
+        String schema)
     {
         String type = null;
         try
         {
-            HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
-                        ? "http://localhost:8080" : config.registry.url,
-                    "/apis/registry/v2/groups/%s/artifacts/%s/meta".formatted(config.registry.groupId, subject)))
-                .GET()
-                .build();
-
-            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            if (httpResponse.statusCode() == 200)
+            ObjectMapper schemaMapper = new ObjectMapper();
+            JsonNode schemaObject = schemaMapper.readTree(schema);
+            String schemaType = schemaObject.get("type").asText();
+            switch (schemaType)
             {
-                ObjectMapper objectMapper = new ObjectMapper();
-                JsonNode rootNode = objectMapper.readTree(httpResponse.body());
-                type = rootNode.path("type").asText().toLowerCase();
+            case "record":
+            case "enum":
+            case "fixed":
+                type = "avro";
+                break;
+            case "object":
+            case "array":
+                type = "json";
+                break;
+            default:
+                type = schemaType;
+                break;
             }
         }
-        catch (Exception ex)
+        catch (JsonProcessingException e)
         {
-            ex.printStackTrace(System.err);
+            throw new RuntimeException(e);
         }
         return type;
     }
@@ -1413,9 +1451,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.url.equals(DEFAULT_REGISTRY_URL)
-                        ? "http://localhost:8080" : config.registry.url,
-                    "/apis/registry/v2/groups/%s/artifacts/%s".formatted(config.registry.groupId, subject)))
+                .newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
+                        ? DEFAULT_CLIENT_KARAPACE_URL : config.registry.karapace.url,
+                    "/subjects/%s/versions/latest".formatted(subject)))
                 .GET()
                 .build();
 
@@ -1719,8 +1757,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            ExposedPort exposedPort = ExposedPort.tcp(8080);
-
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -1729,11 +1765,50 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
                         .withRestartPolicy(unlessStoppedRestart()))
-                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(8080), exposedPort))
-                .withExposedPorts(exposedPort)
                 .withTty(true);
         }
     }
+
+    private static final class CreateKarapaceFactory extends CreateContainerFactory
+    {
+        CreateKarapaceFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "karapace", "ghcr.io/aiven/karapace:latest");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            ExposedPort exposedPort = ExposedPort.tcp(8081);
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withPortBindings(new PortBinding(Ports.Binding.bindPort(8081), exposedPort))
+                .withExposedPorts(exposedPort)
+                .withCmd("/bin/bash", "/opt/karapace/start.sh", "registry")
+                .withEnv(
+                    "KARAPACE_ADVERTISED_HOSTNAME=karapace.zillabase.dev",
+                    "KARAPACE_BOOTSTRAP_URI=%s".formatted(config.kafka.bootstrapUrl),
+                    "KARAPACE_PORT=8081",
+                    "KARAPACE_HOST=0.0.0.0",
+                    "KARAPACE_CLIENT_ID=karapace",
+                    "KARAPACE_GROUP_ID=karapace-registry",
+                    "KARAPACE_MASTER_ELIGIBILITY=true",
+                    "KARAPACE_TOPIC_NAME=_schemas",
+                    "KARAPACE_LOG_LEVEL=WARNING",
+                    "KARAPACE_COMPATIBILITY=FULL")
+                .withTty(true);
+        }
+    }
+
 
     private static final class CreateRisingWaveFactory extends CreateContainerFactory
     {
@@ -1776,9 +1851,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            String username = System.getenv(KEYCLOAK_ADMIN);
-            String password = System.getenv(KEYCLOAK_ADMIN_PASSWORD);
-
             ExposedPort exposedPort = ExposedPort.tcp(8180);
 
             return client
@@ -1795,8 +1867,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file",
                     "KEYCLOAK_HTTP_PORT=8180",
-                    "KEYCLOAK_ADMIN=%s".formatted(username != null ? username : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
-                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(password != null ? password : DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL));
+                    "KEYCLOAK_ADMIN=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
+                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL));
         }
     }
 
@@ -1814,8 +1886,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             List<String> envVars = Arrays.asList(
                 "ADMIN_PORT=%d".formatted(config.admin.port),
-                "REGISTRY_URL=%s".formatted(config.registry.url),
-                "REGISTRY_GROUP_ID=%s".formatted(config.registry.groupId),
+                "REGISTRY_URL=%s".formatted(config.registry.apicurio.url),
+                "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
                 "CONFIG_SERVER_URL=%s".formatted(config.admin.configServerUrl),
                 "DEBUG=%s".formatted(true));
 

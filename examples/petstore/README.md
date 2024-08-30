@@ -84,7 +84,7 @@ Similarly, endpoints are avaiable to manage customers using `/petstore-customers
 ##### Publish a valid record
 
 ```bash
-curl -k -v -X POST http://localhost:9090/petstore-pets -H 'Idempotency-Key: 1'  -H 'Content-Type: application/json' -d '{"id": "123","breed": "Awesome Dog"}'
+curl -k -v -X POST http://localhost:8080/petstore-pets -H 'Idempotency-Key: 1'  -H 'Content-Type: application/json' -d '{"id": "123","breed": "Awesome Dog"}'
 ```
 
 Output:
@@ -104,7 +104,7 @@ Output:
 ##### Fetch a record
 
 ```bash
-curl -k -v http://localhost:9090/petstore-pets/1
+curl -k -v http://localhost:8080/petstore-pets/1
 ```
 
 Output:

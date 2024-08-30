@@ -14,12 +14,13 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseConfig
+public final class ZillabaseKarapaceConfig
 {
-    public ZillabaseAdminConfig admin = new ZillabaseAdminConfig();
-    public ZillabaseKafkaConfig kafka = new ZillabaseKafkaConfig();
-    public ZillabaseRegistryConfig registry = new ZillabaseRegistryConfig();
-    public ZillabaseRisingWaveConfig risingwave = new ZillabaseRisingWaveConfig();
-    public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
-    public ZillabaseKeycloakConfig keycloak = new ZillabaseKeycloakConfig();
+    private static final String DEFAULT_CONTEXT = "default";
+
+    public static final String DEFAULT_KARAPACE_URL = "http://karapace.zillabase.dev:8081";
+    public static final String DEFAULT_CLIENT_KARAPACE_URL = "http://localhost:8081";
+
+    public String url = DEFAULT_KARAPACE_URL;
+    public String context = DEFAULT_CONTEXT;
 }
