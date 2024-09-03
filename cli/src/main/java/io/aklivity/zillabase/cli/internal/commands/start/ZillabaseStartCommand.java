@@ -1418,21 +1418,25 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             ObjectMapper schemaMapper = new ObjectMapper();
             JsonNode schemaObject = schemaMapper.readTree(schema);
-            String schemaType = schemaObject.get("type").asText();
-            switch (schemaType)
+
+            if (schemaObject.has("syntax") || schemaObject.has("message"))
             {
-            case "record":
-            case "enum":
-            case "fixed":
-                type = "avro";
-                break;
-            case "object":
-            case "array":
-                type = "json";
-                break;
-            default:
-                type = schemaType;
-                break;
+                type = "protobuf";
+            }
+            else if (schemaObject.has("type"))
+            {
+                String schemaType = schemaObject.get("type").asText();
+                switch (schemaType)
+                {
+                case "record":
+                case "enum":
+                case "fixed":
+                    type = "avro";
+                    break;
+                default:
+                    type = "json";
+                    break;
+                }
             }
         }
         catch (JsonProcessingException e)
