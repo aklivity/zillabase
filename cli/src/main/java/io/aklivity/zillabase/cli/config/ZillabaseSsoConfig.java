@@ -14,14 +14,9 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseRisingWaveConfig
+public final class ZillabaseSsoConfig
 {
-    private static final int DEFAULT_RISINGWAVE_PORT = 4567;
-    private static final String DEFAULT_RISINGWAVE_DB = "dev";
-
-    public static final String DEFAULT_RISINGWAVE_INTERNAL_URL = "risingwave.zillabase.dev:4566";
-    public static final String DEFAULT_RISINGWAVE_URL = "localhost:%d".formatted(DEFAULT_RISINGWAVE_PORT);
-
-    public String url = DEFAULT_RISINGWAVE_URL;
-    public String db = DEFAULT_RISINGWAVE_DB;
+    public static final int DEFAULT_SSO_PORT = 7185;
+    public static final String DEFAULT_SSO_HOST = "sso.zillabase.dev";
+    public String tag = "latest";
 }

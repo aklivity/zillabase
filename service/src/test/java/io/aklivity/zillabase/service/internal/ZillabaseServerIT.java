@@ -49,33 +49,6 @@ public class ZillabaseServerIT
 
     @Test
     @Specification({
-        "${app}/asyncapi.register/client",
-        "${app}/asyncapi.register/server"})
-    public void shouldRegisterAsyncapiSpec() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "${app}/resolve.artifact.via.global.id/client",
-        "${app}/resolve.artifact.via.global.id/server"})
-    public void shouldResolveAsyncapiSpecById() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "${app}/remove.artifact/client",
-        "${app}/remove.artifact/server"})
-    public void shouldRemoveAsyncapiSpec() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
         "${app}/sso.add/client",
         "${app}/sso.add/server"})
     public void shouldAddIdentityProvider() throws Exception

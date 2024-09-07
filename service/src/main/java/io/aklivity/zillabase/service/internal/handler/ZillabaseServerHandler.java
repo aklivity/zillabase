@@ -43,9 +43,9 @@ public abstract class ZillabaseServerHandler implements HttpHandler
         try
         {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            response.headers().map().forEach((k, v) -> exchange.getResponseHeaders().add(k, String.join(",", v)));
-            exchange.sendResponseHeaders(response.statusCode(), response.body().length());
 
+            long contentLength = response.body() != null ? response.body().getBytes().length : 0;
+            exchange.sendResponseHeaders(response.statusCode(), contentLength);
             if (response.body() != null && !response.body().isEmpty())
             {
                 try (OutputStream os = exchange.getResponseBody())
