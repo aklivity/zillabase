@@ -1882,7 +1882,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateSsoFactory(
             ZillabaseConfig config)
         {
-            super(config, "sso", "ghcr.io/aklivity/zillabase/sso:%s".formatted(config.admin.tag));
+            super(config, "sso", "ghcr.io/aklivity/zillabase/sso:%s".formatted(config.sso.tag));
         }
 
         @Override
@@ -1910,7 +1910,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateAdminFactory(
             ZillabaseConfig config)
         {
-            super(config, "admin", "ghcr.io/aklivity/zilla:%s".formatted(config.zilla.tag));
+            super(config, "admin", "ghcr.io/aklivity/zilla:%s".formatted(config.admin.tag));
         }
 
         @Override
@@ -1926,6 +1926,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .toList();
 
             URI apicurio = URI.create(config.registry.apicurio.url);
+            URI configServer = URI.create(config.admin.configServerUrl);
             String risingwaveUrl = config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL)
                 ? DEFAULT_RISINGWAVE_INTERNAL_URL
                 : config.risingwave.url;
@@ -1935,8 +1936,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "ZILLA_INCUBATOR_ENABLED=%s".formatted(true),
                 "RISINGWAVE_HOST=%s".formatted(risingwave[0]),
                 "RISINGWAVE_PORT=%s".formatted(risingwave[1]),
-                "CONFIG_SERVER_HOST=%s".formatted("config.zillabase.dev"),
-                "CONFIG_SERVER_PORT=%d".formatted(7114),
+                "CONFIG_SERVER_HOST=%s".formatted(configServer.getHost()),
+                "CONFIG_SERVER_PORT=%d".formatted(configServer.getPort()),
                 "APICURIO_HOST=%s".formatted(apicurio.getHost()),
                 "APICURIO_PORT=%d".formatted(apicurio.getPort()),
                 "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),

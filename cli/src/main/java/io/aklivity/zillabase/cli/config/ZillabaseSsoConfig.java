@@ -18,5 +18,6 @@ public final class ZillabaseSsoConfig
 {
     public static final int DEFAULT_SSO_PORT = 7185;
     public static final String DEFAULT_SSO_HOST = "sso.zillabase.dev";
+
     public String tag = "latest";
 }
