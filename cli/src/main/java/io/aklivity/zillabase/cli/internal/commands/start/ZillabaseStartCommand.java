@@ -198,6 +198,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateKeycloakFactory(config));
         factories.add(new CreateKarapaceFactory(config));
         factories.add(new CreateAdminFactory(config));
+        factories.add(new CreateUdfServerFactory(config));
 
         for (CreateContainerFactory factory : factories)
         {
@@ -2012,6 +2013,63 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 ex.printStackTrace(System.err);
             }
             return container;
+        }
+    }
+
+    private static final class CreateUdfServerFactory extends CreateContainerFactory
+    {
+        CreateUdfServerFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "udf-server", "ghcr.io/aklivity/zillabase/udf-server:%s".formatted(config.admin.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<String> envVars = Arrays.asList("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+
+            String projectsBasePath = "zillabase/functions/java";
+
+            File projectsDirectory = new File(projectsBasePath);
+            List<Bind> binds = new ArrayList<>();
+
+            if (projectsDirectory.exists() && projectsDirectory.isDirectory())
+            {
+                File[] projectDirs = projectsDirectory.listFiles(File::isDirectory);
+                if (projectDirs != null)
+                {
+                    for (File projectDir : projectDirs)
+                    {
+                        File targetDir = new File(projectDir, "target");
+                        if (targetDir.exists())
+                        {
+                            File[] jarFiles = targetDir.listFiles((dir, name) -> name.endsWith(".jar"));
+                            if (jarFiles != null)
+                            {
+                                for (File jarFile : jarFiles)
+                                {
+                                    String jarHostPath = jarFile.getAbsolutePath();
+                                    String jarContainerPath = "/opt/udf/lib/" + jarFile.getName();
+                                    binds.add(new Bind(jarHostPath, new Volume(jarContainerPath)));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withBinds(binds))
+                .withEnv(envVars)
+                .withTty(true);
         }
     }
 }
