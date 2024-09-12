@@ -19,12 +19,17 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.P
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
+import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
-import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_INTERNAL_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_HOST;
+import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_PORT;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
@@ -88,6 +93,7 @@ import org.leadpony.justify.api.JsonSchema;
 import org.leadpony.justify.api.JsonSchemaReader;
 import org.leadpony.justify.api.JsonValidationService;
 import org.leadpony.justify.api.ProblemHandler;
+import org.postgresql.jdbc.PreferQueryMode;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
@@ -183,8 +189,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
-        factories.add(new CreateAdminFactory(config));
-        factories.add(new CreateUdfServerFactory(config));
+        factories.add(new CreateSsoFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
         factories.add(new CreateKafkaFactory(config));
@@ -192,6 +197,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateApicurioFactory(config));
         factories.add(new CreateKeycloakFactory(config));
         factories.add(new CreateKarapaceFactory(config));
+        factories.add(new CreateAdminFactory(config));
 
         for (CreateContainerFactory factory : factories)
         {
@@ -688,7 +694,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             if (zillaConfig != null)
             {
                 HttpRequest httpRequest = HttpRequest
-                    .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port), "/v1/config/zilla.yaml"))
+                    .newBuilder(toURI("http://localhost:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
+                        "/v1/config/zilla.yaml"))
                     .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
                     .build();
 
@@ -713,7 +720,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                                     Path relativePath = zillaFilesPath.relativize(file);
                                     byte[] content = Files.readAllBytes(file);
                                     HttpRequest zillaFileRequest = HttpRequest
-                                        .newBuilder(toURI("http://localhost:%d".formatted(config.admin.port),
+                                        .newBuilder(toURI("http://localhost:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
                                             "/v1/config/%s".formatted(relativePath)))
                                         .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
                                         .build();
@@ -1483,6 +1490,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             Properties props = new Properties();
             props.setProperty("user", "root");
+            props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
 
             boolean status = false;
             int retries = 0;
@@ -1823,8 +1831,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            ExposedPort exposedPort = ExposedPort.tcp(DEFAULT_RISINGWAVE_PORT);
-
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -1832,9 +1838,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                         .withNetworkMode(network)
-                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(DEFAULT_RISINGWAVE_PORT), exposedPort))
                         .withRestartPolicy(unlessStoppedRestart()))
-                .withExposedPorts(exposedPort)
                 .withTty(true)
                 .withCmd("playground");
         }
@@ -1873,12 +1877,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private static final class CreateAdminFactory extends CreateContainerFactory
+    private static final class CreateSsoFactory extends CreateContainerFactory
     {
-        CreateAdminFactory(
+        CreateSsoFactory(
             ZillabaseConfig config)
         {
-            super(config, "admin", "ghcr.io/aklivity/zillabase/admin:%s".formatted(config.admin.tag));
+            super(config, "sso", "ghcr.io/aklivity/zillabase/sso:%s".formatted(config.sso.tag));
         }
 
         @Override
@@ -1886,14 +1890,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             List<String> envVars = Arrays.asList(
-                "ADMIN_PORT=%d".formatted(config.admin.port),
-                "REGISTRY_URL=%s".formatted(config.registry.apicurio.url),
-                "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
-                "CONFIG_SERVER_URL=%s".formatted(config.admin.configServerUrl),
+                "ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
                 "DEBUG=%s".formatted(true));
 
-            int port = config.admin.port;
-            ExposedPort exposedPort = ExposedPort.tcp(port);
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -1901,67 +1900,76 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network))
-                    .withPortBindings(new PortBinding(Ports.Binding.bindPort(port), exposedPort))
-                .withExposedPorts(exposedPort)
                 .withEnv(envVars)
                 .withTty(true);
         }
     }
 
-    private static final class CreateUdfServerFactory extends CreateContainerFactory
+    private static final class CreateAdminFactory extends CreateContainerFactory
     {
-        CreateUdfServerFactory(
+        CreateAdminFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server", "ghcr.io/aklivity/zillabase/udf-server:%s".formatted(config.admin.tag));
+            super(config, "admin", "ghcr.io/aklivity/zilla:%s".formatted(config.admin.tag));
         }
 
         @Override
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            List<String> envVars = Arrays.asList("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+            List<ExposedPort> exposedPorts = config.admin.PORTS.stream()
+                .map(port -> ExposedPort.tcp(port))
+                .toList();
 
-            String projectsBasePath = "zillabase/functions/java";
+            List<PortBinding> portBindings = config.admin.PORTS.stream()
+                .map(port -> new PortBinding(Ports.Binding.bindPort(port), ExposedPort.tcp(port)))
+                .toList();
 
-            File projectsDirectory = new File(projectsBasePath);
-            List<Bind> binds = new ArrayList<>();
+            URI apicurio = URI.create(config.registry.apicurio.url);
+            URI configServer = URI.create(config.admin.configServerUrl);
+            String risingwaveUrl = config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL)
+                ? DEFAULT_RISINGWAVE_INTERNAL_URL
+                : config.risingwave.url;
+            String[] risingwave = risingwaveUrl.split(":");
 
-            if (projectsDirectory.exists() && projectsDirectory.isDirectory())
-            {
-                File[] projectDirs = projectsDirectory.listFiles(File::isDirectory);
-                if (projectDirs != null)
-                {
-                    for (File projectDir : projectDirs)
-                    {
-                        File targetDir = new File(projectDir, "target");
-                        if (targetDir.exists())
-                        {
-                            File[] jarFiles = targetDir.listFiles((dir, name) -> name.endsWith(".jar"));
-                            if (jarFiles != null)
-                            {
-                                for (File jarFile : jarFiles)
-                                {
-                                    String jarHostPath = jarFile.getAbsolutePath();
-                                    String jarContainerPath = "/opt/udf/lib/" + jarFile.getName();
-                                    binds.add(new Bind(jarHostPath, new Volume(jarContainerPath)));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            List<String> envVars = Arrays.asList(
+                "ZILLA_INCUBATOR_ENABLED=%s".formatted(true),
+                "RISINGWAVE_HOST=%s".formatted(risingwave[0]),
+                "RISINGWAVE_PORT=%s".formatted(risingwave[1]),
+                "CONFIG_SERVER_HOST=%s".formatted(configServer.getHost()),
+                "CONFIG_SERVER_PORT=%d".formatted(configServer.getPort()),
+                "APICURIO_HOST=%s".formatted(apicurio.getHost()),
+                "APICURIO_PORT=%d".formatted(apicurio.getPort()),
+                "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
+                "SSO_ADMIN_HOST=%s".formatted(DEFAULT_SSO_HOST),
+                "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT));
 
-            return client
+            CreateContainerCmd container = client
                 .createContainerCmd(image)
                 .withLabels(project)
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
-                    .withBinds(binds))
+                    .withPortBindings(portBindings))
+                .withCmd("start", "-v", "-e")
+                .withExposedPorts(exposedPorts)
                 .withEnv(envVars)
                 .withTty(true);
+
+            try
+            {
+                File tempFile = File.createTempFile("zillabase-admin-server-zilla", ".yaml");
+                Path configPath = Paths.get(tempFile.getPath());
+                Files.writeString(configPath, ZILLABASE_ADMIN_SERVER_ZILLA_YAML);
+                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")));
+                tempFile.deleteOnExit();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
+            return container;
         }
     }
 

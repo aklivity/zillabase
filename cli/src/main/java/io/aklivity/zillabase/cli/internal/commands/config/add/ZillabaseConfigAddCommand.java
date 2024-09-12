@@ -87,14 +87,14 @@ public final class ZillabaseConfigAddCommand extends ZillabaseConfigCommand
             serverURL = ADMIN_SERVER_DEFAULT;
         }
 
-        HttpRequest httpRequest = HttpRequest
-            .newBuilder(serverURL.resolve(path))
-            .PUT(HttpRequest.BodyPublishers.ofInputStream(() -> content))
-            .build();
-
         boolean status = false;
         try
         {
+            HttpRequest httpRequest = HttpRequest
+                .newBuilder(serverURL.resolve(path))
+                .PUT(HttpRequest.BodyPublishers.ofByteArray(content.readAllBytes()))
+                .build();
+
             HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
             status = httpResponse.statusCode() == 204;
         }
