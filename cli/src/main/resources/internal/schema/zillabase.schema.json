@@ -24,6 +24,18 @@
       },
       "additionalProperties": false
     },
+    "sso":
+    {
+      "type": "object",
+      "properties":
+      {
+        "tag":
+        {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "kafka":
     {
       "type": "object",
