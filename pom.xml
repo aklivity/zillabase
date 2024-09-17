@@ -54,6 +54,7 @@
 
   <modules>
     <module>service</module>
+    <module>udf-server</module>
     <module>cli</module>
   </modules>
 
