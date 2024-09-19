@@ -26,9 +26,9 @@ public final class ZillabaseAdminConfig
         name: admin
         catalogs:
           karapace_catalog:
-          type: karapace
-          options:
-            url: ${{env.KARAPACE_URL}}
+            type: karapace
+            options:
+              url: ${{env.KARAPACE_URL}}
         bindings:
           tcp_server:
             type: tcp
@@ -62,7 +62,7 @@ public final class ZillabaseAdminConfig
                     karapace_catalog:
                       - strategy: topic
             routes:
-              - exit: pgsql_kafka
+              - exit: pgsql_kafka_proxy
                 when:
                   - commands:
                       - "CREATE TOPIC"
@@ -77,21 +77,21 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.RISINGWAVE_HOST}}
               port: ${{env.RISINGWAVE_PORT}}
-          pgsql_kafka:
+          pgsql_kafka_proxy:
             type: pgsql-kafka
             kind: proxy
             catalog:
               karapace_catalog:
                 - strategy: topic
             exit: kafka_client
-           kafka_client:
+          kafka_client:
             type: kafka
             kind: client
             options:
               servers:
                 - ${{env.KAFKA_BOOTSTRAP_SERVER}}
             exit: kafka_tcp_client
-           kafka_tcp_client:
+          kafka_tcp_client:
             type: tcp
             kind: client
           http_server:

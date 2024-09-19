@@ -1217,6 +1217,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 {
                     continue;
                 }
+
+                if (name.startsWith(config.risingwave.db))
+                {
+                    name = name.replace(config.risingwave.db, "");
+                }
                 String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
                 if (secure)
                 {
@@ -1947,7 +1952,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "APICURIO_PORT=%d".formatted(apicurio.getPort()),
                 "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
                 "SSO_ADMIN_HOST=%s".formatted(DEFAULT_SSO_HOST),
-                "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT));
+                "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
+                "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
+                "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl));
 
             CreateContainerCmd container = client
                 .createContainerCmd(image)
