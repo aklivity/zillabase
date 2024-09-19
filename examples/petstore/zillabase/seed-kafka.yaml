@@ -1,7 +1,7 @@
 # topics
 
 topics:
-  - name: petstore-pets
+  - name: dev.petstore-pets
     config:
       replication_factor: 1
       partitions: 1
@@ -27,7 +27,7 @@ topics:
           "namespace": "io.aklivity.example",
           "type": "record"
         }
-  - name: petstore-customers
+  - name: dev.petstore-customers
     schema:
       value: |
         {
@@ -45,7 +45,7 @@ topics:
           "namespace": "io.aklivity.example",
           "type": "record"
         }
-  - name: petstore-verified-customers
+  - name: dev.petstore-verified-customers
     config:
       replication_factor: 1
       partitions: 1
