@@ -1527,7 +1527,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .formatted(config.risingwave.url, config.risingwave.db), props);
                          Statement stmt = conn.createStatement())
                     {
-                        String[] sqlCommands = content.split(";");
+                        String[] sqlCommands = content.split("(?<=;)(\\\\s*)");
                         for (String command : sqlCommands)
                         {
                             if (!command.trim().isEmpty())
