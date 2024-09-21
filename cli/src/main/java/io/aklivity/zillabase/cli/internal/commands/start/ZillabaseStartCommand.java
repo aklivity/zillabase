@@ -1546,7 +1546,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ZillabaseConfig config)
     {
         String content = readSeedSql();
-        if (content != null)
+        if (content != null && !content.isEmpty())
         {
             Properties props = new Properties();
             props.setProperty("user", "root");
@@ -1565,12 +1565,18 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .formatted(config.risingwave.url, config.risingwave.db), props);
                          Statement stmt = conn.createStatement())
                     {
-                        String[] sqlCommands = content.split("(?<=;)(\\\\s*)");
-                        for (String command : sqlCommands)
+                        String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
+                                          .replaceAll("--.*?(\\r?\\n)", "");
+
+                        List<String> splitCommands = splitSQL(noCommentsSQL);
+
+                        for (String command : splitCommands)
                         {
                             if (!command.trim().isEmpty())
                             {
-                                stmt.execute(command);
+                                command = command.trim().replaceAll("[\\n\\r]+$", "");
+                                System.out.println("Executing command: " + command);
+                                stmt.executeUpdate(command);
                             }
                         }
                         status = true;
@@ -1593,6 +1599,39 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
             }
         }
+    }
+
+    private static List<String> splitSQL(
+        String sql)
+    {
+        List<String> result = new ArrayList<>();
+        StringBuilder command = new StringBuilder();
+        boolean insideDollarBlock = false;
+
+        String[] lines = sql.split("\\r?\\n");
+
+        for (String line : lines)
+        {
+            if (line.contains("$$"))
+            {
+                insideDollarBlock = !insideDollarBlock;
+            }
+
+            command.append(line).append("\n");
+
+            if (!insideDollarBlock && line.trim().endsWith(";"))
+            {
+                result.add(command.toString().trim());
+                command.setLength(0);
+            }
+        }
+
+        if (!command.isEmpty())
+        {
+            result.add(command.toString().trim());
+        }
+
+        return result;
     }
 
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
