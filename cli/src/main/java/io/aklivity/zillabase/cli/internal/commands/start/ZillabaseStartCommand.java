@@ -31,6 +31,7 @@ import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT
 import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_PORT;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
 import java.io.BufferedWriter;
@@ -56,6 +57,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -123,10 +125,15 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.HealthState;
+import com.github.dockerjava.api.command.InspectContainerCmd;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HealthCheck;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.api.model.PortBinding;
@@ -227,8 +234,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try (CreateContainerCmd command = factory.createContainer(client))
             {
                 CreateContainerResponse response = command.exec();
-                String responseId = response.getId();
-                containerIds.add(responseId);
+                String id = response.getId();
+
+                containerIds.add(id);
             }
         }
 
@@ -237,6 +245,36 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             try (StartContainerCmd command = client.startContainerCmd(containerId))
             {
                 command.exec();
+            }
+        }
+
+        while (!containerIds.isEmpty())
+        {
+            for (Iterator<String> i = containerIds.iterator(); i.hasNext(); )
+            {
+                String containerId = i.next();
+
+                try (InspectContainerCmd command = client.inspectContainerCmd(containerId))
+                {
+                    InspectContainerResponse response = command.exec();
+
+                    ContainerState state = response.getState();
+                    HealthState health = state.getHealth();
+
+                    if (health == null || "healthy".equals(health.getStatus()))
+                    {
+                        i.remove();
+                    }
+                }
+            }
+
+            try
+            {
+                Thread.sleep(3000L);
+            }
+            catch (InterruptedException ex)
+            {
+                throw new RuntimeException(ex);
             }
         }
 
@@ -1772,7 +1810,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     "KAFKA_CFG_LISTENERS=CLIENT://:9092,INTERNAL://:29092,CONTROLLER://:9093",
                     "KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL",
                     "KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://localhost:9092,INTERNAL://kafka.zillabase.dev:29092",
-                    "KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true");
+                    "KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true")
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/29092")));
         }
     }
 
@@ -1794,9 +1837,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withRestartPolicy(unlessStoppedRestart()))
-                .withTty(true);
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8080")));
         }
     }
 
@@ -1836,7 +1884,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     "KARAPACE_TOPIC_NAME=_schemas",
                     "KARAPACE_LOG_LEVEL=WARNING",
                     "KARAPACE_COMPATIBILITY=FULL")
-                .withTty(true);
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8081")));
         }
     }
 
@@ -1862,7 +1915,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .withNetworkMode(network)
                         .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
-                .withCmd("playground");
+                .withCmd("playground")
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/4566")));
         }
     }
 
@@ -1890,12 +1948,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withPortBindings(new PortBinding(Ports.Binding.bindPort(8180), exposedPort))
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withExposedPorts(exposedPort)
-                .withTty(true)
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file",
                     "KEYCLOAK_HTTP_PORT=8180",
                     "KEYCLOAK_ADMIN=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
-                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL));
+                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL))
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8180")));
         }
     }
 
@@ -1923,7 +1986,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network))
                 .withEnv(envVars)
-                .withTty(true);
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s".formatted(DEFAULT_SSO_PORT))));
         }
     }
 
@@ -1980,7 +2048,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withCmd("start", "-v", "-e")
                 .withExposedPorts(exposedPorts)
                 .withEnv(envVars)
-                .withTty(true);
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184")));
+
 
             try
             {
@@ -2022,7 +2096,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network))
                 .withCmd("start", "-v", "-e")
                 .withEnv(envVars)
-                .withTty(true);
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7114")));
 
             try
             {
@@ -2093,7 +2172,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withBinds(binds))
                 .withEnv(envVars)
-                .withTty(true);
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8815")));
         }
     }
 }
