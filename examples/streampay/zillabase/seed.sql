@@ -27,11 +27,6 @@ INCLUDE zilla_correlation_id AS correlation_id
 INCLUDE zilla_identity AS owner_id
 INCLUDE timestamp as timestamp;
 
-CREATE TABLE streampay_replies(
-    status VARCHAR,
-    correlationid VARCHAR
-);
-
 CREATE TABLE streampay_payment_requests(
   id VARCHAR,
   fromUserId VARCHAR,
@@ -62,8 +57,13 @@ CREATE TABLE streampay_balance_histories(
 )
 INCLUDE timestamp AS timestamp;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS invalid_commands AS
+CREATE VIEW IF NOT EXISTS invalid_status_code AS
     SELECT column_value('400') as status, encode(correlation_id, 'escape') as correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment');
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS valid_commands AS
+CREATE VIEW IF NOT EXISTS valid_status_code AS
     SELECT column_value('200') as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where NOT NULL AND type IN ('SendPayment', 'RequestPayment');
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
+    SELECT * FROM invalid_status_code
+    UNION
+    SELECT * FROM valid_status_code;
