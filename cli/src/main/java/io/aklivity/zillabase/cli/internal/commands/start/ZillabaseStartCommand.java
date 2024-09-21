@@ -1508,7 +1508,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ZillabaseConfig config)
     {
         String content = readSeedSql();
-        if (content != null)
+        if (content != null && !content.isEmpty())
         {
             Properties props = new Properties();
             props.setProperty("user", "root");
@@ -1527,12 +1527,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .formatted(config.risingwave.url, config.risingwave.db), props);
                          Statement stmt = conn.createStatement())
                     {
-                        String[] sqlCommands = content.split("(?<=;)(\\\\s*)");
+                        String[] sqlCommands = content.split("(?<=;)(?=\\\\s*\\\\n)");
                         for (String command : sqlCommands)
                         {
                             if (!command.trim().isEmpty())
                             {
-                                stmt.execute(command);
+                                command = command.trim().replaceAll("[\\n\\r]+$", "");
+                                System.out.println("Executing command: " + command);
+                                stmt.executeUpdate(command);
                             }
                         }
                         status = true;
