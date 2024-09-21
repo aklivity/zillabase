@@ -1,5 +1,21 @@
 -- seed
 
+CREATE FUNCTION column_value(name varchar) RETURNS TABLE (value varchar) LANGUAGE javascript AS $$
+    yield i;
+$$;
+
+CREATE FUNCTION generate_guid() RETURNS TABLE (value varchar) LANGUAGE javascript AS $$
+    var result, i, j;
+    result = '';
+    for(j=0; j<32; j++) {
+        if( j == 8 || j == 12 || j == 16 || j == 20)
+          result = result + '-';
+        i = Math.floor(Math.random()*16).toString(16).toUpperCase();
+        result = result + i;
+    }
+  return result;
+$$;
+
 CREATE TABLE streampay_commands(
     type VARCHAR,
     userid VARCHAR,
@@ -45,3 +61,9 @@ CREATE TABLE streampay_balance_histories(
     balance DOUBLE PRECISION
 )
 INCLUDE timestamp AS timestamp;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS invalid_commands AS
+    SELECT column_value('400') as status, encode(correlation_id, 'escape') as correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment');
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS valid_commands AS
+    SELECT column_value('200') as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where NOT NULL AND type IN ('SendPayment', 'RequestPayment');

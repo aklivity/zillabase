@@ -1568,7 +1568,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
                                           .replaceAll("--.*?(\\r?\\n)", "");
 
-                        String[] splitCommands = noCommentsSQL.split("(?<=;)");
+                        List<String> splitCommands = splitSQL(noCommentsSQL);
 
                         for (String command : splitCommands)
                         {
@@ -1599,6 +1599,39 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
             }
         }
+    }
+
+    private static List<String> splitSQL(
+        String sql)
+    {
+        List<String> result = new ArrayList<>();
+        StringBuilder command = new StringBuilder();
+        boolean insideDollarBlock = false;
+
+        String[] lines = sql.split("\\r?\\n");
+
+        for (String line : lines)
+        {
+            if (line.contains("$$"))
+            {
+                insideDollarBlock = !insideDollarBlock;
+            }
+
+            command.append(line).append("\n");
+
+            if (!insideDollarBlock && line.trim().endsWith(";"))
+            {
+                result.add(command.toString().trim());
+                command.setLength(0);
+            }
+        }
+
+        if (!command.isEmpty())
+        {
+            result.add(command.toString().trim());
+        }
+
+        return result;
     }
 
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
