@@ -2,6 +2,21 @@
 
 This example demonstrates how to register external User Defined Functions (UDFs) in the UDF server(zillabase) and declare and use these UDFs.
 
+#### Build external User Defined Functions (UDFs)
+
+```bash
+$ cd zillabase/functions/java/risingwave-java-udf-template/
+$ ./mvnw clean install
+```
+
+Output:
+
+```text
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+
 #### Install `zillabase`
 
 ```bash
