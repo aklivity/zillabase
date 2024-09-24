@@ -49,17 +49,13 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref, unref, watch} from 'vue';
-import {useAuth0} from "@auth0/auth0-vue";
-import {api, streamingUrl} from "boot/axios";
-import {Buffer} from "buffer";
-import {watchEffectOnceAsync} from "@auth0/auth0-vue/src/utils";
+import {defineComponent, ref, watch} from 'vue';
+import {api} from 'boot/axios';
+import {keycloak} from 'boot/main';
 
 export default defineComponent({
   name: 'MainPage',
   setup () {
-    const auth0 = useAuth0();
-
     const tableRef = ref(null);
 
     const columns = [
@@ -76,21 +72,20 @@ export default defineComponent({
     const requests = ref([] as any);
 
     return {
-      auth0,
+      keycloak,
       tableRef,
       columns,
       requests
     }
   },
   async mounted() {
-    const auth0 = this.auth0;
     const requests = this.requests;
 
     async function readRequests() {
-      const accessToken = await auth0.getAccessTokenSilently();
+      const accessToken = keycloak.token;
       const authorization = {Authorization: `Bearer ${accessToken}`};
 
-      await api.get('/streampay-request-payments', {
+      await api.get('/streampay_payment_requests', {
         headers: {
           ...authorization
         }
@@ -103,10 +98,14 @@ export default defineComponent({
       });
     }
 
-    if (auth0.isAuthenticated.value) {
+    if (keycloak.authenticated) {
       await readRequests();
     } else {
-      watch(auth0.isAuthenticated, readRequests);
+      watch(() => keycloak.authenticated ?? false, (newValue) => {
+        if (newValue) {
+          readRequests();
+        }
+      });
     }
   }
 });

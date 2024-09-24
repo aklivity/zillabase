@@ -51,14 +51,12 @@
 
 <script lang="ts">
 import {defineComponent, ref, watch} from 'vue';
-import {useAuth0} from '@auth0/auth0-vue';
 import {streamingUrl} from 'boot/axios';
+import {keycloak, user} from 'boot/main';
 
 export default defineComponent({
   name: 'MainPage',
   setup () {
-    const auth0 = useAuth0();
-
     const tableRef = ref(null);
 
     const columns = [
@@ -78,8 +76,8 @@ export default defineComponent({
 
     return {
       color: 'text-red',
-      auth0,
-      user: auth0.user,
+      keycloak,
+      user,
       tableRef,
       columns,
       activities,
@@ -90,14 +88,13 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const auth0 = this.auth0;
-    const userId = this.user.sub;
+    const userId = this.user?.username;
     const activities = this.activities;
     let activitiesStream = this.activitiesStream;
 
     async function readActivities() {
-      const accessToken = await auth0.getAccessTokenSilently();
-      activitiesStream = new EventSource(`${streamingUrl}/streampay-activities?access_token=${accessToken}`);
+      const accessToken = keycloak.token;
+      activitiesStream = new EventSource(`${streamingUrl}/streampay_activities?access_token=${accessToken}`);
 
       activitiesStream.onopen = function () {
         activities.splice(0);
@@ -144,11 +141,15 @@ export default defineComponent({
       };
     }
 
-    if (this.auth0.isAuthenticated.value)
+    if (keycloak.authenticated)
     {
       await readActivities();
     } else {
-      watch(this.auth0.isAuthenticated, readActivities);
+      watch(() => keycloak.authenticated ?? false, (newValue) => {
+        if (newValue) {
+          readActivities();
+        }
+      });
     }
   },
   unmounted() {

@@ -695,7 +695,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     optionsConfig.http.authorization = Map.of(authnJwt,
                         Map.of("credentials",
                             Map.of("headers",
-                                Map.of("authorization", "Bearer {credentials}"))));
+                                Map.of("authorization", "Bearer {credentials}"),
+                                "query", Map.of("access_token", "{credentials}"))));
                 }
                 northHttpServer.options = optionsConfig;
                 northHttpServer.exit = "south_kafka_proxy";
