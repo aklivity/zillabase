@@ -55,10 +55,10 @@
 <script lang="ts">
 import {defineComponent, ref, toRefs, watch} from 'vue'
 import {api, streamingUrl} from "boot/axios";
+import {keycloak, user} from "boot/main";
 import {useQuasar} from "quasar";
 import {useRouter} from "vue-router";
 import {v4} from "uuid";
-import {useAuth0} from "@auth0/auth0-vue";
 
 interface UserOption {
   label: string;
@@ -74,7 +74,6 @@ export default defineComponent({
   },
   setup (props) {
     const $q = useQuasar()
-    const auth0 = useAuth0();
     const { requestId } = toRefs(props);
     const balance = ref(0 as number);
     const userOption = ref(null as UserOption | null);
@@ -85,8 +84,8 @@ export default defineComponent({
     const balanceStream = null as EventSource | null;
 
     return {
-      auth0,
-      user: auth0.user,
+      keycloak,
+      user,
       formRequestId: requestId,
       balance,
       userOption,
@@ -96,9 +95,9 @@ export default defineComponent({
       balanceStream,
       async onPay () {
         if (balance.value - amount.value > 0) {
-          const accessToken = await auth0.getAccessTokenSilently();
+          const accessToken = keycloak.token;
           const authorization = { Authorization: `Bearer ${accessToken}` };
-          api.post('/streampay-commands', {
+          api.post('/streampay_commands', {
             type: 'SendPayment',
             userid: userOption.value?.value,
             requestid: "",
@@ -131,9 +130,9 @@ export default defineComponent({
         }
       },
       async onRequest () {
-        const accessToken = await auth0.getAccessTokenSilently();
+        const accessToken = keycloak.token;
         const authorization = { Authorization: `Bearer ${accessToken}` };
-        api.post('/streampay-commands', {
+        api.post('/streampay_commands', {
           type: 'RequestPayment',
           userid: userOption.value?.value,
           requestid: "",
@@ -159,7 +158,6 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const auth0 = this.auth0;
     const updateBalance = this.updateBalance;
     const updateAmount = this.updateAmount;
     const formRequestId = this.formRequestId;
@@ -167,9 +165,9 @@ export default defineComponent({
     let balanceStream = this.balanceStream;
 
     async function readBalance() {
-      const accessToken = await auth0.getAccessTokenSilently();
+      const accessToken = keycloak.token;
       const authorization = { Authorization: `Bearer ${accessToken}` };
-      balanceStream = new EventSource(`${streamingUrl}/streampay-balances?access_token=${accessToken}`);
+      balanceStream = new EventSource(`${streamingUrl}/streampay_balance?access_token=${accessToken}`);
 
       balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
@@ -177,7 +175,7 @@ export default defineComponent({
       };
 
       if (formRequestId) {
-        api.get('/streampay-request-payments/' + formRequestId,{
+        api.get('/streampay_payment_requests/' + formRequestId,{
           headers: {
             ...authorization
           }
@@ -193,10 +191,14 @@ export default defineComponent({
       }
     }
 
-    if (auth0.isAuthenticated.value) {
+    if (keycloak.authenticated) {
       await readBalance();
     } else {
-      watch(this.auth0.isAuthenticated, readBalance);
+      watch(() => keycloak.authenticated ?? false, (newValue) => {
+        if (newValue) {
+          readBalance();
+        }
+      });
     }
 
   },
@@ -208,10 +210,10 @@ export default defineComponent({
       this.amount = amount;
     },
     async fetchAndSetUsers(userId = null) {
-      const accessToken = await this.auth0.getAccessTokenSilently();
+      const accessToken = keycloak.token;
       const authorization = { Authorization: `Bearer ${accessToken}` };
 
-        const url = userId == null ? '/streampay-users' : '/streampay-users/' + userId;
+        const url = userId == null ? '/streampay_users' : '/streampay_users/' + userId;
         await api.get(url, {
           headers: {
             ...authorization,
@@ -220,7 +222,7 @@ export default defineComponent({
         .then((response) => {
           const users = response.data;
           for(let user of users) {
-            if (user.id != this.user.sub) {
+            if (user.id != userId) {
               const newUserOption = {
                 label: user.name,
                 value: user.id

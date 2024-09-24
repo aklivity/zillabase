@@ -26,14 +26,12 @@
 
 <script lang="ts">
 import {defineComponent, ref, watch} from 'vue';
-import {useAuth0} from '@auth0/auth0-vue';
 import {streamingUrl} from 'boot/axios';
+import {keycloak} from 'boot/main';
 
 export default defineComponent({
   name: 'MainPage',
   setup () {
-    const auth0 = useAuth0();
-
     const balanceSeries = ref([{
       name: 'Balance',
       data: [] as any
@@ -45,7 +43,7 @@ export default defineComponent({
     const averageTransactionStream = null as EventSource | null;
 
     return {
-      auth0,
+      keycloak,
       options: {},
       balanceSeries,
       balanceStream,
@@ -56,7 +54,6 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const auth0 = this.auth0;
     const updateBalance = this.updateBalance;
     const updateTotalTransactionBalance = this.updateTotalTransactionBalance;
     const updateAverageTransactionBalance = this.updateAverageTransactionBalance;
@@ -65,9 +62,9 @@ export default defineComponent({
     let averageTransactionStream = this.averageTransactionStream;
 
     async function readStatement() {
-      const accessToken = await auth0.getAccessTokenSilently();
+      const accessToken = keycloak.token;
 
-      balanceStream = new EventSource(`${streamingUrl}/balance-histories?access_token=${accessToken}`);
+      balanceStream = new EventSource(`${streamingUrl}/streampay_balance_histories?access_token=${accessToken}`);
 
       balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
@@ -88,10 +85,14 @@ export default defineComponent({
       };
     }
 
-    if (auth0.isAuthenticated.value) {
+    if (keycloak.authenticated) {
       await readStatement();
     } else {
-      watch(auth0.isAuthenticated, readStatement);
+      watch(() => keycloak.authenticated ?? false, (newValue) => {
+        if (newValue) {
+          readStatement();
+        }
+      });
     }
   },
   methods: {

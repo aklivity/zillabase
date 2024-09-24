@@ -16,11 +16,8 @@
           />
         </div>
         <div style="margin-top: 100px">
-          <q-avatar size="60px" class="q-mb-sm" style="margin-left: 10px">
-            <img :src="user.picture" referrerpolicy="no-referrer">
-          </q-avatar>
           <div class="text-weight-bold float-right text-h6" style="padding-right: 10px; width: 222px; margin-top: 10px;">
-            Hi, {{ user.name }}
+            Hi, {{ user.firstName }}
           </div>
         </div>
       </div>
@@ -90,10 +87,9 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref, unref, watch} from 'vue';
-import {useAuth0} from '@auth0/auth0-vue';
+import {defineComponent, unref, watch} from 'vue';
 import {api, streamingUrl} from "boot/axios";
-import {watchEffectOnceAsync} from "@auth0/auth0-vue/src/utils";
+import {keycloak, user} from 'boot/main';
 import {v4} from "uuid";
 
 export default defineComponent({
@@ -105,24 +101,22 @@ export default defineComponent({
     }
   },
   setup () {
-    const auth0 = useAuth0();
-
     return {
-      auth0,
-      user: auth0.user
+      keycloak,
+      user,
     }
   },
   async mounted() {
+    const userId = this.user?.username;
+    const firstname = this.user?.firstName;
     const incRequests =  this.incRequest;
     const decRequests =  this.decRequests;
     const updateBalance =  this.updateBalance;
-    const auth0 = this.auth0;
     async function authenticatePage() {
-      const accessToken = await auth0.getAccessTokenSilently();
+      const accessToken = keycloak.token;
+      const requestStream = new EventSource(`${streamingUrl}/streampay_payment_requests?access_token=${accessToken}`);
 
-      const requestStream = new EventSource(`${streamingUrl}/streampay-request-payment?access_token=${accessToken}`);
-
-      requestStream.addEventListener('delete', (event: MessageEvent) => {
+      requestStream.addEventListener('delete', () => {
         decRequests();
       }, false);
 
@@ -130,7 +124,7 @@ export default defineComponent({
         incRequests();
       };
 
-      const balanceStream = new EventSource(`${streamingUrl}/streampay-balances?access_token=${accessToken}`);
+      const balanceStream = new EventSource(`${streamingUrl}/streampay_balance?access_token=${accessToken}`);
 
       balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
@@ -138,11 +132,11 @@ export default defineComponent({
       };
 
       const authorization = { Authorization: `Bearer ${accessToken}` };
-      const userId = auth0.user.value.sub;
-      await api.put(`${streamingUrl}/streampay-users/${userId}`, {
+
+      await api.put(`${streamingUrl}/streampay_users/${userId}`, {
         'id': userId,
-        'name': auth0.user.value.name,
-        'username': auth0.user.value.nickname
+        'name': firstname,
+        'username': userId
       }, {
         headers: {
           'Idempotency-Key': v4(),
@@ -151,17 +145,21 @@ export default defineComponent({
       })
     }
 
-    if (auth0.isAuthenticated.value)
+    if (keycloak.authenticated)
     {
       await authenticatePage();
     } else {
-      watch(this.auth0.isAuthenticated, authenticatePage);
+      watch(() => keycloak.authenticated ?? false, (newValue) => {
+        if (newValue) {
+          authenticatePage();
+        }
+      });
     }
   },
   methods: {
      logout() {
-      this.auth0.logout({
-        returnTo: `${window.location.origin}/`
+      keycloak.logout({
+        redirectUri: `${window.location.origin}/`
       });
     },
     incRequest() {
@@ -178,22 +176,20 @@ export default defineComponent({
   },
   async beforeCreate() {
     const isAuthenticated = async () => {
-      if (unref(this.auth0.isAuthenticated)) {
+      if (unref(keycloak.authenticated)) {
         return true;
       }
 
-      await this.auth0.loginWithRedirect({
-        appState: { target: '/' }
+      await keycloak.login({
+         redirectUri: window.location.href,
       });
 
       return false;
     };
 
-    if (!unref(this.auth0.isLoading)) {
-      return isAuthenticated();
+    if (!unref(keycloak.authenticated)) {
+        await keycloak.init({ onLoad: 'login-required' });
     }
-
-    await watchEffectOnceAsync(() => !unref(this.auth0.isLoading));
 
     return isAuthenticated();
   }

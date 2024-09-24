@@ -42,20 +42,13 @@
 
 <script lang="ts">
 import {defineComponent, unref} from 'vue';
-import { useAuth0 } from "@auth0/auth0-vue";
-import {watchEffectOnceAsync} from "@auth0/auth0-vue/src/utils";
+import {keycloak} from 'boot/main';
 
 export default defineComponent({
   name: 'IndexPage',
-  setup () {
-    const auth0 = useAuth0();
-    return {
-      auth0: auth0
-    }
-  },
   async beforeCreate() {
     const fn = async () => {
-      if (!unref(this.auth0.isAuthenticated)) {
+      if (!unref(keycloak.authenticated)) {
         return true;
       }
 
@@ -64,17 +57,15 @@ export default defineComponent({
       return true;
     };
 
-    if (!unref(this.auth0.isLoading)) {
+    if (!unref(keycloak.authenticated)) {
       return fn();
     }
-
-    await watchEffectOnceAsync(() => !unref(this.auth0.isLoading));
 
     return fn();
   },
   methods: {
     login() {
-      this.auth0.loginWithRedirect();
+      keycloak.login();
     }
   }
 });

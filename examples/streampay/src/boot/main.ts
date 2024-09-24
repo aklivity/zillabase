@@ -1,17 +1,54 @@
-import {boot} from 'quasar/wrappers'
-import { domain, clientId as client_id } from '../../auth_config.json';
-import { createAuth0 } from '@auth0/auth0-vue';
+import { boot } from 'quasar/wrappers';
+import Keycloak, { KeycloakInstance, KeycloakProfile } from 'keycloak-js';
 
-// "async" is optional;
-// more info on params: https://v2.quasar.dev/quasar-cli/boot-files
-export default boot( ({ app}) => {
-  app.use(
-    createAuth0({
-      domain,
-      client_id,
-      redirect_uri: `http://localhost:8080/#/main`,
-      audience: 'https://localhost:9090/streampay',
-      scope: 'read:users write:users read:payment-requests write:pay write:request read:activities read:balances'
-    })
-  )
-})
+const keycloak = new Keycloak({
+  url: 'http://localhost:8180/',
+  realm: 'zillabase',
+  clientId: 'streampay',
+});
+
+let user: KeycloakProfile | null = null;
+
+async function createRefreshTokenTimer(keycloak: KeycloakInstance) {
+  setInterval(() => {
+    keycloak.updateToken(60).then((refreshed: boolean) => {
+      if (refreshed) {
+        console.log('Token refreshed', refreshed);
+      } else {
+        console.log('Token not refreshed, it is still valid');
+      }
+    }).catch(() => {
+      console.log('Failed to refresh token');
+    });
+  }, 6000);
+}
+
+export default boot(({ app }) => {
+  return new Promise<void>(resolve => {
+    keycloak.init({
+      onLoad: 'login-required',
+      checkLoginIframe: false,
+      enableLogging: true,
+    }).then(async (authenticated: boolean) => {
+      if (authenticated) {
+        console.log('Authenticated');
+        keycloak.loadUserProfile().then(userProfile => {
+          user = userProfile;
+        }).catch(err => {
+          console.error('Failed to load user profile:', err);
+        });
+        await createRefreshTokenTimer(keycloak);
+        resolve();
+      } else {
+        console.log('Not authenticated');
+      }
+    }).catch((error: Error) => {
+      console.log('Authentication failure', error);
+    });
+
+    app.config.globalProperties.$keycloak = keycloak as Keycloak;
+    app.config.globalProperties.$user = user as KeycloakProfile;
+  });
+});
+
+export { keycloak, user };

@@ -11,17 +11,16 @@
 import {defineComponent, unref} from "vue";
 import PayOrRequestForm from "components/PayOrRequestForm.vue";
 import {useRoute} from "vue-router";
-import {useAuth0} from "@auth0/auth0-vue";
+import {keycloak} from 'boot/main';
 
 export default defineComponent({
   name: 'PayOrRequestPage',
   components: { PayOrRequestForm },
   setup() {
     const route = useRoute();
-    const auth0 = useAuth0();
     const requestId = route.params.requestId;
     return {
-      auth0,
+      keycloak,
       requestId
     };
   }

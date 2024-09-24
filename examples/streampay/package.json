@@ -11,7 +11,7 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@auth0/auth0-vue": "^1.0.2",
+    "keycloak-js": "^25.0.6",
     "@quasar/extras": "^1.0.0",
     "apexcharts": "^3.37.0",
     "axios": "^1.6.0",
