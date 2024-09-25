@@ -62,6 +62,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -1796,6 +1797,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .map(portConfig -> new PortBinding(Ports.Binding.bindPort(portConfig.port), ExposedPort.tcp(portConfig.port)))
                 .toList();
 
+            List<String> env = Optional.ofNullable(config.zilla.env).orElse(List.of());
 
             return client
                 .createContainerCmd(image)
@@ -1807,7 +1809,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .withPortBindings(portBindings))
                 .withExposedPorts(exposedPorts)
                 .withCmd("start", "-v", "-e", "-c", "%s/config/zilla.yaml".formatted(config.admin.configServerUrl))
-                .withTty(true);
+                .withTty(true)
+                .withEnv(env);
         }
     }
 
