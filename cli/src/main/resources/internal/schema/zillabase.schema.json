@@ -149,6 +149,14 @@
           },
           "minItems": 1
         },
+        "env":
+        {
+            "type": "array",
+            "items":
+            {
+              "type": "string"
+            }
+        },
         "tag":
         {
           "type": "string"
