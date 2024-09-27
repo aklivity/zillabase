@@ -14,28 +14,20 @@
  */
 package io.aklivity.zillabase.cli.internal.asyncapi;
 
+import java.util.List;
+
 import com.asyncapi.bindings.OperationBinding;
-import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class ZillaSseOperationBinding extends OperationBinding
+public final class ZillaSseKafkaOperationBinding extends OperationBinding
 {
-    @JsonProperty("method")
-    private HTTPOperationMethod method;
+    @JsonProperty("filters")
+    private List<AsyncapiSseKafkaFilter> filters;
 
-
-    @JsonProperty("bindingVersion")
-    private String bindingVersion;
-
-    public ZillaSseOperationBinding(
-        HTTPOperationMethod method,
-        String bindingVersion)
+    public ZillaSseKafkaOperationBinding(
+        List<AsyncapiSseKafkaFilter> filters)
     {
-        this.method = method;
-        this.bindingVersion = bindingVersion;
+        this.filters = filters;
     }
 
-    public ZillaSseOperationBinding()
-    {
-    }
 }

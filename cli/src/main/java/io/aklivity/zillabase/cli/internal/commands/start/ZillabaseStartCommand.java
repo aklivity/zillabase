@@ -150,8 +150,10 @@ import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
+import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiSseKafkaFilter;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
+import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseOperationBinding;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaAsyncApiConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingConfig;
@@ -1544,8 +1546,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setMessages(List.of(reference));
         httpBinding = new HTTPOperationBinding();
         httpBinding.setMethod(GET);
-        ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding(GET);
-        operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
+        ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
+        AsyncapiSseKafkaFilter filter = new AsyncapiSseKafkaFilter();
+        filter.key = "{identity}";
+        ZillaSseKafkaOperationBinding sseKafkaBinding = new ZillaSseKafkaOperationBinding(List.of(filter));
+        Map<String, Object> operationBindings = Map.of(
+            //"http", httpBinding,
+            "x-zilla-sse", sseBinding,
+            "x-zilla-sse-kafka", sseKafkaBinding);
+        operation.setBindings(operationBindings);
         if (secure)
         {
             operation.setSecurity(List.of(security));
@@ -1558,10 +1567,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setChannel(reference);
         reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
         operation.setMessages(List.of(reference));
-        httpBinding = new HTTPOperationBinding();
-        httpBinding.setMethod(GET);
-        sseBinding = new ZillaSseOperationBinding(GET);
-        operation.setBindings(Map.of("http", httpBinding, "x-zilla-sse", sseBinding));
+        operation.setBindings(operationBindings);
         if (secure)
         {
             operation.setSecurity(List.of(security));
