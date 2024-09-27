@@ -222,7 +222,7 @@ export default defineComponent({
         .then((response) => {
           const users = response.data;
           for(let user of users) {
-            if (user.id != userId) {
+            if (user.id != this.user?.id) {
               const newUserOption = {
                 label: user.name,
                 value: user.id

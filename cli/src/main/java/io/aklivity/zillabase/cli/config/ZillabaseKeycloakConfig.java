@@ -29,5 +29,6 @@ public final class ZillabaseKeycloakConfig
     public String jwks = KEYCLOAK_JWKS_URL;
     public String realm;
     public ZillabaseKeycloakClientConfig client;
+    public List<ZillabaseKeycloakUserConfig> users;
     public List<String> scopes = new ArrayList<>();
 }

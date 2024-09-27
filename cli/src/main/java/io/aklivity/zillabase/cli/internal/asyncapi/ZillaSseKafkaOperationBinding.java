@@ -12,15 +12,22 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.asyncapi.zilla;
+package io.aklivity.zillabase.cli.internal.asyncapi;
 
-import java.util.Map;
+import java.util.List;
 
-public class ZillaAsyncApiConfig
+import com.asyncapi.bindings.OperationBinding;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public final class ZillaSseKafkaOperationBinding extends OperationBinding
 {
-    public String name;
-    public Map<String, ZillaCatalogConfig> catalogs;
-    public Map<String, ZillaGuardConfig> guards;
-    public Map<String, ZillaBindingConfig> bindings;
-    public Map<String, Object> telemetry;
+    @JsonProperty("filters")
+    private List<AsyncapiSseKafkaFilter> filters;
+
+    public ZillaSseKafkaOperationBinding(
+        List<AsyncapiSseKafkaFilter> filters)
+    {
+        this.filters = filters;
+    }
+
 }

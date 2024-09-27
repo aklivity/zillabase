@@ -23,10 +23,19 @@ public final class ZillaSseOperationBinding extends OperationBinding
     @JsonProperty("method")
     private HTTPOperationMethod method;
 
+
+    @JsonProperty("bindingVersion")
+    private String bindingVersion;
+
     public ZillaSseOperationBinding(
-        HTTPOperationMethod method)
+        HTTPOperationMethod method,
+        String bindingVersion)
     {
         this.method = method;
+        this.bindingVersion = bindingVersion;
     }
 
+    public ZillaSseOperationBinding()
+    {
+    }
 }

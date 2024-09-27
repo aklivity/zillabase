@@ -107,8 +107,9 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const userId = this.user?.username;
+    const userId = this.user?.id;
     const firstname = this.user?.firstName;
+    const username = this.user?.username;
     const incRequests =  this.incRequest;
     const decRequests =  this.decRequests;
     const updateBalance =  this.updateBalance;
@@ -136,7 +137,7 @@ export default defineComponent({
       await api.put(`${streamingUrl}/streampay_users/${userId}`, {
         'id': userId,
         'name': firstname,
-        'username': userId
+        'username': username
       }, {
         headers: {
           'Idempotency-Key': v4(),

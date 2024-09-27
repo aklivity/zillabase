@@ -12,15 +12,12 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.asyncapi.zilla;
+package io.aklivity.zillabase.cli.config;
 
-import java.util.Map;
-
-public class ZillaAsyncApiConfig
+public final class ZillabaseKeycloakUserConfig
 {
+    public String username;
+    public String email;
     public String name;
-    public Map<String, ZillaCatalogConfig> catalogs;
-    public Map<String, ZillaGuardConfig> guards;
-    public Map<String, ZillaBindingConfig> bindings;
-    public Map<String, Object> telemetry;
+    public String password;
 }

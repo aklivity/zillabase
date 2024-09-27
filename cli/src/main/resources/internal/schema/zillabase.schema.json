@@ -173,6 +173,41 @@
         {
           "type": "string"
         },
+        "users":
+        {
+          "type": "array",
+          "items":
+          {
+            "type": "object",
+            "properties":
+            {
+              "username":
+              {
+                "type": "string"
+              },
+              "email":
+              {
+                "type": "string"
+              },
+              "name":
+              {
+                "type": "string"
+              },
+              "password":
+              {
+                "type": "string"
+              }
+            },
+            "required":
+            [
+              "username",
+              "email",
+              "name",
+              "password"
+            ],
+            "additionalProperties": false
+          }
+        },
         "client":
         {
           "type": "object",

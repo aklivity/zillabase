@@ -32,7 +32,7 @@ export default boot(({ app }) => {
     }).then(async (authenticated: boolean) => {
       if (authenticated) {
         console.log('Authenticated');
-        keycloak.loadUserProfile().then(userProfile => {
+        await keycloak.loadUserProfile().then(userProfile => {
           user = userProfile;
         }).catch(err => {
           console.error('Failed to load user profile:', err);
