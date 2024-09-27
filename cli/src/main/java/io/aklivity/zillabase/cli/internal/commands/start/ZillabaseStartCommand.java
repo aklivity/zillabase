@@ -693,7 +693,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
             else if (!operations.isEmpty())
             {
-                List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete");
+                List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
+                    "Get", "GetItem");
 
                 ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
                 ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
@@ -1548,10 +1549,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         httpBinding.setMethod(GET);
         ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
         AsyncapiSseKafkaFilter filter = new AsyncapiSseKafkaFilter();
-        filter.key = "{identity}";
+        if (secure)
+        {
+            filter.key = "{identity}";
+        }
         ZillaSseKafkaOperationBinding sseKafkaBinding = new ZillaSseKafkaOperationBinding(List.of(filter));
         Map<String, Object> operationBindings = Map.of(
-            //"http", httpBinding,
             "x-zilla-sse", sseBinding,
             "x-zilla-sse-kafka", sseKafkaBinding);
         operation.setBindings(operationBindings);
@@ -1573,6 +1576,34 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             operation.setSecurity(List.of(security));
         }
         operations.put("on%sReadItem".formatted(label), operation);
+
+        operation = new Operation();
+        operation.setAction(OperationAction.RECEIVE);
+        reference = new Reference("#/channels/%s".formatted(name));
+        operation.setChannel(reference);
+        reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
+        operation.setMessages(List.of(reference));
+        httpBinding = new HTTPOperationBinding();
+        httpBinding.setMethod(GET);
+        operation.setBindings(Map.of("http", httpBinding));
+        if (secure)
+        {
+            operation.setSecurity(List.of(security));
+        }
+        operations.put("on%sGet".formatted(label), operation);
+
+        operation = new Operation();
+        operation.setAction(OperationAction.RECEIVE);
+        reference = new Reference("#/channels/%s-item".formatted(name));
+        operation.setChannel(reference);
+        reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
+        operation.setMessages(List.of(reference));
+        operation.setBindings(Map.of("http", httpBinding));
+        if (secure)
+        {
+            operation.setSecurity(List.of(security));
+        }
+        operations.put("on%sGetItem".formatted(label), operation);
     }
 
     private String buildAsyncApiSpec(
