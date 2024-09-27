@@ -1,7 +1,7 @@
 -- seed
 
 CREATE FUNCTION column_value(name varchar) RETURNS TABLE (value varchar) LANGUAGE javascript AS $$
-    yield i;
+    yield name;
 $$;
 
 CREATE FUNCTION generate_guid() RETURNS TABLE (value varchar) LANGUAGE javascript AS $$
@@ -61,7 +61,7 @@ CREATE VIEW IF NOT EXISTS invalid_status_code AS
     SELECT column_value('400') as status, encode(correlation_id, 'escape') as correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment');
 
 CREATE VIEW IF NOT EXISTS valid_status_code AS
-    SELECT column_value('200') as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where NOT NULL AND type IN ('SendPayment', 'RequestPayment');
+    SELECT column_value('200') as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment');
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
     SELECT * FROM invalid_status_code

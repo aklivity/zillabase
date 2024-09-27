@@ -88,7 +88,7 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const userId = this.user?.username;
+    const userId = this.user?.id;
     const activities = this.activities;
     let activitiesStream = this.activitiesStream;
 
