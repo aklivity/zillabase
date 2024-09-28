@@ -61,6 +61,8 @@ public final class ZillabaseAdminConfig
                   catalog:
                     karapace_catalog:
                       - strategy: topic
+              udf:
+                - server: ${{env.UDF_SERVER}}
             routes:
               - exit: pgsql_kafka_proxy
                 when:
