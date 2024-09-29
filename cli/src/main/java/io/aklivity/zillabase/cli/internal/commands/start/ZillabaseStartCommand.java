@@ -1393,6 +1393,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 channel.setMessages(itemMessagesRef);
                 channels.put("%s-item".formatted(name), channel);
 
+                // Channel for SSE endpoints
+                channel = new Channel();
+                channel.setAddress("/%s-stream".formatted(name));
+                channel.setMessages(itemMessagesRef);
+                channels.put("%s-stream".formatted(name), channel);
+
+                channel = new Channel();
+                channel.setAddress("/%s-stream-identity".formatted(name));
+                channel.setMessages(itemMessagesRef);
+                channels.put("%s-stream-identity".formatted(name), channel);
+
                 JsonObject channelBinding = channelValue.asJsonObject().getJsonObject("bindings");
                 boolean compact = false;
                 if (channelBinding.containsKey("kafka"))
@@ -1492,6 +1503,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         String messageName,
         boolean compact)
     {
+        // HTTP Operations
         Operation operation = new Operation();
         operation.setAction(OperationAction.SEND);
         Reference reference = new Reference("#/channels/%s".formatted(name));
@@ -1544,44 +1556,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setMessages(List.of(reference));
         httpBinding = new HTTPOperationBinding();
         httpBinding.setMethod(GET);
-        ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
-        AsyncapiSseKafkaFilter filter = new AsyncapiSseKafkaFilter();
-        if (secure)
-        {
-            filter.key = "{identity}";
-        }
-        ZillaSseKafkaOperationBinding sseKafkaBinding = new ZillaSseKafkaOperationBinding(List.of(filter));
-        Map<String, Object> operationBindings = Map.of(
-            "x-zilla-sse", sseBinding,
-            "x-zilla-sse-kafka", sseKafkaBinding);
-        operation.setBindings(operationBindings);
-        if (secure)
-        {
-            operation.setSecurity(List.of(security));
-        }
-        operations.put("on%sRead".formatted(label), operation);
-
-        operation = new Operation();
-        operation.setAction(OperationAction.RECEIVE);
-        reference = new Reference("#/channels/%s-item".formatted(name));
-        operation.setChannel(reference);
-        reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
-        operation.setMessages(List.of(reference));
-        operation.setBindings(operationBindings);
-        if (secure)
-        {
-            operation.setSecurity(List.of(security));
-        }
-        operations.put("on%sReadItem".formatted(label), operation);
-
-        operation = new Operation();
-        operation.setAction(OperationAction.RECEIVE);
-        reference = new Reference("#/channels/%s".formatted(name));
-        operation.setChannel(reference);
-        reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
-        operation.setMessages(List.of(reference));
-        httpBinding = new HTTPOperationBinding();
-        httpBinding.setMethod(GET);
         operation.setBindings(Map.of("http", httpBinding));
         if (secure)
         {
@@ -1601,6 +1575,48 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             operation.setSecurity(List.of(security));
         }
         operations.put("on%sGetItem".formatted(label), operation);
+
+        // SSE Operations
+        operation = new Operation();
+        operation.setAction(OperationAction.RECEIVE);
+        reference = new Reference("#/channels/%s-stream-identity".formatted(name));
+        operation.setChannel(reference);
+        reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
+        operation.setMessages(List.of(reference));
+        httpBinding = new HTTPOperationBinding();
+        httpBinding.setMethod(GET);
+        ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
+        AsyncapiSseKafkaFilter filter = new AsyncapiSseKafkaFilter();
+        if (secure)
+        {
+            filter.key = "{identity}";
+        }
+        ZillaSseKafkaOperationBinding sseKafkaBinding = new ZillaSseKafkaOperationBinding(List.of(filter));
+        Map<String, Object> operationBindings = Map.of(
+            "x-zilla-sse", sseBinding,
+            "x-zilla-sse-kafka", sseKafkaBinding);
+        operation.setBindings(operationBindings);
+        if (secure)
+        {
+            operation.setSecurity(List.of(security));
+        }
+        operations.put("on%sReadItem".formatted(label), operation);
+
+
+        operation = new Operation();
+        operation.setAction(OperationAction.RECEIVE);
+        reference = new Reference("#/channels/%s-stream".formatted(name));
+        operation.setChannel(reference);
+        reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
+        operation.setMessages(List.of(reference));
+        httpBinding = new HTTPOperationBinding();
+        httpBinding.setMethod(GET);
+        operation.setBindings(Map.of("x-zilla-sse", sseBinding));
+        if (secure)
+        {
+            operation.setSecurity(List.of(security));
+        }
+        operations.put("on%sRead".formatted(label), operation);
     }
 
     private String buildAsyncApiSpec(

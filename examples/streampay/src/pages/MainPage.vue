@@ -94,7 +94,7 @@ export default defineComponent({
 
     async function readActivities() {
       const accessToken = keycloak.token;
-      activitiesStream = new EventSource(`${streamingUrl}/streampay_activities?access_token=${accessToken}`);
+      activitiesStream = new EventSource(`${streamingUrl}/streampay_activities-stream?access_token=${accessToken}`);
 
       activitiesStream.onopen = function () {
         activities.splice(0);

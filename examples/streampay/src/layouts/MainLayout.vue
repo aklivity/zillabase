@@ -115,7 +115,7 @@ export default defineComponent({
     const updateBalance =  this.updateBalance;
     async function authenticatePage() {
       const accessToken = keycloak.token;
-      const requestStream = new EventSource(`${streamingUrl}/streampay_payment_requests?access_token=${accessToken}`);
+      const requestStream = new EventSource(`${streamingUrl}/streampay_payment_requests-stream?access_token=${accessToken}`);
 
       requestStream.addEventListener('delete', () => {
         decRequests();
@@ -125,7 +125,7 @@ export default defineComponent({
         incRequests();
       };
 
-      const balanceStream = new EventSource(`${streamingUrl}/streampay_balance?access_token=${accessToken}`);
+      const balanceStream = new EventSource(`${streamingUrl}/streampay_balance-stream-identity?access_token=${accessToken}`);
 
       balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
