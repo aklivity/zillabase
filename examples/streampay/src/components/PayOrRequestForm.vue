@@ -167,7 +167,7 @@ export default defineComponent({
     async function readBalance() {
       const accessToken = keycloak.token;
       const authorization = { Authorization: `Bearer ${accessToken}` };
-      balanceStream = new EventSource(`${streamingUrl}/streampay_balances?access_token=${accessToken}`);
+      balanceStream = new EventSource(`${streamingUrl}/streampay_balance-stream-identity?access_token=${accessToken}`);
 
       balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
