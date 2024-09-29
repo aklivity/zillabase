@@ -26,6 +26,12 @@ CREATE TABLE streampay_users(
   PRIMARY KEY (id)
 );
 
+CREATE TABLE streampay_initial_balances (
+    user_id VARCHAR,
+    initial_balance DOUBLE PRECISION,
+    PRIMARY KEY (user_id)
+);
+
 CREATE VIEW user_transactions AS
   SELECT
       encode(owner_id, 'escape') AS user_id,
@@ -39,12 +45,27 @@ CREATE VIEW user_transactions AS
   FROM streampay_commands
   WHERE type = 'SendPayment';
 
+CREATE VIEW all_user_transactions AS
+  SELECT
+      user_id,
+      initial_balance AS net_amount
+  FROM
+      streampay_initial_balances
+  UNION ALL
+  SELECT
+      user_id,
+      net_amount
+  FROM
+      user_transactions;
+
 CREATE MATERIALIZED VIEW streampay_balances AS
   SELECT
       user_id,
       SUM(net_amount) AS balance
-  FROM user_transactions
-  GROUP BY user_id;
+  FROM
+      all_user_transactions
+  GROUP BY
+      user_id;
 
 CREATE MATERIALIZED VIEW streampay_payment_requests as
   SELECT

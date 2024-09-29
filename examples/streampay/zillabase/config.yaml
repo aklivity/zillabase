@@ -14,6 +14,10 @@ keycloak:
       email: jane.doe@example.com
       name: Jane Doe
       password: Test@123
+    - username: accountant
+      email: investor@example.com
+      name: Aklivity Zilla
+      password: Test@123
   client:
     client-id: streampay
     redirects:
