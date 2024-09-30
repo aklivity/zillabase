@@ -64,11 +64,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 import java.util.zip.CRC32C;
 
 import jakarta.json.Json;
@@ -183,13 +185,16 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final String ADMIN_REALMS_USERS_PATH = "/admin/realms/%s/users";
     private static final Pattern EXPRESSION_PATTERN =
         Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
+    private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
+        Pattern.DOTALL);
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
+    private final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
+    private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
     private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
-    private Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
 
     private String kafkaArtifactId;
     private String httpArtifactId;
@@ -780,26 +785,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 optionsConfig = new ZillaBindingOptionsConfig();
                 optionsConfig.specs = Map.of("kafka_api", kafkaApi);
                 List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig = new ArrayList<>();
-                for (KafkaTopicSchemaRecord record : records)
-                {
-                    if (record.name.endsWith("_replies"))
-                    {
-                        ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
-                            new ZillaBindingOptionsConfig.KafkaTopicConfig();
-                        topicConfig.name = record.name;
-                        ZillaBindingOptionsConfig.TransformConfig transforms =
-                            new ZillaBindingOptionsConfig.TransformConfig();
-                        transforms.headers = Map.of(":status", "${message.value.status}",
-                            "zilla:correlation-id", "${message.value.correlation_id}");
-                        ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
-                        value.model = record.type;
-                        value.catalog = Map.of("catalog0",
-                            List.of(Map.of("subject", record.subject, "version", "latest")));
-                        topicConfig.value = value;
-                        topicConfig.transforms = List.of(transforms);
-                        topicsConfig.add(topicConfig);
-                    }
-                }
+                extractedHeaders(topicsConfig);
 
                 ZillaBindingOptionsConfig.KafkaOptionsConfig kafkaOptionsConfig =
                     new ZillaBindingOptionsConfig.KafkaOptionsConfig();
@@ -876,6 +862,120 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             ex.printStackTrace(System.err);
         }
+    }
+
+    private void extractedHeaders(
+        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig)
+    {
+        for (KafkaTopicSchemaRecord record : records)
+        {
+            if (record.name.endsWith("_replies"))
+            {
+                ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
+                    new ZillaBindingOptionsConfig.KafkaTopicConfig();
+                topicConfig.name = record.name;
+                ZillaBindingOptionsConfig.TransformConfig transforms =
+                    new ZillaBindingOptionsConfig.TransformConfig();
+                transforms.headers = Map.of(":status", "${message.value.status}",
+                    "zilla:correlation-id", "${message.value.correlation_id}");
+                ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
+                value.model = record.type;
+                value.catalog = Map.of("catalog0",
+                    List.of(Map.of("subject", record.subject, "version", "latest")));
+                topicConfig.value = value;
+                topicConfig.transforms = List.of(transforms);
+                topicsConfig.add(topicConfig);
+            }
+            else
+            {
+                String identity = record.type.equals("protobuf")
+                    ? extractIdentityFieldFromProtobufSchema(record.schema)
+                    : extractIdentityFieldFromSchema(record.schema);
+                if (identity != null)
+                {
+                    ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
+                        new ZillaBindingOptionsConfig.KafkaTopicConfig();
+                    topicConfig.name = record.name;
+                    ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
+                    value.model = record.type;
+                    value.catalog = Map.of("catalog0",
+                        List.of(Map.of("subject", record.subject, "version", "latest")));
+                    topicConfig.value = value;
+                    ZillaBindingOptionsConfig.TransformConfig transforms =
+                        new ZillaBindingOptionsConfig.TransformConfig();
+                    transforms.headers = Map.of("identity", "${message.value.%s}".formatted(identity));
+                    topicConfig.transforms = List.of(transforms);
+                    topicsConfig.add(topicConfig);
+                }
+            }
+        }
+    }
+
+    private String extractIdentityFieldFromProtobufSchema(
+        String schema)
+    {
+        String identity = null;
+        String[] parts = schema.split(";");
+        for (String part : parts)
+        {
+            part = part.trim();
+            if (part.contains("message") || part.contains("syntax"))
+            {
+                continue;
+            }
+            String[] tokens = part.split("\\s+");
+            if (tokens.length >= 2)
+            {
+                String fieldName = tokens[1];
+                if (fieldName.endsWith("_identity"))
+                {
+                    identity = fieldName;
+                    break;
+                }
+            }
+        }
+        return identity;
+    }
+
+    private String extractIdentityFieldFromSchema(
+        String schema)
+    {
+        AtomicReference<String> identity = new AtomicReference<>(null);
+        try
+        {
+            ObjectMapper schemaMapper = new ObjectMapper();
+            JsonNode schemaObject = schemaMapper.readTree(schema);
+            if (schemaObject.has("fields"))
+            {
+                JsonNode fieldsNode = schemaObject.get("fields");
+                StreamSupport.stream(fieldsNode.spliterator(), false)
+                    .forEach(field ->
+                    {
+                        String fieldName = field.has("name")
+                            ? field.get("name").asText()
+                            : fieldsNode.fieldNames().next();
+                        if (fieldName.endsWith("_identity"))
+                        {
+                            identity.set(fieldName);
+                        }
+                    });
+            }
+            else if (schemaObject.has("properties"))
+            {
+                JsonNode fieldsNode = schemaObject.get("properties");
+                fieldsNode.fieldNames().forEachRemaining(fieldName ->
+                {
+                    if (fieldName.endsWith("_identity"))
+                    {
+                        identity.set(fieldName);
+                    }
+                });
+            }
+        }
+        catch (JsonProcessingException ex)
+        {
+        }
+        return identity.get();
     }
 
     private void createConfigServerKafkaTopic(
@@ -1657,32 +1757,34 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         String type = null;
         try
         {
-            ObjectMapper schemaMapper = new ObjectMapper();
-            JsonNode schemaObject = schemaMapper.readTree(schema);
-
-            if (schemaObject.has("syntax") || schemaObject.has("message"))
+            if (protoMatcher.reset(schema.toLowerCase()).matches())
             {
                 type = "protobuf";
             }
-            else if (schemaObject.has("type"))
+            else
             {
-                String schemaType = schemaObject.get("type").asText();
-                switch (schemaType)
+                ObjectMapper schemaMapper = new ObjectMapper();
+                JsonNode schemaObject = schemaMapper.readTree(schema);
+                if (schemaObject.has("type"))
                 {
-                case "record":
-                case "enum":
-                case "fixed":
-                    type = "avro";
-                    break;
-                default:
-                    type = "json";
-                    break;
+                    String schemaType = schemaObject.get("type").asText();
+                    switch (schemaType)
+                    {
+                    case "record":
+                    case "enum":
+                    case "fixed":
+                        type = "avro";
+                        break;
+                    default:
+                        type = "json";
+                        break;
+                    }
                 }
             }
         }
-        catch (JsonProcessingException e)
+        catch (Exception ex)
         {
-            throw new RuntimeException(e);
+            System.err.format("Failed to parse schema type: %s:\n", ex.getMessage());
         }
         return type;
     }
