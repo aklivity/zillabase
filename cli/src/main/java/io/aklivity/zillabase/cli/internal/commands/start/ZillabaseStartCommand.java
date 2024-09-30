@@ -1603,6 +1603,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         String messageName,
         boolean compact)
     {
+        String identity = null;
+        for (KafkaTopicSchemaRecord record : records)
+        {
+            if (label.equals(record.label))
+            {
+                identity = record.type.equals("protobuf")
+                    ? extractIdentityFieldFromProtobufSchema(record.schema)
+                    : extractIdentityFieldFromSchema(record.schema);
+            }
+        }
+
         // HTTP Operations
         Operation operation = new Operation();
         operation.setAction(OperationAction.SEND);
@@ -1683,8 +1694,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setChannel(reference);
         reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
         operation.setMessages(List.of(reference));
-        httpBinding = new HTTPOperationBinding();
-        httpBinding.setMethod(GET);
         ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
         AsyncapiSseKafkaFilter filter = new AsyncapiSseKafkaFilter();
         if (secure)
@@ -1709,9 +1718,16 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setChannel(reference);
         reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
         operation.setMessages(List.of(reference));
-        httpBinding = new HTTPOperationBinding();
-        httpBinding.setMethod(GET);
-        operation.setBindings(Map.of("x-zilla-sse", sseBinding));
+        bindings = new HashMap<>();
+        filter = new AsyncapiSseKafkaFilter();
+        if (identity != null)
+        {
+            filter.headers = Map.of("identity", "{identity}");
+            sseKafkaBinding = new ZillaSseKafkaOperationBinding(List.of(filter));
+            bindings.put("x-zilla-sse-kafka", sseKafkaBinding);
+        }
+        bindings.put("x-zilla-sse", sseBinding);
+        operation.setBindings(bindings);
         if (secure)
         {
             operation.setSecurity(List.of(security));
