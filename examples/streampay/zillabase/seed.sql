@@ -87,6 +87,7 @@ CREATE MATERIALIZED VIEW streampay_payment_requests as
 
 CREATE MATERIALIZED VIEW streampay_activities AS
   SELECT
+      generate_unique_id()::varchar as id,
       'PaymentSent' AS eventName,
       encode(sc.owner_id, 'escape') AS from_user_id,
       fu.username AS from_username,
@@ -102,6 +103,7 @@ CREATE MATERIALIZED VIEW streampay_activities AS
       sc.type = 'SendPayment'
   UNION ALL
   SELECT
+      generate_unique_id()::varchar as id,
       'PaymentReceived' AS eventName,
       encode(sc.owner_id, 'escape') AS from_user_id,
       fu.username AS from_username,
@@ -117,6 +119,7 @@ CREATE MATERIALIZED VIEW streampay_activities AS
       sc.type = 'SendPayment'
   UNION ALL
   SELECT
+      generate_unique_id()::varchar as id,
       'PaymentRequested' AS eventName,
       encode(sc.owner_id, 'escape') AS from_user_id,
       fu.username AS from_username,
