@@ -2298,7 +2298,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withEnv(
                     "KEYCLOAK_DATABASE_VENDOR=dev-file",
                     "KEYCLOAK_HTTP_PORT=8180",
-                    "KEYCLOAK_ACCESS_TOKEN_LIFESPAN_IMPLICIT=3600",
+                    "KEYCLOAK_ACCESS_TOKEN_LIFESPAN=3600",
                     "KEYCLOAK_ACCESS_TOKEN_LIFESPAN_IMPLICIT=3600",
                     "KEYCLOAK_ADMIN=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
                     "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL))
