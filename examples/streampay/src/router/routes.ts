@@ -40,9 +40,24 @@ const routes: RouteRecordRaw[] = [
     children: [{ path: '', component: () => import('pages/MainPage.vue') }],
   },
   {
-    path: '/request&state=:state',
+    path: '/main&state=:state',
     component: () => import('layouts/MainLayout.vue'),
     children: [{ path: '', component: () => import('pages/MainPage.vue') }],
+  },
+  {
+    path: '/request&state=:state',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [{ path: '', component: () => import('pages/RequestPage.vue') }],
+  },
+  {
+    path: '/payorrequest&state=:state',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [{ path: '', component: () => import('pages/PayOrRequestPage.vue') }],
+  },
+  {
+    path: '/statement&state=:state',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [{ path: '', component: () => import('pages/StatementPage.vue') }],
   },
 
   // Always leave this as last one,
