@@ -22,10 +22,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class ZillaSseKafkaOperationBinding extends OperationBinding
 {
     @JsonProperty("filters")
-    private List<AsyncapiSseKafkaFilter> filters;
+    private List<AsyncapiKafkaFilter> filters;
 
     public ZillaSseKafkaOperationBinding(
-        List<AsyncapiSseKafkaFilter> filters)
+        List<AsyncapiKafkaFilter> filters)
     {
         this.filters = filters;
     }
