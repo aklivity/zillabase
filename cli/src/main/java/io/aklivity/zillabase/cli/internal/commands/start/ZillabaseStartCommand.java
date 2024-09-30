@@ -152,7 +152,7 @@ import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
-import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiSseKafkaFilter;
+import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiKafkaFilter;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseKafkaOperationBinding;
@@ -1628,7 +1628,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         if (secure)
         {
             ZillaHttpOperationBinding zillaHttpBinding =
-                new ZillaHttpOperationBinding(POST, Map.of("zilla:identity", "{identity}"));
+                new ZillaHttpOperationBinding(POST, Map.of("zilla:identity", "{identity}"), null);
             bindings.put("x-zilla-http-kafka", zillaHttpBinding);
             operation.setSecurity(List.of(security));
         }
@@ -1651,7 +1651,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             if (secure)
             {
                 ZillaHttpOperationBinding zillaHttpBinding = new ZillaHttpOperationBinding(PUT,
-                    Map.of("zilla:identity", "{identity}"));
+                    Map.of("zilla:identity", "{identity}"), null);
                 bindings.put("x-zilla-http-kafka", zillaHttpBinding);
                 operation.setSecurity(List.of(security));
             }
@@ -1667,7 +1667,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setMessages(List.of(reference));
         httpBinding = new HTTPOperationBinding();
         httpBinding.setMethod(GET);
-        operation.setBindings(Map.of("http", httpBinding));
+        bindings = new HashMap<>();
+        bindings.put("http", httpBinding);
+        if (identity != null)
+        {
+            AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
+            filter.headers = Map.of("identity", "{identity}");
+            ZillaHttpOperationBinding zillaHttpBinding = new ZillaHttpOperationBinding(GET, null,
+                List.of(filter));
+            bindings.put("x-zilla-http-kafka", zillaHttpBinding);
+        }
+        operation.setBindings(bindings);
         if (secure)
         {
             operation.setSecurity(List.of(security));
@@ -1680,7 +1690,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setChannel(reference);
         reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
         operation.setMessages(List.of(reference));
-        operation.setBindings(Map.of("http", httpBinding));
+        operation.setBindings(bindings);
         if (secure)
         {
             operation.setSecurity(List.of(security));
@@ -1695,7 +1705,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
         operation.setMessages(List.of(reference));
         ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
-        AsyncapiSseKafkaFilter filter = new AsyncapiSseKafkaFilter();
+        AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
         if (secure)
         {
             filter.key = "{identity}";
@@ -1719,7 +1729,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
         operation.setMessages(List.of(reference));
         bindings = new HashMap<>();
-        filter = new AsyncapiSseKafkaFilter();
+        filter = new AsyncapiKafkaFilter();
         if (identity != null)
         {
             filter.headers = Map.of("identity", "{identity}");
