@@ -69,7 +69,7 @@ CREATE MATERIALIZED VIEW streampay_balances AS
 
 CREATE MATERIALIZED VIEW streampay_payment_requests as
   SELECT
-      generate_unique_id() as id,
+      generate_unique_id()::varchar as id,
       encode(cmd.owner_id, 'escape') as from_user_id,
       u2.username as from_username,
       cmd.user_id as to_user_id_identity,
