@@ -125,7 +125,7 @@ export default defineComponent({
         incRequests();
       };
 
-      const balanceStream = new EventSource(`${streamingUrl}/streampay_balance-stream-identity?access_token=${accessToken}`);
+      const balanceStream = new EventSource(`${streamingUrl}/streampay_balances-stream-identity?access_token=${accessToken}`);
 
       balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);

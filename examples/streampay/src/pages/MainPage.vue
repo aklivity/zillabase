@@ -102,24 +102,24 @@ export default defineComponent({
 
       activitiesStream.onmessage = function (event: MessageEvent) {
         const activity = JSON.parse(event.data);
-        if (activity.eventName == 'PaymentReceived' && activity.fromUserId == userId ||
-          activity.eventName == 'PaymentSent' && activity.toUserId == userId) {
+        if (activity.eventname == 'PaymentReceived' && activity.from_user_id == userId ||
+          activity.eventname == 'PaymentSent' && activity.to_user_id == userId) {
 
         } else {
           let state = '';
 
-          if (activity.eventName == 'PaymentSent') {
+          if (activity.eventname == 'PaymentSent') {
             state = 'paid';
-          } else if (activity.eventName == 'PaymentReceived') {
+          } else if (activity.eventname == 'PaymentReceived') {
             state = 'paid';
-          } else if (activity.eventName == 'PaymentRequested') {
+          } else if (activity.eventname == 'PaymentRequested') {
             state = 'requested';
           }
-          const from = activity.fromUserId == userId ? 'You' : activity.fromUserName;
-          const to = activity.toUserId == userId ? 'you' : activity.toUserName;
+          const from = activity.from_user_id == userId ? 'You' : activity.from_username;
+          const to = activity.to_user_id == userId ? 'you' : activity.to_username;
 
           const avatar = from.charAt(0).toUpperCase();
-          const eventName = activity.eventName;
+          const eventName = activity.eventname;
 
           const newActivity = {
             eventName,

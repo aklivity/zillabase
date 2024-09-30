@@ -22,7 +22,7 @@
            <q-td  key="requester" :props="props">
              <div style="margin-bottom: 20px; margin-top: 20px;">
                <div class="text-h6">
-                 <b>{{ props.row.request.fromusername }}</b> requested <b> ${{ props.row.request.amount.toFixed(2) }}</b>
+                 <b>{{ props.row.request.from_username }}</b> requested <b> ${{ props.row.request.amount.toFixed(2) }}</b>
                </div>
                <div class="text-subtitle2">
                  {{ props.row.request.notes }}

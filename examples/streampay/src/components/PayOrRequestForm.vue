@@ -99,7 +99,7 @@ export default defineComponent({
           const authorization = { Authorization: `Bearer ${accessToken}` };
           api.post('/streampay_commands', {
             type: 'SendPayment',
-            userid: userOption.value?.value,
+            user_id: userOption.value?.value,
             requestid: "",
             amount: +amount.value,
             notes: notes.value
@@ -134,7 +134,7 @@ export default defineComponent({
         const authorization = { Authorization: `Bearer ${accessToken}` };
         api.post('/streampay_commands', {
           type: 'RequestPayment',
-          userid: userOption.value?.value,
+          user_id: userOption.value?.value,
           requestid: "",
           amount: +amount.value,
           notes: notes.value
@@ -167,7 +167,7 @@ export default defineComponent({
     async function readBalance() {
       const accessToken = keycloak.token;
       const authorization = { Authorization: `Bearer ${accessToken}` };
-      balanceStream = new EventSource(`${streamingUrl}/streampay_balance-stream-identity?access_token=${accessToken}`);
+      balanceStream = new EventSource(`${streamingUrl}/streampay_balances-stream-identity?access_token=${accessToken}`);
 
       balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
@@ -184,7 +184,7 @@ export default defineComponent({
           const request = response.data;
           updateAmount(request.amount);
 
-          fetchAndSetUsers(request.fromuserid);
+          fetchAndSetUsers(request.from_user_id);
         })
       } else {
         await fetchAndSetUsers();
@@ -221,18 +221,36 @@ export default defineComponent({
         })
         .then((response) => {
           const users = response.data;
-          for(let user of users) {
-            if (user.id != this.user?.id) {
-              const newUserOption = {
-                label: user.name,
-                value: user.id
-              };
-              this.userOptions.push(newUserOption as any);
-            }
 
-            if (userId && userId == user.id) {
-              this.userOption = { label: user.name, value: user.id };
+          if (typeof users[Symbol.iterator] === 'function')
+          {
+              for(let user of users) {
+              if (user.id != this.user?.id) {
+                const newUserOption = {
+                  label: user.name,
+                  value: user.id
+                };
+                this.userOptions.push(newUserOption as any);
+              }
+
+              if (userId && userId == user.id) {
+                this.userOption = { label: user.name, value: user.id };
+              }
             }
+          }
+          else
+          {
+              if (users.id != this.user?.id) {
+                const newUserOption = {
+                  label: users.name,
+                  value: users.id
+                };
+                this.userOptions.push(newUserOption as any);
+              }
+
+              if (userId && userId == users.id) {
+                this.userOption = { label: users.name, value: users.id };
+              }
           }
         });
     }

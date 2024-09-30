@@ -20,7 +20,7 @@ async function createRefreshTokenTimer(keycloak: KeycloakInstance) {
     }).catch(() => {
       console.log('Failed to refresh token');
     });
-  }, 6000);
+  }, 18000);
 }
 
 export default boot(({ app }) => {

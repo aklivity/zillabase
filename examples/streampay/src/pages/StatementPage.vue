@@ -30,7 +30,7 @@ import {streamingUrl} from 'boot/axios';
 import {keycloak} from 'boot/main';
 
 export default defineComponent({
-  name: 'MainPage',
+  name: 'StatementPage',
   setup () {
     const balanceSeries = ref([{
       name: 'Balance',
