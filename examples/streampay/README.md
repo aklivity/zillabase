@@ -2,6 +2,11 @@
 
 StreamPay Project
 
+### Start zillabase
+```bash
+java -jar ../../cli/target/cli-develop-SNAPSHOT.jar start
+```
+
 ## Install the dependencies
 ```bash
 yarn
@@ -14,29 +19,17 @@ npm install
 quasar dev
 ```
 
-Note: You can install quasar via `npm install -g @quasar/cli`, and you might need execute `rehash` to find `quasar` on the path afterwards.
+### Login
 
-### Lint the files
+Login with one of the users pre-created in `zillabase/config.yaml`
+
+### Deposit initial balance
+
+When you login the new user will be added into `dev.streampay_users` topic use id from that user to deposit initial balance;
+
+
 ```bash
-yarn lint
-# or
-npm run lint
+./initial_balance.sh USER_ID
 ```
 
-
-### Format the files
-```bash
-yarn format
-# or
-npm run format
-```
-
-
-
-### Build the app for production
-```bash
-quasar build
-```
-
-### Customize the configuration
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js).
+Replace `USER_ID` with one you got from topic as explained above.
