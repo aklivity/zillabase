@@ -72,7 +72,7 @@ CREATE MATERIALIZED VIEW streampay_payment_requests as
       generate_unique_id() as id,
       encode(cmd.owner_id, 'escape') as from_user_id,
       u2.username as from_username,
-      cmd.user_id as to_user_id,
+      cmd.user_id as to_user_id_identity,
       u1.username as to_username,
       amount,
       notes
@@ -104,9 +104,9 @@ CREATE MATERIALIZED VIEW streampay_activities AS
   SELECT
       'PaymentReceived' AS eventName,
       encode(sc.owner_id, 'escape') AS from_user_id,
-      tu.username AS from_username,
+      fu.username AS from_username,
       sc.user_id AS to_user_id,
-      fu.username AS to_username,
+      tu.username AS to_username,
       sc.amount as amount,
       CAST(extract(epoch FROM sc.timestamp) AS FLOAT) * 1000 AS timestamp
   FROM
