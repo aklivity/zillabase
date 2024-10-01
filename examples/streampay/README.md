@@ -99,6 +99,8 @@ npm install
 quasar dev
 ```
 
+Note: You can install quasar via `npm install -g @quasar/cli`, and you might need execute `rehash` to find `quasar` on the path afterwards.
+
 ### Login
 
 Login with one of the users pre-created in `zillabase/config.yaml`
