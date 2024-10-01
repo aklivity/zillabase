@@ -92,15 +92,18 @@ export default defineComponent({
     const activities = this.activities;
     let activitiesStream = this.activitiesStream;
 
-    async function readActivities() {
+    async function readActivities(lastEventId: string) {
       const accessToken = keycloak.token;
-      activitiesStream = new EventSource(`${streamingUrl}/streampay_activities-stream?access_token=${accessToken}`);
+      var lastEventIdQuery = lastEventId != "" ? `&lastEventId=${lastEventId}` : lastEventId;
+      activitiesStream = new EventSource(`${streamingUrl}/streampay_activities-stream?access_token=${accessToken}${lastEventIdQuery}`);
 
       activitiesStream.onopen = function () {
         activities.splice(0);
       }
 
       activitiesStream.onmessage = function (event: MessageEvent) {
+        lastEventId = event.lastEventId
+
         const activity = JSON.parse(event.data);
         if (activity.eventname == 'PaymentReceived' && activity.from_user_id == userId ||
           activity.eventname == 'PaymentSent' && activity.to_user_id == userId) {
@@ -128,7 +131,7 @@ export default defineComponent({
             to,
             state,
             amount: Math.abs(activity.amount).toFixed(2),
-            date: new Date (activity.timestamp)
+            date: new Date(activity.timestamp)
           };
 
           if (activities.length > 20) {
@@ -139,15 +142,23 @@ export default defineComponent({
           }
         }
       };
+
+      activitiesStream.onerror = function (event: Event) {
+        activitiesStream?.close();
+
+        setTimeout(() => {
+          readActivities(lastEventId);
+        }, 1000);
+      }
     }
 
     if (keycloak.authenticated)
     {
-      await readActivities();
+      await readActivities("");
     } else {
       watch(() => keycloak.authenticated ?? false, (newValue) => {
         if (newValue) {
-          readActivities();
+          readActivities("");
         }
       });
     }
