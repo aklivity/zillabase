@@ -1702,7 +1702,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setAction(OperationAction.RECEIVE);
         reference = new Reference("#/channels/%s-stream-identity".formatted(name));
         operation.setChannel(reference);
-        reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
+        reference = new Reference("#/channels/%s-stream-identity/messages/%s".formatted(name, messageName));
         operation.setMessages(List.of(reference));
         ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
         AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
@@ -1726,7 +1726,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         operation.setAction(OperationAction.RECEIVE);
         reference = new Reference("#/channels/%s-stream".formatted(name));
         operation.setChannel(reference);
-        reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
+        reference = new Reference("#/channels/%s-stream/messages/%s".formatted(name, messageName));
         operation.setMessages(List.of(reference));
         bindings = new HashMap<>();
         filter = new AsyncapiKafkaFilter();
