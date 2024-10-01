@@ -105,7 +105,7 @@ Login with one of the users pre-created in `zillabase/config.yaml`
 
 ### Deposit initial balance
 
-When you login the new user will be added into `dev.streampay_users` topic use id from that user to deposit initial balance;
+When you login the new user will be added into `dev.streampay_users` topic use id from that user to deposit initial balance.
 
 
 ```bash
