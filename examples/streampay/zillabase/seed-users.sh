@@ -13,16 +13,11 @@ JOHN_USER_INFO=$(curl -s -X GET "http://localhost:8180/realms/zillabase/account"
 
 JOHN_USER_ID=$(echo "$JOHN_USER_INFO" | jq -r '.id')
 
-curl --location 'http://localhost:8080/streampay_users' \
+curl -X PUT "http://localhost:8080/streampay_users/${JOHN_USER_ID}" \
 --header "Content-Type: application/json" \
 --header "Accept: application/json" \
---header "Idempotency-Key: ${JOHN_USER_ID}" \
 --header "Authorization: Bearer ${JOHN_ACCESS_TOKEN}" \
---data "{
-  \"id\": \"${JOHN_USER_ID}\",
-  \"name\": \"John Doe\",
-  \"username\": \johndoe\"
-}"
+--data-raw "{\"id\":\"${JOHN_USER_ID}\",\"name\":\"John Doe\",\"username\":\"johndoe\"}"
 
 curl --location -X POST 'http://localhost:8080/streampay_initial_balances' \
   --header 'Content-Type: application/json' \
@@ -47,23 +42,18 @@ JANE_USER_INFO=$(curl -s -X GET "http://localhost:8180/realms/zillabase/account"
 
 JANE_USER_ID=$(echo "$JANE_USER_INFO" | jq -r '.id')
 
-curl --location 'http://localhost:8080/streampay_users' \
+curl -X PUT "http://localhost:8080/streampay_users/${JANE_USER_ID}" \
 --header "Content-Type: application/json" \
 --header "Accept: application/json" \
---header "Idempotency-Key: ${JANE_USER_ID}" \
 --header "Authorization: Bearer ${JANE_ACCESS_TOKEN}" \
---data "{
-  \"id\": \"${JANE_USER_ID}\",
-  \"name\": \"Jane Doe\",
-  \"username\": \janedoe\"
-}"
+--data-raw "{\"id\":\"${JANE_USER_ID}\",\"name\":\"Jane Doe\",\"username\":\"janedoe\"}"
 
-curl --location -X POST 'http://localhost:8080/streampay_initial_balances' \
+curl -X POST 'http://localhost:8080/streampay_initial_balances' \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json' \
   --header "Idempotency-Key: ${JANE_USER_ID}" \
   --header "Authorization: Bearer ${JANE_ACCESS_TOKEN}" \
   --data "{
-      \"user_id\": \"${JOHN_USER_ID}\",
+      \"user_id\": \"${JANE_USER_ID}\",
       \"initial_balance\": 10000
     }"

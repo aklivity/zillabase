@@ -105,7 +105,7 @@ Note: You can install quasar via `npm install -g @quasar/cli`, and you might nee
 
 Login with one of the users pre-created in `zillabase/config.yaml`
 
-### Deposit initial balance
+### Seed users
 
 ```bash
 ./zilabase/seed-users.sh
