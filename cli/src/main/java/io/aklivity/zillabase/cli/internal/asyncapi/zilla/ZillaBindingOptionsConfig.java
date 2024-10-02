@@ -14,15 +14,44 @@
  */
 package io.aklivity.zillabase.cli.internal.asyncapi.zilla;
 
+import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ZillaBindingOptionsConfig
 {
     public Map<String, Object> specs;
     public HttpAuthorizationOptionsConfig http;
+    public KafkaOptionsConfig kafka;
 
     public static class HttpAuthorizationOptionsConfig
     {
         public Map<String, Object> authorization;
+    }
+
+    public static class KafkaOptionsConfig
+    {
+        public List<KafkaTopicConfig> topics;
+    }
+
+    public static class KafkaTopicConfig
+    {
+        public String name;
+        public List<TransformConfig> transforms;
+        public ModelConfig value;
+    }
+
+    public static class TransformConfig
+    {
+        @JsonProperty("extract-headers")
+        public Map<String, String> headers;
+    }
+
+    public static class ModelConfig
+    {
+        public String view;
+        public String model;
+        public Map<String, Object> catalog;
     }
 }

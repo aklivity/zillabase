@@ -15,30 +15,18 @@
 package io.aklivity.zillabase.cli.internal.asyncapi;
 
 import java.util.List;
-import java.util.Map;
 
 import com.asyncapi.bindings.OperationBinding;
-import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class ZillaHttpOperationBinding extends OperationBinding
+public final class ZillaSseKafkaOperationBinding extends OperationBinding
 {
-    @JsonProperty("method")
-    private HTTPOperationMethod method;
-
-    @JsonProperty("overrides")
-    private Map<String, String> overrides;
-
     @JsonProperty("filters")
     private List<AsyncapiKafkaFilter> filters;
 
-    public ZillaHttpOperationBinding(
-        HTTPOperationMethod method,
-        Map<String, String> overrides,
+    public ZillaSseKafkaOperationBinding(
         List<AsyncapiKafkaFilter> filters)
     {
-        this.method = method;
-        this.overrides = overrides;
         this.filters = filters;
     }
 

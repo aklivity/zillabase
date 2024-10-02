@@ -51,4 +51,5 @@ public class ZillabaseZillaConfig
 
     public String tag = "latest";
     public List<ZillabaseZillaPortConfig> ports = DEFAULT_PORT_LIST;
+    public List<String> env;
 }

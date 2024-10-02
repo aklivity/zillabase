@@ -1,0 +1,17 @@
+# config
+keycloak:
+  realm: zillabase
+  users:
+    - username: johndoe
+      email: john.doe@example.com
+      name: John Doe
+      password: Test@123
+    - username: janedoe
+      email: jane.doe@example.com
+      name: Jane Doe
+      password: Test@123
+  client:
+    client-id: streampay
+    redirects:
+      - http://localhost:8084/*
+      - https://oauth.pstmn.io/v1/callback
