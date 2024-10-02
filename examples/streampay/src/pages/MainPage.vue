@@ -52,7 +52,7 @@
 <script lang="ts">
 import {defineComponent, ref, watch} from 'vue';
 import {streamingUrl} from 'boot/axios';
-import {keycloak, user} from 'boot/main';
+import {keycloak, user, SecureEventSource} from 'boot/main';
 
 export default defineComponent({
   name: 'MainPage',
@@ -72,7 +72,7 @@ export default defineComponent({
     ]
 
     const activities = ref([] as any);
-    const activitiesStream = null as EventSource | null;
+    const activitiesStream = null as SecureEventSource | null;
 
     return {
       color: 'text-red',
@@ -93,30 +93,30 @@ export default defineComponent({
     let activitiesStream = this.activitiesStream;
 
     async function readActivities() {
-      const accessToken = keycloak.token;
-      activitiesStream = new EventSource(`${streamingUrl}/streampay_activities-stream?access_token=${accessToken}`);
+      activitiesStream = new SecureEventSource(`${streamingUrl}/streampay_activities-stream`, {
+        credentials: () => keycloak.token || ""
+      });
 
       activitiesStream.onopen = function () {
         activities.splice(0);
-      }
+      };
 
       activitiesStream.onmessage = function (event: MessageEvent) {
         const activity = JSON.parse(event.data);
-        if (activity.eventname == 'PaymentReceived' && activity.from_user_id == userId ||
-          activity.eventname == 'PaymentSent' && activity.to_user_id == userId) {
 
+        if ((activity.eventname === 'PaymentReceived' && activity.from_user_id === userId) ||
+            (activity.eventname === 'PaymentSent' && activity.to_user_id === userId)) {
         } else {
           let state = '';
 
-          if (activity.eventname == 'PaymentSent') {
+          if (activity.eventname === 'PaymentSent' || activity.eventname === 'PaymentReceived') {
             state = 'paid';
-          } else if (activity.eventname == 'PaymentReceived') {
-            state = 'paid';
-          } else if (activity.eventname == 'PaymentRequested') {
+          } else if (activity.eventname === 'PaymentRequested') {
             state = 'requested';
           }
-          const from = activity.from_user_id == userId ? 'You' : activity.from_username;
-          const to = activity.to_user_id == userId ? 'you' : activity.to_username;
+
+          const from = activity.from_user_id === userId ? 'You' : activity.from_username;
+          const to = activity.to_user_id === userId ? 'you' : activity.to_username;
 
           const avatar = from.charAt(0).toUpperCase();
           const eventName = activity.eventname;
@@ -128,7 +128,7 @@ export default defineComponent({
             to,
             state,
             amount: Math.abs(activity.amount).toFixed(2),
-            date: new Date (activity.timestamp)
+            date: new Date(activity.timestamp)
           };
 
           if (activities.length > 20) {
