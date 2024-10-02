@@ -122,18 +122,18 @@ export default defineComponent({
         decRequests();
       }, false);
 
-      requestStream.addEventListener('message', (event: MessageEvent) => {
+      requestStream.onmessage = function (event: MessageEvent) {
         incRequests();
-      });
+      };
 
       const balanceStream  = new SecureEventSource(`${streamingUrl}/streampay_balances-stream-identity`, {
         credentials: () => keycloak.token || ""
       });
 
-      balanceStream.addEventListener('message', (event: MessageEvent) => {
+      balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
         updateBalance(balance.balance);
-      });
+      };
 
       const accessToken = keycloak.token;
       const authorization = { Authorization: `Bearer ${accessToken}` };

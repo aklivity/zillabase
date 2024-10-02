@@ -97,11 +97,11 @@ export default defineComponent({
         credentials: () => keycloak.token || ""
       });
 
-      activitiesStream.addEventListener('open', () => {
+      activitiesStream.onopen = function () {
         activities.splice(0);
-      });
+      };
 
-      activitiesStream.addEventListener('message', (event: MessageEvent) => {
+      activitiesStream.onmessage = function (event: MessageEvent) {
         const activity = JSON.parse(event.data);
 
         if ((activity.eventname === 'PaymentReceived' && activity.from_user_id === userId) ||
@@ -138,7 +138,7 @@ export default defineComponent({
             activities.push(newActivity);
           }
         }
-      });
+      };
     }
 
     if (keycloak.authenticated)

@@ -61,6 +61,10 @@ class SecureEventSource extends EventTarget {
   private url: string;
   private eventSourceInit: SecureEventSourceInit | undefined;
 
+  public onopen: ((this: EventSource, ev: Event) => any) | null = null;
+  public onmessage: ((this: EventSource, ev: MessageEvent) => any) | null = null;
+  public onerror: ((this: EventSource, ev: Event) => any) | null = null;
+
   constructor(url: string, eventSourceInit?: SecureEventSourceInit) {
     super();
     this.url = url;

@@ -171,10 +171,10 @@ export default defineComponent({
         credentials: () => keycloak.token || ""
       });
 
-      balanceStream.addEventListener('message', (event: MessageEvent) => {
+      balanceStream.onmessage = function (event: MessageEvent) {
         const balance = JSON.parse(event.data);
         updateBalance(balance.balance);
-      });
+      };
 
       if (formRequestId) {
         api.get('/streampay_payment_requests/' + formRequestId,{
