@@ -97,7 +97,6 @@ export default defineComponent({
         credentials: () => keycloak.token || ""
       });
 
-
       activitiesStream.addEventListener('open', () => {
         activities.splice(0);
       });

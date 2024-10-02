@@ -55,7 +55,7 @@
 <script lang="ts">
 import {defineComponent, ref, toRefs, watch} from 'vue'
 import {api, streamingUrl} from "boot/axios";
-import {keycloak, user} from "boot/main";
+import {keycloak, user, SecureEventSource} from "boot/main";
 import {useQuasar} from "quasar";
 import {useRouter} from "vue-router";
 import {v4} from "uuid";
@@ -81,7 +81,7 @@ export default defineComponent({
     const amount = ref(0 as number);
     const notes = ref("" as string);
     const router = useRouter();
-    const balanceStream = null as EventSource | null;
+    const balanceStream = null as SecureEventSource | null;
 
     return {
       keycloak,
@@ -167,12 +167,14 @@ export default defineComponent({
     async function readBalance() {
       const accessToken = keycloak.token;
       const authorization = { Authorization: `Bearer ${accessToken}` };
-      balanceStream = new EventSource(`${streamingUrl}/streampay_balances-stream-identity?access_token=${accessToken}`);
+      balanceStream = new SecureEventSource(`${streamingUrl}/streampay_balances-stream-identity`, {
+        credentials: () => keycloak.token || ""
+      });
 
-      balanceStream.onmessage = function (event: MessageEvent) {
+      balanceStream.addEventListener('message', (event: MessageEvent) => {
         const balance = JSON.parse(event.data);
         updateBalance(balance.balance);
-      };
+      });
 
       if (formRequestId) {
         api.get('/streampay_payment_requests/' + formRequestId,{
