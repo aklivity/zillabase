@@ -22,4 +22,5 @@ public class ZillaAsyncApiConfig
     public Map<String, ZillaCatalogConfig> catalogs;
     public Map<String, ZillaGuardConfig> guards;
     public Map<String, ZillaBindingConfig> bindings;
+    public Map<String, Object> telemetry;
 }
