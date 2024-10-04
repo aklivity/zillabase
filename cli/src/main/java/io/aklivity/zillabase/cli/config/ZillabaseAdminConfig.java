@@ -63,6 +63,8 @@ public final class ZillabaseAdminConfig
                       - strategy: topic
               udf:
                 - server: ${{env.UDF_SERVER}}
+                - server: ${{env.UDF_PYTHON_SERVER}}
+                  language: python
             routes:
               - exit: pgsql_kafka_proxy
                 when:

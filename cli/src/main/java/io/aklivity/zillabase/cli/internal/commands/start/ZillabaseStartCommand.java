@@ -2385,7 +2385,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
                 "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl),
-                "UDF_SERVER=%s".formatted("http://udf-server.zillabase.dev:8815"));
+                "UDF_SERVER=%s".formatted("http://udf-server.zillabase.dev:8815"),
+                "UDF_PYTHON_SERVER=%s".formatted("http://udf-server-python.zillabase.dev:8816"));
 
             CreateContainerCmd container = client
                 .createContainerCmd(image)
