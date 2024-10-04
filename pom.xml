@@ -55,6 +55,7 @@
   <modules>
     <module>service</module>
     <module>udf-server</module>
+    <module>udf-server-python</module>
     <module>cli</module>
   </modules>
 
