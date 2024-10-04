@@ -8,7 +8,7 @@ CREATE FUNCTION generate_unique_id() RETURNS VARCHAR LANGUAGE javascript AS $$
   });
 $$;
 
-CREATE TABLE streampay_commands(
+CREATE STREAM streampay_commands(
     type VARCHAR,
     user_id VARCHAR,
     requestid VARCHAR,
@@ -26,11 +26,19 @@ CREATE TABLE streampay_users(
   PRIMARY KEY (id)
 );
 
+INSERT INTO streampay_users (id, name, username) VALUES ('johndoe', 'John Doe', 'johndoe');
+
+INSERT INTO streampay_users (id, name, username) VALUES ('janedoe', 'Jane Doe', 'janedoe');
+
 CREATE TABLE streampay_initial_balances (
     user_id VARCHAR,
     initial_balance DOUBLE PRECISION,
     PRIMARY KEY (user_id)
 );
+
+INSERT INTO streampay_initial_balances (user_id, initial_balance) VALUES ('johndoe', 10000);
+
+INSERT INTO streampay_initial_balances (user_id, initial_balance) VALUES ('janedoe', 10000);
 
 CREATE VIEW user_transactions AS
   SELECT
@@ -134,7 +142,7 @@ CREATE MATERIALIZED VIEW streampay_activities AS
   WHERE
       sc.type = 'RequestPayment';
 
-CREATE TABLE streampay_balance_histories(
+CREATE STREAM streampay_balance_histories(
     balance DOUBLE PRECISION
 )
 INCLUDE timestamp AS timestamp;

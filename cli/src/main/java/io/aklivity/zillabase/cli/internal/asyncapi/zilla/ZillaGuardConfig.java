@@ -24,5 +24,6 @@ public class ZillaGuardConfig
         public String issuer;
         public String audience;
         public String keys;
+        public String identity;
     }
 }

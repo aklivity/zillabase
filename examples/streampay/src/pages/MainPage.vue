@@ -88,7 +88,7 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const userId = this.user?.id;
+    const userId = this.user?.username;
     const activities = this.activities;
     let activitiesStream = this.activitiesStream;
 
@@ -96,10 +96,6 @@ export default defineComponent({
       activitiesStream = new SecureEventSource(`${streamingUrl}/streampay_activities-stream`, {
         credentials: () => keycloak.token || ""
       });
-
-      activitiesStream.onopen = function () {
-        activities.splice(0);
-      };
 
       activitiesStream.onmessage = function (event: MessageEvent) {
         const activity = JSON.parse(event.data);

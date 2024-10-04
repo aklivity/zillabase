@@ -722,6 +722,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     guard.options.issuer = "%s/realms/%s".formatted(keycloak.url, realm);
                     guard.options.audience = keycloak.audience;
                     guard.options.keys = keycloak.jwks.formatted(realm);
+                    guard.options.identity = "preferred_username";
 
                     zilla.guards = Map.of(authnJwt, guard);
                 }
