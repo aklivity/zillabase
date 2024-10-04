@@ -5,8 +5,8 @@ This example demonstrates how to register external User Defined Functions (UDFs)
 #### Build external User Defined Functions (UDFs)
 
 ```bash
-$ cd zillabase/functions/java/risingwave-java-udf-template/
-$ ./mvnw clean install
+cd zillabase/functions/java/risingwave-java-udf-template/
+./mvnw clean install
 ```
 
 Output:
@@ -20,21 +20,21 @@ Output:
 #### Install `zillabase`
 
 ```bash
-$ brew tap aklivity/tap
+brew tap aklivity/tap
 
-$ brew install zillabase
+brew install zillabase
 ```
 
 Note: To use a local build, you can define an alias as follows:
 
 ```bash
-$ alias zillabase="java -jar `pwd`/cli/target/cli-develop-SNAPSHOT.jar"
+alias zillabase="java -jar `pwd`/cli/target/cli-develop-SNAPSHOT.jar"
 ```
 
 #### Start `zillabase` stack:
 
 ```bash
-$ zillabase start
+zillabase start
 ```
 
 Output:
@@ -52,7 +52,7 @@ latest: Pulling from aklivity/zillabase/udf-server
 #### Connect to psql endpoint expose through Admin service
 
 ```bash
-$ psql -U root -d dev -h localhost -p 4567
+psql -U root -d dev -h localhost -p 4567
 ```
 
 #### Validate defined functions:
