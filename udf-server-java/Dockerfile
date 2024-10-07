@@ -17,7 +17,7 @@ FROM eclipse-temurin:22-jdk AS build
 
 WORKDIR /app
 
-COPY target/udf-server-shaded.jar ./udf-server.jar
+COPY target/udf-server-java-shaded.jar ./udf-server.jar
 
 ENV JAVA_OPTS="--add-opens=java.base/java.nio=ALL-UNNAMED"
 
