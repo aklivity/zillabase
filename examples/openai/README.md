@@ -1,15 +1,15 @@
 
 ```mermaid
 sequenceDiagram
-    UI->>Zillabase: transfer request
-    Zillabase->>UI: successful created request
+    UI->>Zillabase: Sending User transfer request
+    Zillabase->>UI: successful created request for Recieving User with fraud risk PENDING
     Zillabase->>OpenAI: async prompt for fraud risk
     OpenAI->>Zillabase: capture fraud risk
-    Zillabase->>UI: show requested user fraud risk
-    UI->>Zillabase: accept transfer
+    Zillabase->>UI: show requested user fraud risk and update from PENDING to LOW/MEDIUM/HIGH risk
+    UI->>Zillabase: accept risk and transfer
     Zillabase->>OpenAI: add decision as less risk
     OpenAI->>Zillabase: record decision as less risk
-    UI->>Zillabase: reject transfer
+    UI->>Zillabase: reject risk and block
     Zillabase->>OpenAI: add decision as more risk
     OpenAI->>Zillabase: record decision as more risk
 ```
