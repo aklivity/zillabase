@@ -157,3 +157,6 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
     SELECT * FROM invalid_status_code
     UNION
     SELECT * FROM valid_status_code;
+
+CREATE FUNCTION gcd(int, int) RETURNS int
+LANGUAGE python AS gcd;
