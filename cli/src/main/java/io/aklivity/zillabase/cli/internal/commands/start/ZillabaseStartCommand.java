@@ -217,7 +217,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateKeycloakFactory(config));
         factories.add(new CreateKarapaceFactory(config));
         factories.add(new CreateAdminFactory(config));
-        factories.add(new CreateUdfServerFactory(config));
+        factories.add(new CreateUdfServerJavaFactory(config));
         factories.add(new CreateUdfServerPythonFactory(config));
 
         for (CreateContainerFactory factory : factories)
@@ -2385,7 +2385,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
                 "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl),
-                "UDF_SERVER=%s".formatted("http://udf-server.zillabase.dev:8815"),
+                "UDF_JAVA_SERVER=%s".formatted("http://udf-server-java.zillabase.dev:8815"),
                 "UDF_PYTHON_SERVER=%s".formatted("http://udf-server-python.zillabase.dev:8816"));
 
             CreateContainerCmd container = client
@@ -2470,12 +2470,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private static final class CreateUdfServerFactory extends CreateContainerFactory
+    private static final class CreateUdfServerJavaFactory extends CreateContainerFactory
     {
-        CreateUdfServerFactory(
+        CreateUdfServerJavaFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server", "ghcr.io/aklivity/zillabase/udf-server:%s".formatted(config.admin.tag));
+            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.admin.tag));
         }
 
         @Override
