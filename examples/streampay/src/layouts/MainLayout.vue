@@ -107,8 +107,9 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const userId = this.user?.id;
+    const userId = this.user?.username;
     const firstname = this.user?.firstName;
+    const lastName = this.user?.lastName;
     const username = this.user?.username;
     const incRequests =  this.incRequest;
     const decRequests =  this.decRequests;
@@ -140,7 +141,7 @@ export default defineComponent({
 
       await api.put(`${streamingUrl}/streampay_users/${userId}`, {
         'id': userId,
-        'name': firstname,
+        'name': `${firstname} ${lastName}`,
         'username': username
       }, {
         headers: {

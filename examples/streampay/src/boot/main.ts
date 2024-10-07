@@ -85,6 +85,10 @@ class SecureEventSource extends EventTarget {
     this.eventSource.onmessage = (event: MessageEvent) => {
       this.lastEventId = event.lastEventId;
       this.dispatchEvent(new MessageEvent("message", { data: event.data, lastEventId: event.lastEventId }));
+
+      if (this.onmessage) {
+        this.onmessage.call(this.eventSource, event);
+      }
     };
     this.eventSource.onerror = (event: Event) => {
       this.dispatchEvent(new ErrorEvent("error"));
