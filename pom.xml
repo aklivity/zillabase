@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.aklivity.zillabase</groupId>
   <artifactId>zillabase</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <packaging>pom</packaging>
   <name>zillabase</name>
   <url>https://github.com/aklivity/zillabase</url>
@@ -54,7 +54,8 @@
 
   <modules>
     <module>service</module>
-    <module>udf-server</module>
+    <module>udf-server-java</module>
+    <module>udf-server-python</module>
     <module>cli</module>
   </modules>
 

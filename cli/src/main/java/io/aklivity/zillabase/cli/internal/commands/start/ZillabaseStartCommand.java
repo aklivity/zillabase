@@ -217,7 +217,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateKeycloakFactory(config));
         factories.add(new CreateKarapaceFactory(config));
         factories.add(new CreateAdminFactory(config));
-        factories.add(new CreateUdfServerFactory(config));
+        factories.add(new CreateUdfServerJavaFactory(config));
+        factories.add(new CreateUdfServerPythonFactory(config));
 
         for (CreateContainerFactory factory : factories)
         {
@@ -722,6 +723,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     guard.options.issuer = "%s/realms/%s".formatted(keycloak.url, realm);
                     guard.options.audience = keycloak.audience;
                     guard.options.keys = keycloak.jwks.formatted(realm);
+                    guard.options.identity = "preferred_username";
 
                     zilla.guards = Map.of(authnJwt, guard);
                 }
@@ -2384,7 +2386,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
                 "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl),
-                "UDF_SERVER=%s".formatted("http://udf-server.zillabase.dev:8815"));
+                "UDF_JAVA_SERVER=%s".formatted("http://udf-server-java.zillabase.dev:8815"),
+                "UDF_PYTHON_SERVER=%s".formatted("http://udf-server-python.zillabase.dev:8816"));
 
             CreateContainerCmd container = client
                 .createContainerCmd(image)
@@ -2468,12 +2471,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private static final class CreateUdfServerFactory extends CreateContainerFactory
+    private static final class CreateUdfServerJavaFactory extends CreateContainerFactory
     {
-        CreateUdfServerFactory(
+        CreateUdfServerJavaFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server", "ghcr.io/aklivity/zillabase/udf-server:%s".formatted(config.admin.tag));
+            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.admin.tag));
         }
 
         @Override
@@ -2527,6 +2530,75 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withTimeout(SECONDS.toNanos(3L))
                     .withRetries(5)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8815")));
+        }
+    }
+
+    private static final class CreateUdfServerPythonFactory extends CreateContainerFactory
+    {
+        CreateUdfServerPythonFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "udf-server-python", "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.admin.tag));
+        }
+
+        private void importModule(
+            File directory,
+            List<Bind> binds)
+        {
+            File[] files = directory.listFiles();
+            if (files != null)
+            {
+                for (File file : files)
+                {
+                    if (file.isDirectory())
+                    {
+                        importModule(file, binds);
+                    }
+                    else if (file.isFile() && file.getName().endsWith(".py"))
+                    {
+                        String pyHostPath = file.getAbsolutePath();
+                        String pyContainerPath = "/opt/udf/lib/" + file.getName();
+                        binds.add(new Bind(pyHostPath, new Volume(pyContainerPath)));
+                    }
+                }
+            }
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            String projectsBasePath = "zillabase/functions/python";
+
+            File projectsDirectory = new File(projectsBasePath);
+            List<Bind> binds = new ArrayList<>();
+
+            if (projectsDirectory.exists() && projectsDirectory.isDirectory())
+            {
+                File[] projectDirs = projectsDirectory.listFiles(File::isDirectory);
+                if (projectDirs != null)
+                {
+                    for (File projectDir : projectDirs)
+                    {
+                        importModule(projectDir, binds);
+                    }
+                }
+            }
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withBinds(binds))
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816")));
         }
     }
 }

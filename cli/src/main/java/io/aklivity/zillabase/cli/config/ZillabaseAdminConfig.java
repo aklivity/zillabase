@@ -62,7 +62,9 @@ public final class ZillabaseAdminConfig
                     karapace_catalog:
                       - strategy: topic
               udf:
-                - server: ${{env.UDF_SERVER}}
+                - server: ${{env.UDF_JAVA_SERVER}}
+                - server: ${{env.UDF_PYTHON_SERVER}}
+                  language: python
             routes:
               - exit: pgsql_kafka_proxy
                 when:

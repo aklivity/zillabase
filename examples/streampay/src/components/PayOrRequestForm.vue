@@ -227,7 +227,7 @@ export default defineComponent({
           if (typeof users[Symbol.iterator] === 'function')
           {
               for(let user of users) {
-              if (user.id != this.user?.id) {
+              if (user.id != this.user?.username) {
                 const newUserOption = {
                   label: user.name,
                   value: user.id

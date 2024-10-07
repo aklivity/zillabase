@@ -6,12 +6,12 @@
   <parent>
     <groupId>io.aklivity.zillabase</groupId>
     <artifactId>zillabase</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>udf-server</artifactId>
-  <name>zillabase::udf-server</name>
+  <artifactId>udf-server-java</artifactId>
+  <name>zillabase::udf-server-java</name>
 
   <properties>
     <jacoco.coverage.ratio>1.0</jacoco.coverage.ratio>
@@ -119,7 +119,7 @@
           <images combine.children="append">
             <image>
               <alias>udf-server</alias>
-              <name>ghcr.io/aklivity/zillabase/udf-server:%v</name>
+              <name>ghcr.io/aklivity/zillabase/udf-server-java:%v</name>
               <build>
                 <contextDir>${project.basedir}</contextDir>
                 <tags>

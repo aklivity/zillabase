@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.aklivity.zillabase</groupId>
+    <artifactId>zillabase</artifactId>
+    <version>0.3.0</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>udf-server-python</artifactId>
+  <name>zillabase::udf-server-python</name>
+
+  <properties>
+    <jacoco.coverage.ratio>1.0</jacoco.coverage.ratio>
+    <jacoco.missed.count>0</jacoco.missed.count>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>0.43.2</version>
+        <configuration>
+          <filter>${*}</filter>
+          <images combine.children="append">
+            <image>
+              <alias>udf-server-python</alias>
+              <name>ghcr.io/aklivity/zillabase/udf-server-python:%v</name>
+              <build>
+                <contextDir>${project.basedir}</contextDir>
+                <tags>
+                  <tag>latest</tag>
+                </tags>
+                <buildx>
+                  <platforms>
+                    <platform>linux/amd64</platform>
+                    <platform>linux/arm64</platform>
+                  </platforms>
+                </buildx>
+              </build>
+            </image>
+          </images>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+              <goal>push</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
