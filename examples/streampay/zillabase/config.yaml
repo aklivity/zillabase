@@ -1,4 +1,8 @@
 # config
+admin:
+  tag: develop-SNAPSHOT
+zilla:
+  tag: develop-SNAPSHOT
 keycloak:
   realm: zillabase
   users:
