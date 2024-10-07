@@ -7,11 +7,9 @@ sequenceDiagram
     OpenAI->>Zillabase: capture fraud risk
     Zillabase->>UI: show requested user fraud risk and update from PENDING to LOW/MEDIUM/HIGH risk
     UI->>Zillabase: accept risk and transfer
-    Zillabase->>OpenAI: add decision as less risk
-    OpenAI->>Zillabase: record decision as less risk
+    Zillabase->>OpenAI: record decision as less risk
     UI->>Zillabase: reject risk and block
-    Zillabase->>OpenAI: add decision as more risk
-    OpenAI->>Zillabase: record decision as more risk
+    Zillabase->>OpenAI: record decision as more risk
 ```
 
 [https://cookbook.openai.com/examples/question_answering_using_embeddings]()
