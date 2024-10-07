@@ -1,3 +1,4 @@
+import time
 from arrow_udf import udf, udtf
 
 @udf(input_types=['INT', 'INT'], result_type='INT')
