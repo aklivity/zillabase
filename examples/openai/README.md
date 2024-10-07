@@ -2,14 +2,19 @@
 ```mermaid
 sequenceDiagram
     UI->>Zillabase: transfer request
-    Zillabase->>OpenAI: promt for fraud risk
+    Zillabase->>UI: successful created request
+    Zillabase->>OpenAI: async prompt for fraud risk
     OpenAI->>Zillabase: capture fraud risk
     Zillabase->>UI: show requested user fraud risk
     UI->>Zillabase: accept transfer
     Zillabase->>OpenAI: add decision as less risk
+    OpenAI->>Zillabase: record decision as less risk
     UI->>Zillabase: reject transfer
     Zillabase->>OpenAI: add decision as more risk
+    OpenAI->>Zillabase: record decision as more risk
 ```
+
+[https://cookbook.openai.com/examples/question_answering_using_embeddings]()
 
 ````
 Incoming transaction: Allen transfer $3400 to Bertollo
