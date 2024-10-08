@@ -25,12 +25,6 @@ brew tap aklivity/tap
 brew install zillabase
 ```
 
-Note: To use a local build, you can define an alias as follows:
-
-```bash
-alias zillabase="java -jar `pwd`/cli/target/cli-develop-SNAPSHOT.jar"
-```
-
 #### Start `zillabase` stack:
 
 ```bash
