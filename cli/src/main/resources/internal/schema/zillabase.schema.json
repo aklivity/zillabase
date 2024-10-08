@@ -44,6 +44,10 @@
         "bootstrapUrl":
         {
           "type": "string"
+        },
+        "tag":
+        {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -69,6 +73,10 @@
             "groupId":
             {
               "type": "string"
+            },
+            "tag":
+            {
+              "type": "string"
             }
           },
           "additionalProperties": false,
@@ -87,6 +95,10 @@
               "type": "string"
             },
             "context":
+            {
+              "type": "string"
+            },
+            "tag":
             {
               "type": "string"
             }
@@ -110,6 +122,10 @@
           "type": "string"
         },
         "db":
+        {
+          "type": "string"
+        },
+        "tag":
         {
           "type": "string"
         }
@@ -248,6 +264,10 @@
             "client-id",
             "redirects"
           ]
+        },
+        "tag":
+        {
+          "type": "string"
         }
       },
       "additionalProperties": false,

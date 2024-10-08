@@ -2127,7 +2127,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKafkaFactory(
             ZillabaseConfig config)
         {
-            super(config, "kafka", "bitnami/kafka:3.2.3");
+            super(config, "kafka", "bitnami/kafka:%s".formatted(config.kafka.tag));
         }
 
         @Override
@@ -2432,7 +2432,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateConfigFactory(
             ZillabaseConfig config)
         {
-            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.zilla.tag));
+            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.admin.tag));
         }
 
         @Override
@@ -2480,7 +2480,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateUdfServerJavaFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.admin.tag));
+            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.udf.java.tag));
         }
 
         @Override
@@ -2543,7 +2543,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateUdfServerPythonFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server-python", "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.admin.tag));
+            super(config, "udf-server-python",
+                    "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.udf.python.tag));
         }
 
         private void importModule(

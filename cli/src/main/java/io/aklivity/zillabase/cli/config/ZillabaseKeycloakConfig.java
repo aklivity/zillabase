@@ -23,7 +23,7 @@ public final class ZillabaseKeycloakConfig
     private static final String KEYCLOAK_JWKS_URL = "http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs";
     private static final String KEYCLOAK_DEFAULT_AUD = "account";
 
-
+    public String tag = ZillabaseKeycloakConfig.DEFAULT_KEYCLOAK_TAG;
     public String url = KEYCLOAK_DEFAULT_URL;
     public String audience = KEYCLOAK_DEFAULT_AUD;
     public String jwks = KEYCLOAK_JWKS_URL;
@@ -31,4 +31,5 @@ public final class ZillabaseKeycloakConfig
     public ZillabaseKeycloakClientConfig client;
     public List<ZillabaseKeycloakUserConfig> users;
     public List<String> scopes = new ArrayList<>();
+    public static final String DEFAULT_KEYCLOAK_TAG = "latest";
 }

@@ -14,11 +14,8 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseKafkaConfig
+public class ZillabaseUdfConfig
 {
-    private static final String DEFAULT_KAFKA_TAG = "3.2.3";
-    public static final String DEFAULT_KAFKA_BOOTSTRAP_URL = "kafka.zillabase.dev:29092";
-
-    public String tag = DEFAULT_KAFKA_TAG;
-    public String bootstrapUrl = DEFAULT_KAFKA_BOOTSTRAP_URL;
+    public ZillabaseUdfJavaConfig java = new ZillabaseUdfJavaConfig();
+    public ZillabaseUdfPythonConfig python = new ZillabaseUdfPythonConfig();
 }

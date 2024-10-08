@@ -16,12 +16,14 @@ package io.aklivity.zillabase.cli.config;
 
 public final class ZillabaseRisingWaveConfig
 {
+    private static final String DEFAULT_RISINGWAVE_TAG = "latest";
     private static final int DEFAULT_RISINGWAVE_PORT = 4567;
     private static final String DEFAULT_RISINGWAVE_DB = "dev";
 
     public static final String DEFAULT_RISINGWAVE_INTERNAL_URL = "risingwave.zillabase.dev:4566";
     public static final String DEFAULT_RISINGWAVE_URL = "localhost:%d".formatted(DEFAULT_RISINGWAVE_PORT);
 
+    public String tag = DEFAULT_RISINGWAVE_TAG;
     public String url = DEFAULT_RISINGWAVE_URL;
     public String db = DEFAULT_RISINGWAVE_DB;
 }
