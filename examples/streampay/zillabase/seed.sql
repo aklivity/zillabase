@@ -8,6 +8,12 @@ CREATE FUNCTION generate_unique_id() RETURNS VARCHAR LANGUAGE javascript AS $$
   });
 $$;
 
+CREATE FUNCTION assess_fraud(varchar, varchar, double precision) RETURNS struct<summary varchar, risk int>
+LANGUAGE python AS assess_fraud;
+
+CREATE FUNCTION process_embedding(varchar, varchar, double precision, varchar) RETURNS boolean
+LANGUAGE python AS process_embedding;
+
 CREATE STREAM streampay_commands(
     type VARCHAR,
     user_id VARCHAR,
@@ -75,7 +81,7 @@ CREATE MATERIALIZED VIEW streampay_balances AS
   GROUP BY
       user_id;
 
-CREATE MATERIALIZED VIEW streampay_payment_requests as
+CREATE MATERIALIZED VIEW streampay_payment_requests AS
   SELECT
       generate_unique_id()::varchar as id,
       encode(cmd.owner_id, 'escape') as from_user_id,
@@ -92,6 +98,15 @@ CREATE MATERIALIZED VIEW streampay_payment_requests as
       streampay_users u2 ON u2.id = encode(cmd.owner_id, 'escape')
   WHERE
       type = 'RequestPayment';
+
+CREATE MATERIALIZED VIEW streampay_payment_risk_assessment AS
+  SELECT
+      id,
+      to_user_id_identity,
+      (assess_fraud(from_username, to_username, amount)).summary AS summary,
+      (assess_fraud(from_username, to_username, amount)).risk AS risk
+  FROM
+      streampay_payment_requests;
 
 CREATE MATERIALIZED VIEW streampay_activities AS
   SELECT
@@ -141,19 +156,37 @@ CREATE MATERIALIZED VIEW streampay_activities AS
       LEFT JOIN streampay_users tu ON sc.user_id = tu.id
   WHERE
       sc.type = 'RequestPayment';
+  SELECT
+      generate_unique_id()::varchar as id,
+      'PaymentRejected' AS eventName,
+      encode(sc.owner_id, 'escape') AS from_user_id,
+      fu.username AS from_username,
+      sc.user_id AS to_user_id,
+      tu.username AS to_username,
+      sc.amount,
+      CAST(extract(epoch FROM sc.timestamp) AS FLOAT) * 1000 AS timestamp
+  FROM
+      streampay_commands sc
+      LEFT JOIN streampay_users fu ON encode(sc.owner_id, 'escape') = fu.id
+      LEFT JOIN streampay_users tu ON sc.user_id = tu.id
+  WHERE
+      sc.type = 'RejectRequest';
+
+CREATE MATERIALIZED VIEW streampay_payment_process_embedding AS
+  SELECT
+      id,
+      process_embedding(from_username, to_username, amount, eventName) AS result,
+  FROM
+      streampay_activities;
+  WHERE
+      eventName = 'PaymentReceived' OR eventName = 'PaymentRejected';
 
 CREATE STREAM streampay_balance_histories(
     balance DOUBLE PRECISION
 )
 INCLUDE timestamp AS timestamp;
 
-CREATE VIEW IF NOT EXISTS invalid_status_code AS
-    SELECT '400' as status, encode(correlation_id, 'escape') as correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment');
-
-CREATE VIEW IF NOT EXISTS valid_status_code AS
-    SELECT '200' as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment');
-
 CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
-    SELECT * FROM invalid_status_code
+    SELECT '400' as status, encode(correlation_id, 'escape') as correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment', 'RejectRequest')
     UNION
-    SELECT * FROM valid_status_code;
+    SELECT '200' as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment', 'RejectRequest');
