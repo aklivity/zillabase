@@ -1,5 +1,5 @@
 import { boot } from 'quasar/wrappers';
-import Keycloak, { KeycloakInstance, KeycloakProfile } from 'keycloak-js';
+import Keycloak, { KeycloakProfile } from 'keycloak-js';
 
 const keycloak = new Keycloak({
   url: 'http://localhost:8180/',
@@ -9,7 +9,7 @@ const keycloak = new Keycloak({
 
 let user: KeycloakProfile | null = null;
 
-async function createRefreshTokenTimer(keycloak: KeycloakInstance) {
+async function createRefreshTokenTimer(keycloak: Keycloak) {
   setInterval(() => {
     keycloak.updateToken(60).then((refreshed: boolean) => {
       if (refreshed) {
@@ -57,7 +57,7 @@ interface SecureEventSourceInit extends EventSourceInit {
 
 class SecureEventSource extends EventTarget {
   private eventSource: EventSource | null = null;
-  private lastEventId = "";
+  private lastEventId = '';
   private url: string;
   private eventSourceInit: SecureEventSourceInit | undefined;
 
@@ -81,17 +81,17 @@ class SecureEventSource extends EventTarget {
 
     this.eventSource = new EventSource(secureUrl, this.eventSourceInit);
 
-    this.eventSource.onopen = (event: Event) => this.dispatchEvent(new Event("open"));
+    this.eventSource.onopen = () => this.dispatchEvent(new Event('open'));
     this.eventSource.onmessage = (event: MessageEvent) => {
       this.lastEventId = event.lastEventId;
-      this.dispatchEvent(new MessageEvent("message", { data: event.data, lastEventId: event.lastEventId }));
+      this.dispatchEvent(new MessageEvent('message', { data: event.data, lastEventId: event.lastEventId }));
 
       if (this.onmessage) {
         this.onmessage.call(this.eventSource, event);
       }
     };
-    this.eventSource.onerror = (event: Event) => {
-      this.dispatchEvent(new ErrorEvent("error"));
+    this.eventSource.onerror = () => {
+      this.dispatchEvent(new ErrorEvent('error'));
       this.eventSource?.close();
       setTimeout(() => this.initEventSource(), 1000);
     };
