@@ -54,11 +54,11 @@
 
 <script lang="ts">
 import {defineComponent, ref, toRefs, watch} from 'vue'
-import {api, streamingUrl} from "boot/axios";
-import {keycloak, user, SecureEventSource} from "boot/main";
-import {useQuasar} from "quasar";
-import {useRouter} from "vue-router";
-import {v4} from "uuid";
+import {api, streamingUrl} from 'boot/axios';
+import {keycloak, user, SecureEventSource} from 'boot/main';
+import {useQuasar} from 'quasar';
+import {useRouter} from 'vue-router';
+import {v4} from 'uuid';
 
 interface UserOption {
   label: string;
@@ -79,7 +79,7 @@ export default defineComponent({
     const userOption = ref(null as UserOption | null);
     const userOptions = ref([] as UserOption[]);
     const amount = ref(0 as number);
-    const notes = ref("" as string);
+    const notes = ref('' as string);
     const router = useRouter();
     const balanceStream = null as SecureEventSource | null;
 
@@ -100,7 +100,7 @@ export default defineComponent({
           api.post('/streampay_commands', {
             type: 'SendPayment',
             user_id: userOption.value?.value,
-            requestid: "",
+            requestid: '',
             amount: +amount.value,
             notes: notes.value
           },{
@@ -135,7 +135,7 @@ export default defineComponent({
         api.post('/streampay_commands', {
           type: 'RequestPayment',
           user_id: userOption.value?.value,
-          requestid: "",
+          requestid: '',
           amount: +amount.value,
           notes: notes.value
         },{
@@ -168,7 +168,7 @@ export default defineComponent({
       const accessToken = keycloak.token;
       const authorization = { Authorization: `Bearer ${accessToken}` };
       balanceStream = new SecureEventSource(`${streamingUrl}/streampay_balances-stream-identity`, {
-        credentials: () => keycloak.token || ""
+        credentials: () => keycloak.token || ''
       });
 
       balanceStream.onmessage = function (event: MessageEvent) {

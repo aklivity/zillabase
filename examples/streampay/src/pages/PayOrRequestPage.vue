@@ -8,9 +8,9 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, unref} from "vue";
-import PayOrRequestForm from "components/PayOrRequestForm.vue";
-import {useRoute} from "vue-router";
+import {defineComponent} from 'vue';
+import PayOrRequestForm from 'components/PayOrRequestForm.vue';
+import {useRoute} from 'vue-router';
 import {keycloak} from 'boot/main';
 
 export default defineComponent({
@@ -18,7 +18,7 @@ export default defineComponent({
   components: { PayOrRequestForm },
   setup() {
     const route = useRoute();
-    const requestId = route.params.requestId;
+    const requestId = route.params.requestId.toString();
     return {
       keycloak,
       requestId

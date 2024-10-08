@@ -94,7 +94,7 @@ export default defineComponent({
 
     async function readActivities() {
       activitiesStream = new SecureEventSource(`${streamingUrl}/streampay_activities-stream`, {
-        credentials: () => keycloak.token || ""
+        credentials: () => keycloak.token || ''
       });
 
       activitiesStream.onmessage = function (event: MessageEvent) {

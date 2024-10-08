@@ -88,9 +88,9 @@
 
 <script lang="ts">
 import {defineComponent, unref, watch} from 'vue';
-import {api, streamingUrl} from "boot/axios";
+import {api, streamingUrl} from 'boot/axios';
 import {keycloak, user, SecureEventSource} from 'boot/main';
-import {v4} from "uuid";
+import {v4} from 'uuid';
 
 export default defineComponent({
   name: 'MainLayout',
@@ -116,19 +116,19 @@ export default defineComponent({
     const updateBalance =  this.updateBalance;
     async function authenticatePage() {
       const requestStream  = new SecureEventSource(`${streamingUrl}/streampay_payment_requests-stream`, {
-        credentials: () => keycloak.token || ""
+        credentials: () => keycloak.token || ''
       });
 
       requestStream.addEventListener('delete', () => {
         decRequests();
       }, false);
 
-      requestStream.onmessage = function (event: MessageEvent) {
+      requestStream.onmessage = function () {
         incRequests();
       };
 
       const balanceStream  = new SecureEventSource(`${streamingUrl}/streampay_balances-stream-identity`, {
-        credentials: () => keycloak.token || ""
+        credentials: () => keycloak.token || ''
       });
 
       balanceStream.onmessage = function (event: MessageEvent) {
