@@ -1709,8 +1709,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withPortBindings(portBindings))
+                    .withNetworkMode(network)
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withExposedPorts(exposedPorts)
                 .withCmd("start", "-v", "-e", "-c", "%s/config/zilla.yaml".formatted(config.admin.configServerUrl))
                 .withTty(true);
@@ -1737,9 +1738,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withRestartPolicy(unlessStoppedRestart()))
-                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
                 .withExposedPorts(exposedPort)
                 .withTty(true)
                 .withEnv(
@@ -1842,8 +1843,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withRestartPolicy(unlessStoppedRestart()))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
                 .withCmd("playground");
         }
@@ -1904,7 +1905,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                    .withNetworkMode(network))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withEnv(envVars)
                 .withTty(true);
         }
@@ -1956,7 +1958,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
-                    .withPortBindings(portBindings))
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withCmd("start", "-v", "-e")
                 .withExposedPorts(exposedPorts)
                 .withEnv(envVars)
@@ -1999,7 +2002,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                    .withNetworkMode(network))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withCmd("start", "-v", "-e")
                 .withEnv(envVars)
                 .withTty(true);
@@ -2071,7 +2075,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
-                    .withBinds(binds))
+                    .withBinds(binds)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withEnv(envVars)
                 .withTty(true);
         }
