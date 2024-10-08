@@ -7,15 +7,15 @@ Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automaticall
 #### Install `zillabase`
 
 ```bash
-$ brew tap aklivity/tap
+brew tap aklivity/tap
 
-$ brew install zillabase
+brew install zillabase
 ```
 
 #### Start `zillabase` stack:
 
 ```bash
-$ zillabase start
+zillabase start
 ```
 
 Output:

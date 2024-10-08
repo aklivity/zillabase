@@ -5,15 +5,15 @@ This example demonstrates how to register external User Defined Functions (UDFs)
 #### Install `zillabase`
 
 ```bash
-$ brew tap aklivity/tap
+brew tap aklivity/tap
 
-$ brew install zillabase
+brew install zillabase
 ```
 
 #### Start `zillabase` stack:
 
 ```bash
-$ zillabase start
+zillabase start
 ```
 
 Output:
@@ -31,7 +31,7 @@ latest: Pulling from aklivity/zillabase/udf-server
 #### Connect to psql endpoint expose through Admin service
 
 ```bash
-$ psql -U root -d dev -h localhost -p 4567
+psql -U root -d dev -h localhost -p 4567
 ```
 
 #### Validate defined functions:

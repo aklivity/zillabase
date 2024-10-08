@@ -8,15 +8,15 @@ Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automaticall
 #### Install `zillabase`
 
 ```bash
-$ brew tap aklivity/tap
+brew tap aklivity/tap
 
-$ brew install zillabase
+brew install zillabase
 ```
 
 #### Start `zillabase` stack:
 
 ```bash
-$ zillabase start
+zillabase start
 ```
 
 Output:
@@ -84,10 +84,10 @@ The Zillabase Streampay is exposes common entity CRUD endpoints with the entity 
 | HTTP     | GET    | /streampay_payment_requests-stream | dev.streampay_payment_requests | Stream new available payment request.        |
 | HTTP     | GET    | /streampay_activities-stream       | dev.streampay_activities       | Stream all the activities.                   |
 
-
 ## Setup StreamPay UI
 
 ### Install the dependencies
+
 ```bash
 yarn
 # or
@@ -95,6 +95,7 @@ npm install
 ```
 
 ### Start the app in development mode (hot-code reloading, error reporting, etc.)
+
 ```bash
 quasar dev
 ```
