@@ -8,6 +8,9 @@ CREATE FUNCTION generate_unique_id() RETURNS VARCHAR LANGUAGE javascript AS $$
   });
 $$;
 
+CREATE FUNCTION assess_fround(varchar, varchar, double precision) RETURNS struct<summary varchar, risk int>
+LANGUAGE python AS assess_fround;
+
 CREATE STREAM streampay_commands(
     type VARCHAR,
     user_id VARCHAR,
@@ -75,7 +78,7 @@ CREATE MATERIALIZED VIEW streampay_balances AS
   GROUP BY
       user_id;
 
-CREATE MATERIALIZED VIEW streampay_payment_requests as
+CREATE MATERIALIZED VIEW streampay_payment_requests AS
   SELECT
       generate_unique_id()::varchar as id,
       encode(cmd.owner_id, 'escape') as from_user_id,
@@ -92,6 +95,15 @@ CREATE MATERIALIZED VIEW streampay_payment_requests as
       streampay_users u2 ON u2.id = encode(cmd.owner_id, 'escape')
   WHERE
       type = 'RequestPayment';
+
+CREATE MATERIALIZED VIEW streampay_payment_risk_assesment AS
+  SELECT
+      id,
+      to_user_id_identity,
+      (assess_fround(from_username, to_username, amount)).summary AS summary,
+      (assess_fround(from_username, to_username, amount)).risk AS risk
+  FROM
+      streampay_payment_requests;
 
 CREATE MATERIALIZED VIEW streampay_activities AS
   SELECT
@@ -147,16 +159,7 @@ CREATE STREAM streampay_balance_histories(
 )
 INCLUDE timestamp AS timestamp;
 
-CREATE VIEW IF NOT EXISTS invalid_status_code AS
-    SELECT '400' as status, encode(correlation_id, 'escape') as correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment');
-
-CREATE VIEW IF NOT EXISTS valid_status_code AS
-    SELECT '200' as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment');
-
 CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
-    SELECT * FROM invalid_status_code
+    SELECT '400' as status, encode(correlation_id, 'escape') as correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment', 'RejectRequest')
     UNION
-    SELECT * FROM valid_status_code;
-
-CREATE FUNCTION blocking(int) RETURNS int
-LANGUAGE python AS blocking;
+    SELECT '200' as status,  encode(correlation_id, 'escape') as correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment', 'RejectRequest');
