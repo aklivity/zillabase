@@ -2487,7 +2487,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            List<String> envVars = Arrays.asList("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+            List<String> envVars = new ArrayList<>();
+            envVars.add("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+
+            List<String> env = config.udf.java.env;
+            if (env != null)
+            {
+                envVars.addAll(env);
+            }
 
             String projectsBasePath = "zillabase/functions/java";
 
@@ -2591,6 +2598,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 }
             }
 
+            List<String> env = Optional.ofNullable(config.udf.python.env).orElse(List.of());
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -2600,6 +2609,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withBinds(binds))
                 .withTty(true)
+                .withEnv(env)
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))

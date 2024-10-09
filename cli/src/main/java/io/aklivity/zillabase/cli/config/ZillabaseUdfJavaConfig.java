@@ -14,6 +14,8 @@
  */
 package io.aklivity.zillabase.cli.config;
 
+import java.util.List;
+
 import io.aklivity.zillabase.cli.internal.Zillabase;
 
 public final class ZillabaseUdfJavaConfig
@@ -21,4 +23,5 @@ public final class ZillabaseUdfJavaConfig
     public static final String DEFAULT_UDF_JAVA_TAG = Zillabase.version();
 
     public String tag = DEFAULT_UDF_JAVA_TAG;
+    public List<String> env;
 }

@@ -135,6 +135,54 @@
         "url"
       ]
     },
+    "udf":
+    {
+      "type": "object",
+      "properties":
+      {
+        "java":
+        {
+          "type": "object",
+          "properties":
+          {
+            "env":
+            {
+                "type": "array",
+                "items":
+                {
+                  "type": "string"
+                }
+            },
+            "tag":
+            {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "python":
+        {
+          "type": "object",
+          "properties":
+          {
+            "env":
+            {
+                "type": "array",
+                "items":
+                {
+                  "type": "string"
+                }
+            },
+            "tag":
+            {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "zilla":
     {
       "type": "object",
