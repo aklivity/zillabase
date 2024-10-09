@@ -2127,7 +2127,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKafkaFactory(
             ZillabaseConfig config)
         {
-            super(config, "kafka", "bitnami/kafka:3.2.3");
+            super(config, "kafka", "bitnami/kafka:%s".formatted(config.kafka.tag));
         }
 
         @Override
@@ -2174,7 +2174,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateApicurioFactory(
             ZillabaseConfig config)
         {
-            super(config, "apicurio", "apicurio/apicurio-registry-mem:latest-release");
+            super(config, "apicurio", "apicurio/apicurio-registry-mem:%s".formatted(config.registry.apicurio.tag));
         }
 
         @Override
@@ -2203,7 +2203,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKarapaceFactory(
             ZillabaseConfig config)
         {
-            super(config, "karapace", "ghcr.io/aiven/karapace:latest");
+            super(config, "karapace", "ghcr.io/aiven/karapace:%s".formatted(config.registry.karapace.tag));
         }
 
         @Override
@@ -2249,7 +2249,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateRisingWaveFactory(
             ZillabaseConfig config)
         {
-            super(config, "risingwave", "risingwavelabs/risingwave:latest");
+            super(config, "risingwave", "risingwavelabs/risingwave:%s".formatted(config.risingwave.tag));
         }
 
         @Override
@@ -2279,7 +2279,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKeycloakFactory(
             ZillabaseConfig config)
         {
-            super(config, "keycloak", "bitnami/keycloak:latest");
+            super(config, "keycloak", "bitnami/keycloak:%s".formatted(config.keycloak.tag));
         }
 
         @Override
@@ -2432,7 +2432,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateConfigFactory(
             ZillabaseConfig config)
         {
-            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.zilla.tag));
+            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.admin.tag));
         }
 
         @Override
@@ -2480,14 +2480,21 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateUdfServerJavaFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.admin.tag));
+            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.udf.java.tag));
         }
 
         @Override
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            List<String> envVars = Arrays.asList("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+            List<String> envVars = new ArrayList<>();
+            envVars.add("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+
+            List<String> env = config.udf.java.env;
+            if (env != null)
+            {
+                envVars.addAll(env);
+            }
 
             String projectsBasePath = "zillabase/functions/java";
 
@@ -2543,7 +2550,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateUdfServerPythonFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server-python", "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.admin.tag));
+            super(config, "udf-server-python",
+                    "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.udf.python.tag));
         }
 
         private void importModule(
@@ -2590,6 +2598,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 }
             }
 
+            List<String> env = Optional.ofNullable(config.udf.python.env).orElse(List.of());
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -2599,6 +2609,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withBinds(binds))
                 .withTty(true)
+                .withEnv(env)
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))

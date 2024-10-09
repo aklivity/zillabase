@@ -14,13 +14,8 @@
  */
 package io.aklivity.zillabase.cli.config;
 
-public final class ZillabaseApicurioConfig
+public class ZillabaseUdfConfig
 {
-    private static final String DEFAULT_APICURIO_TAG = "2.6.x-release";
-    private static final String DEFAULT_APICURIO_URL = "http://apicurio.zillabase.dev:8080";
-    private static final String DEFAULT_APICURIO_GROUP_ID = "default";
-
-    public String tag = DEFAULT_APICURIO_TAG;
-    public String url = DEFAULT_APICURIO_URL;
-    public String groupId = DEFAULT_APICURIO_GROUP_ID;
+    public ZillabaseUdfJavaConfig java = new ZillabaseUdfJavaConfig();
+    public ZillabaseUdfPythonConfig python = new ZillabaseUdfPythonConfig();
 }

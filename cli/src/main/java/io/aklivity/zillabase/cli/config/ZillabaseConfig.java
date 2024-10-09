@@ -23,4 +23,5 @@ public final class ZillabaseConfig
     public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
     public ZillabaseKeycloakConfig keycloak = new ZillabaseKeycloakConfig();
     public ZillabaseSsoConfig sso = new ZillabaseSsoConfig();
+    public ZillabaseUdfConfig udf = new ZillabaseUdfConfig();
 }

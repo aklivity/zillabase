@@ -1,1 +1,6 @@
 # config
+
+udf:
+  python:
+    env:
+      - MY_VAR=value

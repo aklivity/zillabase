@@ -1,4 +1,6 @@
 # config
 
-admin:
-  tag: develop-SNAPSHOT
+udf:
+  java:
+    env:
+      - MY_VAR=value
