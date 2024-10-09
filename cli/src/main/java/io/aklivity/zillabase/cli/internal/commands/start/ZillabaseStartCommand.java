@@ -1859,7 +1859,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             props.setProperty("user", "root");
             props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
 
-            boolean status = false;
+            boolean connected = false;
             int retries = 0;
             int delay = SERVICE_INITIALIZATION_DELAY_MS;
 
@@ -1872,21 +1872,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         .formatted(config.risingwave.url, config.risingwave.db), props);
                          Statement stmt = conn.createStatement())
                     {
-                        String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
-                                          .replaceAll("--.*?(\\r?\\n)", "");
-
-                        List<String> splitCommands = splitSQL(noCommentsSQL);
-
-                        for (String command : splitCommands)
-                        {
-                            if (!command.trim().isEmpty())
-                            {
-                                command = command.trim().replaceAll("[\\n\\r]+$", "");
-                                System.out.println("Executing command: " + command);
-                                stmt.executeUpdate(command);
-                            }
-                        }
-                        status = true;
+                        connected = true;
                         break;
                     }
                 }
@@ -1897,13 +1883,41 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 }
             }
 
-            if (status)
+            if (connected)
             {
+
+                try
+                {
+                    Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
+                        .formatted(config.risingwave.url, config.risingwave.db), props);
+                    Statement stmt = conn.createStatement();
+                    // Set the timeout in seconds (for example, 30 seconds)
+                    stmt.setQueryTimeout(30);
+                    String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
+                            .replaceAll("--.*?(\\r?\\n)", "");
+
+                    List<String> splitCommands = splitSQL(noCommentsSQL);
+
+                    for (String command : splitCommands)
+                    {
+                        if (!command.trim().isEmpty())
+                        {
+                            command = command.trim().replaceAll("[\\n\\r]+$", "");
+                            System.out.println("Executing command: " + command);
+                            stmt.executeUpdate(command);
+                        }
+                    }
+                }
+                catch (SQLException ex)
+                {
+                    System.out.println("seed.sql failed to be processed. ex: " + ex.getMessage());
+                }
+
                 System.out.println("seed.sql processed successfully!");
             }
             else
             {
-                System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
+                System.err.println("Failed to connect to " + config.risingwave.url + " after " + MAX_RETRIES + " attempts.");
             }
         }
     }
