@@ -1,8 +1,12 @@
 # config
-# admin:
-#   tag: develop-SNAPSHOT
-# zilla:
-#   tag: develop-SNAPSHOT
+admin:
+  tag: develop-SNAPSHOT
+zilla:
+  tag: develop-SNAPSHOT
+
+udf:
+  python:
+    env:
 keycloak:
   realm: zillabase
   users:

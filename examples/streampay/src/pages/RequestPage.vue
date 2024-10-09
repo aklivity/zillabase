@@ -3,110 +3,82 @@
     <div class="items-center text-primary text-h4" style="margin-left: 40%; margin-bottom: 60px;">
       Requests
     </div>
-    <q-table
-      ref="tableRef"
-      title-class="feed-title"
-      hide-bottom
-      hide-header
-      card-style="box-shadow: none;"
-      :rows="requests"
-      :columns="columns"
-      :table-colspan="9"
-      row-key="index"
-      virtual-scroll
-      :virtual-scroll-item-size="48"
-      :rows-per-page-options="[0]"
-    >
-       <template v-slot:body="props">
-         <q-tr :props="props" no-hover>
-           <q-td  key="requester" :props="props">
-             <div style="margin-bottom: 20px; margin-top: 20px;">
-               <div class="text-h6">
-                 <b>{{ props.row.request.from_username }}</b> requested <b> ${{ props.row.request.amount.toFixed(2) }}</b>
-               </div>
-               <div class="text-subtitle2">
-                 {{ props.row.request.notes }}
-               </div>
-             </div>
-           </q-td>
+    <div class="q-pa-md row items-start q-gutter-md">
+      <q-card v-for="req in requests" :key="req.id" class="full-width">
+        <q-card-section class="bg-white">
 
-           <q-td
-             key="action"
-             :props="props"
-           >
-             <div class="text-negative">
-               <q-btn
-                 label="Pay"
-                 color="primary"
-                 rounded
-                 @click="this.$router.push({ path: '/payorrequest/' + props.row.request.id })" />
-             </div>
-           </q-td>
-         </q-tr>
-       </template>
-    </q-table>
+          <div class="text-h6"><b>{{ req.from_username }}</b> requested <b> ${{ req.amount?.toFixed(2) || `0` }}</b>
+          </div>
+          <div class="text-subtitle2">Risk:</div>
+          <p>{{ req.risk }} | {{ req.summary }}</p>
+          <div class="text-subtitle2">Note:</div>
+          <p>{{ req.notes }}</p>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions>
+          <q-btn @click="pay(req.id)" class="bg-primary text-white">Pay</q-btn>
+          <q-btn @click="reject(req.id)" flat>Reject</q-btn>
+        </q-card-actions>
+      </q-card>
+
+    </div>
   </q-page>
 </template>
 
-<script lang="ts">
-import {defineComponent, ref, watch} from 'vue';
-import {api} from 'boot/axios';
-import {keycloak} from 'boot/main';
+<script setup lang="ts">
+import { ref, watch, defineExpose } from 'vue';
+import { api } from 'boot/axios';
+import { keycloak } from 'boot/main';
 
-export default defineComponent({
-  name: 'MainPage',
-  setup () {
-    const tableRef = ref(null);
+const requests = ref([] as any);
 
-    const columns = [
-      {
-        name: 'requester',
-        required: true,
-        align: 'left',
-        field: 'requester',
-        format: (val: any) => `${val}`
-      },
-      { name: 'action', align: 'right', field: 'amount', sortable: true },
-    ]
+async function readRequests() {
+  const accessToken = keycloak.token;
+  const authorization = { Authorization: `Bearer ${accessToken}` };
 
-    const requests = ref([] as any);
-
-    return {
-      keycloak,
-      tableRef,
-      columns,
-      requests
+  await api.get('/streampay_payment_requests', {
+    headers: {
+      ...authorization
     }
-  },
-  async mounted() {
-    const requests = this.requests;
-
-    async function readRequests() {
-      const accessToken = keycloak.token;
-      const authorization = {Authorization: `Bearer ${accessToken}`};
-
-      await api.get('/streampay_payment_requests', {
-        headers: {
-          ...authorization
-        }
-      })
-      .then((response) => {
-        const paymentRequests = response.data;
-        for (let paymentRequest of paymentRequests) {
-          requests.push({request: paymentRequest})
-        }
-      });
+  })
+    .then((response) => {
+      requests.value = response.data
+    });
+  api.get('/streampay_payment_risk_assessment', {
+    headers: {
+      ...authorization
     }
+  })
+    .then((response) => {
+      let riskById = response.data?.reduce((acc: any, risk: any) => {acc[risk.id] = risk; return acc;}, {});
+      let withRisk = requests.value.map((r: any) => ({ ...riskById[r.id], ...r }));
+      requests.value = withRisk;
+      console.log(withRisk);
+    });
+}
 
-    if (keycloak.authenticated) {
-      await readRequests();
-    } else {
-      watch(() => keycloak.authenticated ?? false, (newValue) => {
-        if (newValue) {
-          readRequests();
-        }
-      });
+function pay(id: string) {
+  console.log(id);
+}
+
+function reject(id: string) {
+  console.log(id);
+}
+
+if (keycloak.authenticated) {
+  readRequests();
+} else {
+  watch(() => keycloak.authenticated ?? false, (newValue) => {
+    if (newValue) {
+      readRequests();
     }
-  }
+  });
+}
+
+defineExpose({
+  pay,
+  reject,
 });
 </script>

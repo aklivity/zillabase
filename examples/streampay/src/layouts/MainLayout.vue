@@ -12,12 +12,12 @@
             class="text-weight-bold text-h4"
             flat color="primary"
             label="StreamPay"
-            @click="this.$router.push({ path: '/main' })"
+            to="/main"
           />
         </div>
         <div style="margin-top: 100px">
           <div class="text-weight-bold float-right text-h6" style="padding-right: 10px; width: 222px; margin-top: 10px;">
-            Hi, {{ user.firstName }}
+            Hi, {{ user?.firstName }}
           </div>
         </div>
       </div>
@@ -30,7 +30,7 @@
           class="full-width text-white"
           label="Pay or Request"
           rounded
-          @click="this.$router.push({ path: '/payorrequest' })"
+          to="/payorrequest"
         />
       </div>
 
@@ -44,7 +44,7 @@
         <q-item
           clickable
           v-ripple
-          @click="this.$router.push({ path: '/request' })"
+          to="/request"
         >
           <q-item-section avatar>
             <q-icon size="36px" color="primary" name="request_quote" />
@@ -58,7 +58,7 @@
         <q-item
           clickable
           v-ripple
-          @click="this.$router.push({ path: '/statement' })"
+          to="/statement"
         >
           <q-item-section avatar>
             <q-icon size="36px" color="primary" name="insights" />

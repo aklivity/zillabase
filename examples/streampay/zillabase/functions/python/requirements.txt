@@ -1,1 +1,5 @@
-arrow_udf==0.2.1
+openai==1.51.2
+pandas==2.2.3
+python-dotenv==1.0.1
+scipy==1.14.1
+tiktoken==0.8.0

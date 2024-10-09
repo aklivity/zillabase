@@ -18,7 +18,7 @@ export default defineComponent({
   components: { PayOrRequestForm },
   setup() {
     const route = useRoute();
-    const requestId = route.params.requestId.toString();
+    const requestId = route.params.requestId?.toString();
     return {
       keycloak,
       requestId
