@@ -13,10 +13,10 @@
 # specific language governing permissions and limitations under the License.
 #
 
+import importlib.metadata
 import importlib.util
 import inspect
 import os
-import pkg_resources
 import re
 import subprocess
 import sys
@@ -38,24 +38,22 @@ def fetch_classes():
 
 def install_package(package_name, version=None):
     package_str = f"{package_name}=={version}" if version else package_name
-    with open(os.devnull, 'w') as devnull:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", package_str],
-            stdout=devnull,
-            stderr=devnull
-        )
-    print(f"Installed {package_str}")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package_str])
 
 def ensure_packages_installed(packages):
     for package_name, version in packages.items():
         try:
+            installed_version = importlib.metadata.version(package_name)
             if version:
-                pkg_resources.get_distribution(f"{package_name}=={version}")
-                print(f"{package_name} {version} is already installed.")
+                if installed_version == version:
+                    print(f"{package_name} {version} is already installed.")
+                else:
+                    print(f"Package '{package_name}' found with version {installed_version}, "
+                          f"but {version} is required. Installing the correct version...")
+                    install_package(package_name, version)
             else:
-                pkg_resources.get_distribution(package_name)
                 print(f"{package_name} is already installed.")
-        except pkg_resources.DistributionNotFound:
+        except importlib.metadata.PackageNotFoundError:
             print(f"Package '{package_name}=={version}' not found. Installing...")
             install_package(package_name, version)
 
