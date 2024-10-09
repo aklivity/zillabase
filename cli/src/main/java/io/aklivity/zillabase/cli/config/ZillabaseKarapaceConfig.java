@@ -17,7 +17,7 @@ package io.aklivity.zillabase.cli.config;
 public final class ZillabaseKarapaceConfig
 {
     private static final String DEFAULT_KARAPACE_CONTEXT = "default";
-    private static final String DEFAULT_KARAPACE_TAG = "latest";
+    private static final String DEFAULT_KARAPACE_TAG = "3.7.1";
 
     public static final String DEFAULT_KARAPACE_URL = "http://karapace.zillabase.dev:8081";
     public static final String DEFAULT_CLIENT_KARAPACE_URL = "http://localhost:8081";

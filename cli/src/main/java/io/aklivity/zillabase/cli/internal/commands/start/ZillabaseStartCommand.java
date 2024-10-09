@@ -2174,7 +2174,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateApicurioFactory(
             ZillabaseConfig config)
         {
-            super(config, "apicurio", "apicurio/apicurio-registry-mem:latest-release");
+            super(config, "apicurio", "apicurio/apicurio-registry-mem:%s".formatted(config.registry.apicurio.tag));
         }
 
         @Override
@@ -2203,7 +2203,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKarapaceFactory(
             ZillabaseConfig config)
         {
-            super(config, "karapace", "ghcr.io/aiven/karapace:latest");
+            super(config, "karapace", "ghcr.io/aiven/karapace:%s".formatted(config.registry.karapace.tag));
         }
 
         @Override
@@ -2249,7 +2249,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateRisingWaveFactory(
             ZillabaseConfig config)
         {
-            super(config, "risingwave", "risingwavelabs/risingwave:latest");
+            super(config, "risingwave", "risingwavelabs/risingwave:%s".formatted(config.risingwave.tag));
         }
 
         @Override
@@ -2279,7 +2279,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKeycloakFactory(
             ZillabaseConfig config)
         {
-            super(config, "keycloak", "bitnami/keycloak:latest");
+            super(config, "keycloak", "bitnami/keycloak:%s".formatted(config.keycloak.tag));
         }
 
         @Override

@@ -14,9 +14,11 @@
  */
 package io.aklivity.zillabase.cli.config;
 
+import io.aklivity.zillabase.cli.internal.Zillabase;
+
 public final class ZillabaseUdfJavaConfig
 {
-    public static final String DEFAULT_UDF_JAVA_TAG = "latest";
+    public static final String DEFAULT_UDF_JAVA_TAG = Zillabase.version();
 
     public String tag = DEFAULT_UDF_JAVA_TAG;
 }
