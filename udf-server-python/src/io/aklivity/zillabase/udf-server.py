@@ -16,7 +16,10 @@
 import importlib.util
 import inspect
 import os
+import pkg_resources
 import re
+import subprocess
+import sys
 from pathlib import Path
 from arrow_udf import UdfServer
 
@@ -33,6 +36,43 @@ def fetch_classes():
                         class_names.append(file)
     return class_names
 
+def install_package(package_name, version=None):
+    package_str = f"{package_name}=={version}" if version else package_name
+    with open(os.devnull, 'w') as devnull:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", package_str],
+            stdout=devnull,
+            stderr=devnull
+        )
+    print(f"Installed {package_str}")
+
+def ensure_packages_installed(packages):
+    for package_name, version in packages.items():
+        try:
+            if version:
+                pkg_resources.get_distribution(f"{package_name}=={version}")
+                print(f"{package_name} {version} is already installed.")
+            else:
+                pkg_resources.get_distribution(package_name)
+                print(f"{package_name} is already installed.")
+        except pkg_resources.DistributionNotFound:
+            print(f"Package '{package_name}=={version}' not found. Installing...")
+            install_package(package_name, version)
+
+def get_requirements_packages(requirements_path):
+    packages = {}
+    if os.path.exists(requirements_path):
+        with open(requirements_path, "r") as req_file:
+            for line in req_file:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    if "==" in line:
+                        package, version = line.split("==")
+                        packages[package] = version
+                    else:
+                        packages[line] = None
+    return packages
+
 def dynamic_import(file_path):
     module_name = file_path.stem
     spec = importlib.util.spec_from_file_location(module_name, file_path)
@@ -47,6 +87,10 @@ if __name__ == "__main__":
     matcher = CLASS_NAME_PATTERN
 
     try:
+        requirements_file_path = "/opt/udf/lib/requirements.txt"
+        requirements_packages = get_requirements_packages(requirements_file_path)
+        ensure_packages_installed(requirements_packages)
+
         class_files = fetch_classes()
         for class_file in class_files:
             try:
