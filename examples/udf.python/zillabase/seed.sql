@@ -11,3 +11,6 @@ LANGUAGE python AS key_value;
 
 CREATE FUNCTION series(int) RETURNS TABLE (x int)
 LANGUAGE python AS series;
+
+CREATE FUNCTION sum_csv_column(varchar) RETURNS int
+LANGUAGE python AS sum_csv_column;

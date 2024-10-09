@@ -1,3 +1,4 @@
+import pandas as pd
 import time
 from arrow_udf import udf, udtf
 
@@ -21,3 +22,9 @@ def key_value(pair: str):
 def series(n):
     for i in range(n):
         yield i
+
+@udf(input_types=['VARCHAR'], result_type='INT')
+def sum_csv_column(csv_string: str) -> int:
+    data = [int(x) for x in csv_string.split(',')]
+    df = pd.DataFrame(data, columns=['values'])
+    return df['values'].sum()
