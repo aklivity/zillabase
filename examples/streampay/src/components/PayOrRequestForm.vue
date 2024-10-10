@@ -78,7 +78,7 @@ export default defineComponent({
     const balance = ref(0 as number);
     const userOption = ref(null as UserOption | null);
     const userOptions = ref([] as UserOption[]);
-    const amount = ref(0 as number);
+    const amount = ref();
     const notes = ref('' as string);
     const router = useRouter();
     const balanceStream = null as SecureEventSource | null;

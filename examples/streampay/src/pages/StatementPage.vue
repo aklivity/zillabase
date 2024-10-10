@@ -17,104 +17,85 @@
       </div>
       <div class="row">
         <div class="col">
-              <apexchart type="line" :options="options" :series="balanceSeries"></apexchart>
+          <apexchart type="line" :options="options" :series="balanceSeries"></apexchart>
         </div>
       </div>
     </div>
   </q-page>
 </template>
 
-<script lang="ts">
-import {defineComponent, ref, watch} from 'vue';
-import {streamingUrl} from 'boot/axios';
-import {keycloak} from 'boot/main';
+<script setup lang="ts">
+import { ref, watch, onUnmounted, onMounted } from 'vue';
+import { streamingUrl } from 'boot/axios';
+import { keycloak } from 'boot/main';
 
-export default defineComponent({
-  name: 'StatementPage',
-  setup () {
-    const balanceSeries = ref([{
-      name: 'Balance',
-      data: [] as any
-    }]);
-    const balanceStream = null as EventSource | null;
-    const totalTransaction = ref(0);
-    const averageTransaction = ref(0);
-    const totalTransactionStream = null as EventSource | null;
-    const averageTransactionStream = null as EventSource | null;
+const balanceSeries = ref([{
+  name: 'Balance',
+  data: [] as any
+}]);
+let balanceStream: EventSource;
+let totalTransactionStream: EventSource;
+let averageTransactionStream: EventSource;
+const totalTransaction = ref(0);
+const averageTransaction = ref(0);
 
-    return {
-      keycloak,
-      options: {},
-      balanceSeries,
-      balanceStream,
-      totalTransaction,
-      totalTransactionStream,
-      averageTransaction,
-      averageTransactionStream
-    }
-  },
-  async mounted() {
-    const updateBalance = this.updateBalance;
-    const updateTotalTransactionBalance = this.updateTotalTransactionBalance;
-    const updateAverageTransactionBalance = this.updateAverageTransactionBalance;
-    let totalTransactionStream = this.totalTransactionStream;
-    let balanceStream = this.balanceStream;
-    let averageTransactionStream = this.averageTransactionStream;
 
-    async function readStatement() {
-      const accessToken = keycloak.token;
+function updateBalance(newBalance: number, timestamp: number) {
+  let balance = { x: new Date(timestamp).toLocaleString(), y: newBalance };
+  if (balanceSeries.value[0].data.length > 20) {
+    balanceSeries.value[0].data.pop();
+    balanceSeries.value[0].data.unshift(balance);
+  } else {
+    balanceSeries.value[0].data.push(balance);
+  }
+}
+function updateTotalTransactionBalance(total: number) {
+  totalTransaction.value = total;
+}
+function updateAverageTransactionBalance(average: number) {
+  averageTransaction.value = +Math.abs(average).toFixed(2);
+}
 
-      balanceStream = new EventSource(`${streamingUrl}/streampay_balance_histories-stream?access_token=${accessToken}`);
 
-      balanceStream.onmessage = function (event: MessageEvent) {
-        const balance = JSON.parse(event.data);
-        updateBalance(balance.balance, balance.timestamp);
-      };
+async function readStatement() {
+  const accessToken = keycloak.token;
 
-      totalTransactionStream = new EventSource(`${streamingUrl}/total-transactions?access_token=${accessToken}`);
+  balanceStream = new EventSource(`${streamingUrl}/streampay_balance_histories-stream?access_token=${accessToken}`);
 
-      totalTransactionStream.onmessage = function (event: MessageEvent) {
-        const totalTransaction = JSON.parse(event.data);
-        updateTotalTransactionBalance(totalTransaction.total);
-      };
+  balanceStream.onmessage = function (event: MessageEvent) {
+    const balance = JSON.parse(event.data);
+    updateBalance(balance.balance, balance.timestamp);
+  };
 
-      averageTransactionStream = new EventSource(`${streamingUrl}/average-transactions?access_token=${accessToken}`);
+  totalTransactionStream = new EventSource(`${streamingUrl}/total-transactions?access_token=${accessToken}`);
 
-      averageTransactionStream.onmessage = function (event: MessageEvent) {
-        updateAverageTransactionBalance(event.data);
-      };
-    }
+  totalTransactionStream.onmessage = function (event: MessageEvent) {
+    const totalTransaction = JSON.parse(event.data);
+    updateTotalTransactionBalance(totalTransaction.total);
+  };
 
-    if (keycloak.authenticated) {
-      await readStatement();
-    } else {
-      watch(() => keycloak.authenticated ?? false, (newValue) => {
-        if (newValue) {
-          readStatement();
-        }
-      });
-    }
-  },
-  methods: {
-    updateBalance(newBalance: number, timestamp: number) {
-      let balance = { x: new Date(timestamp).toLocaleString(), y: newBalance };
-      if (this.balanceSeries[0].data.length > 20) {
-        this.balanceSeries[0].data.pop();
-        this.balanceSeries[0].data.unshift(balance);
-      } else {
-        this.balanceSeries[0].data.push(balance);
+  averageTransactionStream = new EventSource(`${streamingUrl}/average-transactions?access_token=${accessToken}`);
+
+  averageTransactionStream.onmessage = function (event: MessageEvent) {
+    updateAverageTransactionBalance(event.data);
+  };
+}
+
+onMounted(async () => {
+  if (keycloak.authenticated) {
+    await readStatement();
+  } else {
+    watch(() => keycloak.authenticated ?? false, (newValue) => {
+      if (newValue) {
+        readStatement();
       }
-    },
-    updateTotalTransactionBalance(total: number) {
-      this.totalTransaction = total;
-    },
-    updateAverageTransactionBalance(average: number) {
-      this.averageTransaction = +Math.abs(average).toFixed(2);
-    },
-  },
-  unmounted() {
-    this.balanceStream?.close();
-    this.totalTransactionStream?.close();
+    });
   }
 });
+
+onUnmounted(() => {
+  balanceStream?.close();
+  totalTransactionStream?.close();
+  averageTransactionStream?.close();
+})
 </script>

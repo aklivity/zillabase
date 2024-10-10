@@ -55,7 +55,6 @@ async function readRequests() {
       let riskById = response.data?.reduce((acc: any, risk: any) => {acc[risk.id] = risk; return acc;}, {});
       let withRisk = requests.value.map((r: any) => ({ ...riskById[r.id], ...r }));
       requests.value = withRisk;
-      console.log(withRisk);
     });
 }
 
