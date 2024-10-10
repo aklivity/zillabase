@@ -5,7 +5,7 @@ Zilla is implementing the REST endpoints defined in an AsyncAPI 3.x spec and pro
 
 Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automatically based on the Kafka Cluster metadata information.
 
-#### Install `zillabase`
+## Install `zillabase`
 
 ```bash
 brew tap aklivity/tap
@@ -13,7 +13,7 @@ brew tap aklivity/tap
 brew install zillabase
 ```
 
-#### Start `zillabase` stack:
+## Start `zillabase` stack
 
 ```bash
 zillabase start
@@ -22,50 +22,16 @@ zillabase start
 Output:
 
 ```text
-latest: Pulling from aklivity/zillabase/sso
-3.2.3: Pulling from bitnami/kafka
-latest: Pulling from risingwavelabs/risingwave
-latest-release: Pulling from apicurio/apicurio-registry-mem
-latest: Pulling from bitnami/keycloak
-latest: Pulling from aiven/karapace
-Sep 30, 2024 5:04:43 PM org.postgresql.jdbc.PgConnection <init>
-WARNING: Unsupported Server Version: 1.0.0
+latest: Pulling from aklivity/zillabase
+...
 seed.sql processed successfully!
-Registering zillabase-asyncapi spec
-{
-  "contentId" : 1,
-  "createdBy" : "",
-  "createdOn" : "2024-10-01T00:04:59+0000",
-  "globalId" : 1,
-  "id" : "zillabase-asyncapi-498150925",
-  "modifiedBy" : "",
-  "modifiedOn" : "2024-10-01T00:04:59+0000",
-  "references" : [ ],
-  "state" : "ENABLED",
-  "type" : "ASYNCAPI",
-  "version" : "1"
-}
-Registering zillabase-asyncapi spec
-{
-  "contentId" : 2,
-  "createdBy" : "",
-  "createdOn" : "2024-10-01T00:04:59+0000",
-  "globalId" : 2,
-  "id" : "zillabase-asyncapi-3452784854",
-  "modifiedBy" : "",
-  "modifiedOn" : "2024-10-01T00:04:59+0000",
-  "references" : [ ],
-  "state" : "ENABLED",
-  "type" : "ASYNCAPI",
-  "version" : "1"
-}
+...
 Realm: zillabase created successfully.
-User: John Doe created successfully.
-User: Jane Doe created successfully.
-User: Aklivity Zilla created successfully.
+...
+Config Server is populated with zilla.yaml
 ```
 
-### Using the Streampay APIs
+## Using the Streampay APIs
 
 The Zillabase Streampay is exposes common entity CRUD endpoints with the entity data being stored on Kafka topics if Kafka's cleanup.policy=compact otherwise it exposes only Read mode endpoints.
 
@@ -111,3 +77,68 @@ Login with one of the users pre-created in `zillabase/config.yaml`
 ```bash
 zillabase stop
 ```
+
+## Configure StreamPay OpenAI integration
+
+To enable the OpenAI fraud detection integration you will need to [create an `OPENAI_API_KEY`](https://platform.openai.com/api-keys).
+
+```yaml
+udf:
+  python:
+    env:
+      - OPENAI_API_KEY=<your OpenAI API key>
+```
+
+### OpenAI Fraud Risk with Zillabase
+
+By leveraging the existing CQRS event stream in Zillabase that the Streampay app is using we can create OpenAI query functions using the Python OpenAI library.
+
+```mermaid
+sequenceDiagram
+    UI->>Zillabase: User creates a payment request
+    Zillabase->>UI: Both users are notified a request is created with PENDING fraud risk
+    Zillabase->>OpenAI: OpenAI is queried to determine fraud risk
+    OpenAI->>Zillabase: Capture fraud risk
+    Zillabase->>UI: Show the requested user the fraud risk as LOW/MEDIUM/HIGH risk
+    UI->>Zillabase: Accept risk and transfer
+    Zillabase->>OpenAI: Record decision as safe and use OpenAI to calculate embeddings
+    UI->>Zillabase: Reject risk and block
+    Zillabase->>OpenAI: Record decision as risky and use OpenAI to calculate embeddings
+```
+
+[https://cookbook.openai.com/examples/question_answering_using_embeddings]()
+
+For an new transaction request from Allen to transfer $3400 to Bertollo the OpenAI query will be something similar to the following:
+
+```text
+==== Open AI Query ====
+
+Use the below collection of safe and risky money transfer requests to answer the subsequent question along with your own opinion.
+
+Collection:
+"""
+Allen transferring $3200 to Bertollo is risky
+Allen transferring $3400 to Fred is safe
+Allen transferring $3900 to Greg is safe
+Allen transferring $2800 to Candice is safe
+Elaine transferring $4300 to Bertollo is safe
+"""
+
+Question: Should Allen transfer $3400 to Bertollo?
+
+==== Open AI Result ====
+
+{
+  "summary": "Based on the previous data, Allen transferring money to Bertollo has been identified as risky in one instance. Although Allen has made safe transfers to others, the specific transfer to Bertollo raises concerns. Therefore, it is advisable to consider the risk before proceeding.",
+  "risk": "MEDIUM"
+}
+````
+
+This system prompt is used:
+
+```text
+You recommend the amount of fraud risk for money transfers between two people and respond only with a JSON object containing your summary and a numeric value of the risk as LOW, MEDIUM, or HIGH. Only return valid JSON string and no other markup.
+```
+
+
+You can find the python functions used in the [./zillabase/functions/python/fraud_check.py]() file
