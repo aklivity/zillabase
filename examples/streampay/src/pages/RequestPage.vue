@@ -80,13 +80,11 @@ async function readRequests() {
   })
     .then((response) => {
       let riskById = response.data?.reduce((acc: any, risk: any) => { acc[risk.id] = risk; return acc; }, {});
-      let withRisk = requests.value.map((r: any) => ({ ...riskById[r.id], ...r }));
-      requests.value = withRisk;
+      requests.value = requests.value.map((r: any) => ({ ...r, risk: riskById[r.id]?.risk || 'PENDING', summary: riskById[r.id]?.summary }));;
     });
 }
 
 function pay(request: any) {
-  console.log(request);
   api.post('/streampay_commands', {
     type: 'SendPayment',
     user_id: request.to_username,
@@ -113,7 +111,6 @@ function pay(request: any) {
 }
 
 function reject(request: any) {
-  console.log(request);
   api.post('/streampay_commands', {
     type: 'RejectRequest',
     user_id: request.to_username,
