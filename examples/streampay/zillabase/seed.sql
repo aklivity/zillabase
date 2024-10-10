@@ -93,13 +93,27 @@ CREATE MATERIALIZED VIEW streampay_balances AS
 
 CREATE MATERIALIZED VIEW streampay_payment_requests AS
   SELECT
-      generate_unique_id()::varchar AS id,
+      CASE
+          WHEN sc.requestid IS NULL OR sc.requestid = '' THEN generate_unique_id()::varchar
+          ELSE sc.requestid
+      END AS id,
       encode(sc.owner_id, 'escape') AS from_user_id,
       u2.username AS from_username,
       sc.user_id AS to_user_id_identity,
       u1.username AS to_username,
-      amount,
-      notes
+      sc.amount,
+      sc.notes,
+      CASE
+          WHEN EXISTS (
+              SELECT 1 FROM streampay_commands rr
+              WHERE rr.type = 'RejectRequest' AND rr.requestid = sc.requestid
+          ) THEN 'rejected'
+          WHEN EXISTS (
+              SELECT 1 FROM streampay_commands sp
+              WHERE sp.type = 'SendPayment' AND sp.requestid = sc.requestid
+          ) THEN 'paid'
+          ELSE 'pending'
+      END AS status
   FROM
       streampay_commands AS sc
   LEFT JOIN
@@ -187,15 +201,13 @@ CREATE MATERIALIZED VIEW streampay_activities AS
   WHERE
       sc.type = 'RejectRequest';
 
-CREATE MATERIALIZED VIEW streampay_payment_process_embedding AS
+CREATE VIEW streampay_payment_process_embedding AS
   SELECT
       id,
-      process_embedding(from_username, to_username, amount, eventName) AS result,
+      process_embedding(from_username, to_username, amount, eventName) AS result
   FROM
-      streampay_activities;
-  WHERE
-      eventName = 'PaymentReceived' OR eventName = 'PaymentRejected';
-
+      streampay_activities
+  WHERE eventName IN ('PaymentReceived', 'PaymentRejected');
 
 -- Full CRUD API
 CREATE STREAM streampay_balance_histories(
