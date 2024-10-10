@@ -9,10 +9,14 @@
 
           <div class="text-h6"><b>{{ req.from_username }}</b> requested <b> ${{ req.amount?.toFixed(2) || `0` }}</b>
           </div>
-          <div class="text-subtitle2">Risk:</div>
-          <p>{{ req.risk }} | {{ req.summary }}</p>
           <div class="text-subtitle2">Note:</div>
           <p>{{ req.notes }}</p>
+        </q-card-section>
+        <q-card-section :class="riskBackground(req?.risk)">
+          <div class="text-h7">Risk: {{ req.risk }}</div>
+          <q-inner-loading :showing="req.risk == 'PENDING'">
+          </q-inner-loading>
+          <p>{{ req.summary }}</p>
         </q-card-section>
 
         <q-separator />
@@ -32,7 +36,27 @@ import { ref, watch } from 'vue';
 import { api } from 'boot/axios';
 import { keycloak } from 'boot/main';
 
-const requests = ref([] as any);
+const requests = ref([{
+  from_username: 'yo',
+  amount: 100.00,
+  notes: 'yo yo',
+  risk: 'PENDING'
+}] as any);
+
+function riskBackground(status = 'PENDING') {
+  switch(status){
+    case 'PENDING':
+      return 'bg-grey';
+    case 'LOW':
+      return 'bg-green';
+    case 'MEDIUM':
+      return 'bg-yellow';
+    case 'HIGH':
+      return 'bg-red';
+    default:
+      return 'bg-white';
+  }
+}
 
 async function readRequests() {
   const accessToken = keycloak.token;
@@ -52,7 +76,7 @@ async function readRequests() {
     }
   })
     .then((response) => {
-      let riskById = response.data?.reduce((acc: any, risk: any) => {acc[risk.id] = risk; return acc;}, {});
+      let riskById = response.data?.reduce((acc: any, risk: any) => { acc[risk.id] = risk; return acc; }, {});
       let withRisk = requests.value.map((r: any) => ({ ...riskById[r.id], ...r }));
       requests.value = withRisk;
     });

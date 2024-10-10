@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import { api, streamingUrl } from 'boot/axios';
 import { keycloak, user, SecureEventSource } from 'boot/main';
 import { useQuasar } from 'quasar';
@@ -167,36 +167,11 @@ async function fetchAndSetUsers(userId = null) {
     }
   })
     .then((response) => {
-      const users = response.data;
-
-      if (typeof users[Symbol.iterator] === 'function') {
-        for (let user of users) {
-          if (user.id != user?.username) {
-            const newUserOption = {
-              label: user.name,
-              value: user.id
-            };
-            userOptions.value.push(newUserOption as any);
-          }
-
-          if (userId && userId == user.id) {
-            userOption.value = { label: user.name, value: user.id };
-          }
-        }
-      }
-      else {
-        if (users.id != user?.id) {
-          const newUserOption = {
-            label: users.name,
-            value: users.id
-          };
-          userOptions.value.push(newUserOption as any);
-        }
-
-        if (userId && userId == users.id) {
-          userOption.value = { label: users.name, value: users.id };
-        }
-      }
+      userOptions.value = response.data?.filter((u: any) => (u.id != user?.username))
+        .map((u: any) => ({
+          label: u.name,
+          value: u.id
+        }))
     });
 }
 
@@ -211,6 +186,7 @@ onMounted(async () => {
     });
   }
 })
+
 onUnmounted(() => {
   balanceStream?.close();
 })
