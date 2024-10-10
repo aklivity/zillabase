@@ -22,8 +22,10 @@
         <q-separator />
 
         <q-card-actions>
-          <q-btn @click="pay(req.id)" class="bg-primary text-white">Pay</q-btn>
-          <q-btn @click="reject(req.id)" flat>Reject</q-btn>
+          <q-form @submit="pay(req)" @reset="reject(req)" class="q-pa-sm q-gutter-sm">
+            <q-btn label="Approve" type="submit" color="primary" unelevated />
+            <q-btn label="Reject" type="reset" flat />
+          </q-form>
         </q-card-actions>
       </q-card>
 
@@ -35,16 +37,17 @@
 import { ref, watch } from 'vue';
 import { api } from 'boot/axios';
 import { keycloak } from 'boot/main';
+import { useQuasar } from 'quasar';
+import { useRouter } from 'vue-router';
+import { v4 } from 'uuid';
 
-const requests = ref([{
-  from_username: 'yo',
-  amount: 100.00,
-  notes: 'yo yo',
-  risk: 'PENDING'
-}] as any);
+const $q = useQuasar()
+const router = useRouter();
+
+const requests = ref([] as any);
 
 function riskBackground(status = 'PENDING') {
-  switch(status){
+  switch (status) {
     case 'PENDING':
       return 'bg-grey';
     case 'LOW':
@@ -82,12 +85,58 @@ async function readRequests() {
     });
 }
 
-function pay(id: string) {
-  console.log(id);
+function pay(request: any) {
+  console.log(request);
+  api.post('/streampay_commands', {
+    type: 'SendPayment',
+    user_id: request.to_username,
+    request_id: request?.id || '',
+    amount: request.amount,
+    notes: request.notes
+  }, {
+    headers: {
+      'Idempotency-Key': v4(),
+      Authorization: `Bearer ${keycloak.token}`
+    }
+  }).then(function () {
+    router.push({ path: '/main' });
+  })
+  .catch(function ({message}) {
+    $q.notify({
+      position: 'top',
+      color: 'red-5',
+      textColor: 'white',
+      icon: 'error',
+      message
+    });
+  });
 }
 
-function reject(id: string) {
-  console.log(id);
+function reject(request: any) {
+  console.log(request);
+  api.post('/streampay_commands', {
+    type: 'RejectRequest',
+    user_id: request.to_username,
+    request_id: request?.id || '',
+    amount: request.amount,
+    notes: request.notes
+  }, {
+    headers: {
+      'Idempotency-Key': v4(),
+      Authorization: `Bearer ${keycloak.token}`
+    }
+  }).then(function () {
+    router.push({ path: '/main' });
+  })
+  .catch(function (error) {
+    $q.notify({
+      position: 'top',
+      color: 'red-5',
+      textColor: 'white',
+      icon: 'error',
+      message: error
+    });
+  });
 }
 
 if (keycloak.authenticated) {

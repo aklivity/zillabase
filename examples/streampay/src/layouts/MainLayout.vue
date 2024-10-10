@@ -28,7 +28,7 @@
           size="lg"
           color="primary"
           class="full-width text-white"
-          label="Pay or Request"
+          label="Send or Request"
           rounded
           to="/payorrequest"
         />

@@ -4,11 +4,12 @@
       ${{ balance }}
     </div>
     <q-form @submit="onPay" @reset="onRequest" class="q-gutter-md">
-      <q-select use-chips stack-label label="To" use-input outlined v-model="userOption" :options="userOptions" :rules="[
-        (val) =>
-          (val && val.value.length > 0) ||
-          'Please select user',
-      ]" />
+      <q-select use-chips stack-label label="User" use-input outlined v-model="userOption" :options="userOptions"
+        :rules="[
+          (val) =>
+            (val && val.value.length > 0) ||
+            'Please select user',
+        ]" />
 
       <q-input label="Amount" type="number" v-model="amount" step="any" lazy-rules outlined :rules="[
         (val) =>
@@ -17,9 +18,9 @@
 
       <q-input v-model="notes" label="Notes" type="textarea" outlined />
 
-      <div style="margin-left: 15%; margin-bottom: 20px;  margin-top: 20px;">
-        <q-btn label="Pay" style="width: 200px" type="submit" color="primary" rounded />
-        <q-btn label="Request" style="width: 200px" type="reset" color="primary" class="q-ml-sm" rounded />
+      <div  class="q-pa-sm q-gutter-sm">
+        <q-btn label="Send" style="width: 45%" type="submit" color="primary" rounded />
+        <q-btn label="Request" style="width: 45%" type="reset" color="blue" class="q-ml-sm" rounded />
       </div>
     </q-form>
 
@@ -62,7 +63,7 @@ async function onPay() {
     api.post('/streampay_commands', {
       type: 'SendPayment',
       user_id: userOption.value?.value,
-      requestid: '',
+      request_id: '',
       amount: +amount.value,
       notes: notes.value
     }, {
@@ -73,15 +74,15 @@ async function onPay() {
     }).then(function () {
       router.push({ path: '/main' });
     })
-      .catch(function (error) {
-        $q.notify({
-          position: 'top',
-          color: 'red-5',
-          textColor: 'white',
-          icon: 'error',
-          message: error
-        });
+    .catch(function ({ message }) {
+      $q.notify({
+        position: 'top',
+        color: 'red-5',
+        textColor: 'white',
+        icon: 'error',
+        message
       });
+    });
   } else {
     $q.notify({
       position: 'top',
@@ -98,7 +99,7 @@ async function onRequest() {
   api.post('/streampay_commands', {
     type: 'RequestPayment',
     user_id: userOption.value?.value,
-    requestid: '',
+    request_id: '',
     amount: +amount.value,
     notes: notes.value
   }, {
@@ -109,15 +110,15 @@ async function onRequest() {
   }).then(function () {
     router.push({ path: '/main' });
   })
-    .catch(function (error) {
-      $q.notify({
-        position: 'top',
-        color: 'red-5',
-        textColor: 'white',
-        icon: 'error',
-        message: error
-      });
+  .catch(function ({ message }) {
+    $q.notify({
+      position: 'top',
+      color: 'red-5',
+      textColor: 'white',
+      icon: 'error',
+      message
     });
+  });
 }
 
 async function readBalance() {

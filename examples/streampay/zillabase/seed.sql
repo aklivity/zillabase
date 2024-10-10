@@ -37,7 +37,7 @@ INSERT INTO streampay_users (id, name, username, initial_balance) VALUES ('greg'
 CREATE STREAM streampay_commands(
     type VARCHAR,
     user_id VARCHAR,
-    requestid VARCHAR,
+    request_id VARCHAR,
     amount DOUBLE PRECISION,
     notes VARCHAR
 )
@@ -94,8 +94,8 @@ CREATE VIEW streampay_request_ids AS
 SELECT
     sc.*,
     CASE
-        WHEN sc.requestid IS NULL OR sc.requestid = '' THEN generate_unique_id()::varchar
-        ELSE sc.requestid
+        WHEN sc.request_id IS NULL OR sc.request_id = '' THEN generate_unique_id()::varchar
+        ELSE sc.request_id
     END AS id
 FROM
     streampay_commands sc
@@ -104,28 +104,28 @@ WHERE
 
 CREATE VIEW streampay_request_status AS
 SELECT
-    sc.requestid,
+    sc.request_id,
     CASE
-        WHEN rr.requestid IS NOT NULL THEN 'rejected'
-        WHEN sp.requestid IS NOT NULL THEN 'paid'
+        WHEN rr.request_id IS NOT NULL THEN 'rejected'
+        WHEN sp.request_id IS NOT NULL THEN 'paid'
         ELSE ''
     END AS status
 FROM
     streampay_commands sc
 LEFT JOIN (
-    SELECT DISTINCT requestid
+    SELECT DISTINCT request_id
     FROM streampay_commands
     WHERE type = 'RejectRequest'
-) rr ON rr.requestid = sc.requestid
+) rr ON rr.request_id = sc.request_id
 LEFT JOIN (
-    SELECT DISTINCT requestid
+    SELECT DISTINCT request_id
     FROM streampay_commands
     WHERE type = 'SendPayment'
-) sp ON sp.requestid = sc.requestid
+) sp ON sp.request_id = sc.request_id
 WHERE
     sc.type = 'RequestPayment'
 GROUP BY
-    sc.requestid, rr.requestid, sp.requestid;
+    sc.request_id, rr.request_id, sp.request_id;
 
 CREATE MATERIALIZED VIEW streampay_payment_requests AS
 SELECT
@@ -140,7 +140,7 @@ SELECT
 FROM
     streampay_request_ids rid
 LEFT JOIN
-    streampay_request_status rs ON rs.requestid = rid.requestid
+    streampay_request_status rs ON rs.request_id = rid.request_id
 LEFT JOIN
     streampay_users u1 ON u1.id = rid.user_id
 LEFT JOIN

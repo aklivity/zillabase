@@ -50,7 +50,7 @@ def strings_ranked_by_relatedness(
 @udf(input_types=['VARCHAR', 'VARCHAR', 'DOUBLE PRECISION'], result_type='STRUCT<summary: VARCHAR, risk: VARCHAR>')
 def assess_fraud(from_username, to_username, amount):
     new_trans = f'{from_username} transfer ${amount} to {to_username}'
-    query = f"""Should {new_trans}?"""
+    print(f'assess_fraud: {new_trans}')
     strings, relatednesses = strings_ranked_by_relatedness(new_trans, history_df, top_n=10)
     transaction_history = []
     for string, _ in zip(strings, relatednesses):
@@ -63,7 +63,6 @@ def assess_fraud(from_username, to_username, amount):
     \"\"\"{collection}\"\"\"
 
     Question: Should {new_trans}?"""
-    print(query)
     response = client.chat.completions.create(
         messages=[
             {'role': 'system', 'content': 'You recommend the amount of fraud risk for money transfers between two people and respond only with a JSON object containing your summary and a numeric value of the risk as LOW, MEDIUM, or HIGH. Only return valid JSON string and no other markup.'},
@@ -74,13 +73,16 @@ def assess_fraud(from_username, to_username, amount):
     )
 
     result = json.loads(response.choices[0].message.content)
-    print(result)
     return result
 
 @udf(input_types=['VARCHAR', 'VARCHAR', 'DOUBLE PRECISION', 'VARCHAR'], result_type='BOOLEAN')
 def process_embedding(from_username, to_username, amount, event):
   global history_df
-  summary = f'{from_username} transferring ${amount} to {to_username} is {event}'
+  risk = 'safe'
+  if (event == 'PaymentRejected'):
+    risk = 'risky'
+  summary = f'{from_username} transferring ${amount} to {to_username} is {risk}'
+  print(f'process_embedding: {summary}')
   # convert embeddings from CSV str type back to list type
   new_row = {
     'sender': from_username,
@@ -94,7 +96,3 @@ def process_embedding(from_username, to_username, amount, event):
   history_df = pd.concat([history_df, df_new_rows], ignore_index=True)
   print(history_df)
   return True
-
-
-# assess_fraud('Fred', 'Greg', 500)
-# process_embedding('Fred', 'Greg', 500, 'safe')
