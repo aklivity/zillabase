@@ -90,37 +90,61 @@ CREATE MATERIALIZED VIEW streampay_balances AS
   GROUP BY
       user_id;
 
+CREATE VIEW streampay_request_ids AS
+SELECT
+    sc.*,
+    CASE
+        WHEN sc.requestid IS NULL OR sc.requestid = '' THEN generate_unique_id()::varchar
+        ELSE sc.requestid
+    END AS id
+FROM
+    streampay_commands sc
+WHERE
+    sc.type = 'RequestPayment';
+
+CREATE VIEW streampay_request_status AS
+SELECT
+    sc.requestid,
+    CASE
+        WHEN rr.requestid IS NOT NULL THEN 'rejected'
+        WHEN sp.requestid IS NOT NULL THEN 'paid'
+        ELSE ''
+    END AS status
+FROM
+    streampay_commands sc
+LEFT JOIN (
+    SELECT DISTINCT requestid
+    FROM streampay_commands
+    WHERE type = 'RejectRequest'
+) rr ON rr.requestid = sc.requestid
+LEFT JOIN (
+    SELECT DISTINCT requestid
+    FROM streampay_commands
+    WHERE type = 'SendPayment'
+) sp ON sp.requestid = sc.requestid
+WHERE
+    sc.type = 'RequestPayment'
+GROUP BY
+    sc.requestid, rr.requestid, sp.requestid;
+
 CREATE MATERIALIZED VIEW streampay_payment_requests AS
-  SELECT
-      CASE
-          WHEN sc.requestid IS NULL OR sc.requestid = '' THEN generate_unique_id()::varchar
-          ELSE sc.requestid
-      END AS id,
-      encode(sc.owner_id, 'escape') AS from_user_id,
-      u2.username AS from_username,
-      sc.user_id AS to_user_id_identity,
-      u1.username AS to_username,
-      sc.amount,
-      sc.notes,
-      CASE
-          WHEN EXISTS (
-              SELECT 1 FROM streampay_commands rr
-              WHERE rr.type = 'RejectRequest' AND rr.requestid = sc.requestid
-          ) THEN 'rejected'
-          WHEN EXISTS (
-              SELECT 1 FROM streampay_commands sp
-              WHERE sp.type = 'SendPayment' AND sp.requestid = sc.requestid
-          ) THEN 'paid'
-          ELSE 'pending'
-      END AS status
-  FROM
-      streampay_commands AS sc
-  LEFT JOIN
-      streampay_users u1 ON u1.id = sc.user_id
-  LEFT JOIN
-      streampay_users u2 ON u2.id = encode(sc.owner_id, 'escape')
-  WHERE
-      sc.type = 'RequestPayment';
+SELECT
+    rid.id,
+    encode(rid.owner_id, 'escape') AS from_user_id,
+    u2.username AS from_username,
+    rid.user_id AS to_user_id_identity,
+    u1.username AS to_username,
+    rid.amount,
+    rid.notes,
+    rs.status
+FROM
+    streampay_request_ids rid
+LEFT JOIN
+    streampay_request_status rs ON rs.requestid = rid.requestid
+LEFT JOIN
+    streampay_users u1 ON u1.id = rid.user_id
+LEFT JOIN
+    streampay_users u2 ON u2.id = encode(rid.owner_id, 'escape');
 
 CREATE MATERIALIZED VIEW streampay_payment_risk_assessment AS
   SELECT
