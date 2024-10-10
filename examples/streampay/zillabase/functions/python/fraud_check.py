@@ -94,5 +94,4 @@ def process_embedding(from_username, to_username, amount, event):
   df_new_rows = pd.DataFrame(new_row, index=[0])
   df_new_rows['ada_embedding'] = df_new_rows.summary.apply(lambda x: get_embedding(x))
   history_df = pd.concat([history_df, df_new_rows], ignore_index=True)
-  print(history_df)
   return True

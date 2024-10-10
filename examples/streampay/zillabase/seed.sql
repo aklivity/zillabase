@@ -1,6 +1,5 @@
 -- seed
 
-
 /*
 === SQL Functions ===
 Define functions that can be used in queries.
@@ -42,6 +41,10 @@ CREATE TABLE streampay_users(
 INSERT INTO streampay_users (id, name, username, initial_balance) VALUES ('fred', 'Fred Doe', 'fred', 10000);
 INSERT INTO streampay_users (id, name, username, initial_balance) VALUES ('greg', 'Greg Doe', 'greg', 10000);
 
+/*
+=== Streamed Command messages ===
+*/
+
 -- A stream to track all of the user Commands for the system
 CREATE STREAM streampay_commands(
     type VARCHAR,
@@ -54,16 +57,20 @@ INCLUDE zilla_correlation_id AS correlation_id
 INCLUDE zilla_identity AS owner_id
 INCLUDE timestamp AS timestamp;
 
+CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
+    SELECT '400' AS status, encode(correlation_id, 'escape') AS correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment', 'RejectRequest')
+    UNION
+    SELECT '200' AS status,  encode(correlation_id, 'escape') AS correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment', 'RejectRequest');
+
+/*
+=== APIs ===
+*/
+
 CREATE STREAM streampay_balance_histories(
     balance DOUBLE PRECISION
 )
 INCLUDE timestamp AS timestamp;
 
-/*
-=== Local Views ===
-Collect data views to use in other queries
-a view is only used by other statements
-*/
 CREATE VIEW user_transactions AS
   SELECT
       encode(owner_id, 'escape') AS user_id,
@@ -90,8 +97,6 @@ CREATE VIEW all_user_transactions AS
   FROM
       user_transactions;
 
--- Render data as Views for the UI
--- Creates GET and SSE APIs
 CREATE MATERIALIZED VIEW streampay_balances AS
   SELECT
       user_id,
@@ -138,10 +143,6 @@ WHERE
 GROUP BY
     sc.request_id, rr.request_id, sp.request_id;
 
-/*
-=== MATERIALIZED Views ===
-Collect data views to use in other queries and expose as read only APIs.
-*/
 CREATE MATERIALIZED VIEW streampay_payment_requests AS
 SELECT
     rid.id,
@@ -246,9 +247,3 @@ CREATE VIEW streampay_payment_process_embedding AS
   FROM
       streampay_activities
   WHERE eventName IN ('PaymentReceived', 'PaymentRejected');
-
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
-    SELECT '400' AS status, encode(correlation_id, 'escape') AS correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment', 'RejectRequest')
-    UNION
-    SELECT '200' AS status,  encode(correlation_id, 'escape') AS correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment', 'RejectRequest');

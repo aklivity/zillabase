@@ -65,7 +65,7 @@ User: Jane Doe created successfully.
 User: Aklivity Zilla created successfully.
 ```
 
-### Using the Streapay APIs
+### Using the Streampay APIs
 
 The Zillabase Streampay is exposes common entity CRUD endpoints with the entity data being stored on Kafka topics if Kafka's cleanup.policy=compact otherwise it exposes only Read mode endpoints.
 

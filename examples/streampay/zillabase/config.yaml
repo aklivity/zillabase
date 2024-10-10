@@ -1,8 +1,12 @@
 # config
+risingwave:
+  tag: v1.10.2
 admin:
   tag: develop-SNAPSHOT
 zilla:
   tag: develop-SNAPSHOT
+sso:
+  tag: latest
 
 udf:
   python:
