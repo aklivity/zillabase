@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { api, streamingUrl } from 'boot/axios';
 import { keycloak, user, SecureEventSource } from 'boot/main';
 import { useQuasar } from 'quasar';
