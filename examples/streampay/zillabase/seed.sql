@@ -1,5 +1,11 @@
 -- seed
 
+
+/*
+=== SQL Functions ===
+Define functions that can be used in queries.
+*/
+
 -- Local function
 CREATE FUNCTION generate_unique_id() RETURNS VARCHAR LANGUAGE javascript AS $$
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -17,8 +23,13 @@ CREATE FUNCTION process_embedding(varchar, varchar, double precision, varchar) R
 LANGUAGE python AS process_embedding;
 
 
--- Topic Dataplane
--- create topics to store user data
+/*
+=== Tables & Stream Data plane ===
+A Table creates the topic and CRUD APIs to insert and query data.
+A Stream creates the topic and CRUD APIs to produce and fetch data.
+*/
+
+-- A table to store user data
 CREATE TABLE streampay_users(
   id VARCHAR,
   name VARCHAR,
@@ -31,9 +42,7 @@ CREATE TABLE streampay_users(
 INSERT INTO streampay_users (id, name, username, initial_balance) VALUES ('fred', 'Fred Doe', 'fred', 10000);
 INSERT INTO streampay_users (id, name, username, initial_balance) VALUES ('greg', 'Greg Doe', 'greg', 10000);
 
-
--- Full CRUD API
--- Streams consume messages and allow produce
+-- A stream to track all of the user Commands for the system
 CREATE STREAM streampay_commands(
     type VARCHAR,
     user_id VARCHAR,
@@ -45,14 +54,16 @@ INCLUDE zilla_correlation_id AS correlation_id
 INCLUDE zilla_identity AS owner_id
 INCLUDE timestamp AS timestamp;
 
--- Full CRUD API
 CREATE STREAM streampay_balance_histories(
     balance DOUBLE PRECISION
 )
 INCLUDE timestamp AS timestamp;
 
--- Collect data views to use in other queries
--- a view is only used by other statements
+/*
+=== Local Views ===
+Collect data views to use in other queries
+a view is only used by other statements
+*/
 CREATE VIEW user_transactions AS
   SELECT
       encode(owner_id, 'escape') AS user_id,
@@ -127,6 +138,10 @@ WHERE
 GROUP BY
     sc.request_id, rr.request_id, sp.request_id;
 
+/*
+=== MATERIALIZED Views ===
+Collect data views to use in other queries and expose as read only APIs.
+*/
 CREATE MATERIALIZED VIEW streampay_payment_requests AS
 SELECT
     rid.id,
