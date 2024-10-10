@@ -78,7 +78,6 @@ class SecureEventSource extends EventTarget {
     const lastEventIdQuery = this.lastEventId ? `&lastEventId=${this.lastEventId}` : '';
     const secureUrl = `${this.url}?access_token=${accessToken}${lastEventIdQuery}`;
 
-
     this.eventSource = new EventSource(secureUrl, this.eventSourceInit);
 
     this.eventSource.onopen = () => this.dispatchEvent(new Event('open'));
@@ -99,6 +98,7 @@ class SecureEventSource extends EventTarget {
 
   close() {
     this.eventSource?.close();
+    console.log(`SecureEventSource for (${this.url}) is closed`)
   }
 
   addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {

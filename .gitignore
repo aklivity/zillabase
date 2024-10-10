@@ -33,3 +33,4 @@ node_modules/
 hs_err_pid*.log
 /.metadata/
 .env
+__pycache__
