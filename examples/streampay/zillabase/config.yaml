@@ -7,16 +7,17 @@ zilla:
 udf:
   python:
     env:
+      - OPENAI_API_KEY=<your OpenAI API key>
 keycloak:
   realm: zillabase
   users:
-    - username: johndoe
+    - username: fred
       email: john.doe@example.com
-      name: John Doe
+      name: Fred Doe
       password: Test@123
-    - username: janedoe
+    - username: greg
       email: jane.doe@example.com
-      name: Jane Doe
+      name: Greg Doe
       password: Test@123
   client:
     client-id: streampay

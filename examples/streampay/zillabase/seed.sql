@@ -10,11 +10,27 @@ CREATE FUNCTION generate_unique_id() RETURNS VARCHAR LANGUAGE javascript AS $$
 $$;
 
 -- Remote User Defined Function
-CREATE FUNCTION assess_fraud(varchar, varchar, double precision) RETURNS struct<summary varchar, risk int>
+CREATE FUNCTION assess_fraud(varchar, varchar, double precision) RETURNS struct<summary varchar, risk varchar>
 LANGUAGE python AS assess_fraud;
 
 CREATE FUNCTION process_embedding(varchar, varchar, double precision, varchar) RETURNS boolean
 LANGUAGE python AS process_embedding;
+
+
+-- Topic Dataplane
+-- create topics to store user data
+CREATE TABLE streampay_users(
+  id VARCHAR,
+  name VARCHAR,
+  username VARCHAR,
+  initial_balance DOUBLE PRECISION,
+  PRIMARY KEY (id)
+);
+
+-- add initial user data
+INSERT INTO streampay_users (id, name, username, initial_balance) VALUES ('fred', 'Fred Doe', 'fred', 10000);
+INSERT INTO streampay_users (id, name, username, initial_balance) VALUES ('greg', 'Greg Doe', 'greg', 10000);
+
 
 -- Full CRUD API
 -- Streams consume messages and allow produce
@@ -29,31 +45,13 @@ INCLUDE zilla_correlation_id AS correlation_id
 INCLUDE zilla_identity AS owner_id
 INCLUDE timestamp AS timestamp;
 
--- create topics to store user data
-CREATE TABLE streampay_users(
-  id VARCHAR,
-  name VARCHAR,
-  username VARCHAR,
-  PRIMARY KEY (id)
-);
+-- Full CRUD API
+CREATE STREAM streampay_balance_histories(
+    balance DOUBLE PRECISION
+)
+INCLUDE timestamp AS timestamp;
 
--- add initial user data
-INSERT INTO streampay_users (id, name, username) VALUES ('johndoe', 'John Doe', 'johndoe');
-
-INSERT INTO streampay_users (id, name, username) VALUES ('janedoe', 'Jane Doe', 'janedoe');
-
--- create topic to store transactions
-CREATE TABLE streampay_initial_balances (
-    user_id VARCHAR,
-    initial_balance DOUBLE PRECISION,
-    PRIMARY KEY (user_id)
-);
-
--- add initial transactions
-INSERT INTO streampay_initial_balances (user_id, initial_balance) VALUES ('johndoe', 10000);
-
-INSERT INTO streampay_initial_balances (user_id, initial_balance) VALUES ('janedoe', 10000);
-
+-- Collect data views to use in other queries
 -- a view is only used by other statements
 CREATE VIEW user_transactions AS
   SELECT
@@ -70,10 +68,10 @@ CREATE VIEW user_transactions AS
 
 CREATE VIEW all_user_transactions AS
   SELECT
-      user_id,
+      id as user_id,
       initial_balance AS net_amount
   FROM
-      streampay_initial_balances
+      streampay_users
   UNION ALL
   SELECT
       user_id,
@@ -81,6 +79,7 @@ CREATE VIEW all_user_transactions AS
   FROM
       user_transactions;
 
+-- Render data as Views for the UI
 -- Creates GET and SSE APIs
 CREATE MATERIALIZED VIEW streampay_balances AS
   SELECT
@@ -209,11 +208,6 @@ CREATE VIEW streampay_payment_process_embedding AS
       streampay_activities
   WHERE eventName IN ('PaymentReceived', 'PaymentRejected');
 
--- Full CRUD API
-CREATE STREAM streampay_balance_histories(
-    balance DOUBLE PRECISION
-)
-INCLUDE timestamp AS timestamp;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
     SELECT '400' AS status, encode(correlation_id, 'escape') AS correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment', 'RejectRequest')

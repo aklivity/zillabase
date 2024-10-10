@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineExpose } from 'vue';
+import { ref, watch } from 'vue';
 import { api } from 'boot/axios';
 import { keycloak } from 'boot/main';
 
