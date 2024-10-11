@@ -14,7 +14,6 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.sso.remove;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -42,10 +41,6 @@ public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
         description = "Keycloak Realm")
     public String realm;
 
-    @Option(name = {"-u", "--url"},
-        description = "Admin Server URL")
-    public URI serverURL;
-
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
     public boolean verbose;
@@ -65,13 +60,8 @@ public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
     private String sendHttpRequest(
         HttpClient client)
     {
-        if (serverURL == null)
-        {
-            serverURL = ADMIN_SERVER_DEFAULT;
-        }
-
         HttpRequest httpRequest = HttpRequest
-            .newBuilder(serverURL.resolve(SSO_ALIAS_PATH.formatted(alias)))
+            .newBuilder(ADMIN_SERVER_DEFAULT.resolve(SSO_ALIAS_PATH.formatted(alias)))
             .header("Keycloak-Realm", realm)
             .DELETE()
             .build();

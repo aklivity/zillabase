@@ -16,7 +16,6 @@ package io.aklivity.zillabase.cli.internal.commands.config.add;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -42,10 +41,6 @@ public final class ZillabaseConfigAddCommand extends ZillabaseConfigCommand
     @Option(name = {"--id"},
         description = "Config identifier")
     public String id;
-
-    @Option(name = {"-u", "--url"},
-        description = "Admin Server URL")
-    public URI serverURL;
 
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
@@ -82,16 +77,11 @@ public final class ZillabaseConfigAddCommand extends ZillabaseConfigCommand
         InputStream content,
         HttpClient client)
     {
-        if (serverURL == null)
-        {
-            serverURL = ADMIN_SERVER_DEFAULT;
-        }
-
         boolean status = false;
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(serverURL.resolve(path))
+                .newBuilder(ADMIN_SERVER_DEFAULT.resolve(path))
                 .PUT(HttpRequest.BodyPublishers.ofByteArray(content.readAllBytes()))
                 .build();
 

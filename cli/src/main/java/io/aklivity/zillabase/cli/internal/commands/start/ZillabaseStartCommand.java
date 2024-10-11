@@ -71,7 +71,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
-import java.util.zip.CRC32C;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -187,6 +186,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
     private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
         Pattern.DOTALL);
+    private static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
+    private static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
@@ -195,9 +196,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
-
-    private String kafkaArtifactId;
-    private String httpArtifactId;
 
     @Override
     protected void invoke(
@@ -729,9 +727,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 }
 
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", HTTP_ASYNCAPI_ARTIFACT_ID,
+                        "version", "latest")));
                 Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", kafkaArtifactId, "version", "latest")));
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", KAFKA_ASYNCAPI_ARTIFACT_ID,
+                        "version", "latest")));
 
                 List<ZillaBindingRouteConfig> routes = new ArrayList<>();
 
@@ -1038,14 +1038,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
-        CRC32C crc32c = new CRC32C();
         if (kafkaSpec != null)
         {
-            byte[] kafkaSpecBytes = kafkaSpec.getBytes();
-            crc32c.update(kafkaSpecBytes, 0, kafkaSpecBytes.length);
-            kafkaArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
-
-            registerAsyncApiSpec(kafkaSpec);
+            registerAsyncApiSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
         }
 
         Path httpSpecPath = Paths.get("zillabase/specs/http-asyncapi.yaml");
@@ -1068,12 +1063,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         if (httpSpec != null)
         {
-            crc32c.reset();
-            byte[] httpSpecBytes = httpSpec.getBytes();
-            crc32c.update(httpSpecBytes, 0, httpSpecBytes.length);
-            httpArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
-
-            registerAsyncApiSpec(httpSpec);
+            registerAsyncApiSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
             JsonValue jsonValue = Json.createReader(new StringReader(httpSpec)).readValue();
             JsonObject operations = jsonValue.asJsonObject().getJsonObject("operations");
@@ -1222,6 +1212,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     }
 
     private void registerAsyncApiSpec(
+        String id,
         String spec)
     {
         if (spec != null)
@@ -1235,10 +1226,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     writer.write(spec);
                 }
 
-                System.out.println("Registering zillabase-asyncapi spec");
                 ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
                 command.helpOption = new HelpOption<>();
                 command.spec = tempFile.getPath();
+                command.id = id;
                 command.run();
                 tempFile.delete();
             }
