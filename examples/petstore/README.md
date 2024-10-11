@@ -58,7 +58,7 @@ curl -k -v -X POST http://localhost:8080/petstore_pets -H 'Idempotency-Key: 1'  
 Output:
 
 ```text
-> POST /petstore-pets HTTP/1.1
+> POST /petstore_pets HTTP/1.1
 ...
 > Content-Type: application/json
 > Content-Length: 35
@@ -78,7 +78,7 @@ curl -k -v http://localhost:8080/petstore_pets/1
 Output:
 
 ```text
-> GET /petstore-pets/1 HTTP/1.1
+> GET /petstore_pets/1 HTTP/1.1
 ...
 < HTTP/1.1 200 OK
 < Content-Length: 33
