@@ -26,6 +26,8 @@ import io.aklivity.zillabase.cli.internal.commands.config.add.ZillabaseConfigAdd
 import io.aklivity.zillabase.cli.internal.commands.config.list.ZillabaseConfigListCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.remove.ZillabaseConfigRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
+import io.aklivity.zillabase.cli.internal.commands.migration.add.ZillabaseMigrationAddCommand;
+import io.aklivity.zillabase.cli.internal.commands.migration.list.ZillabaseMigrationListCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.add.ZillabaseSsoAddCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.list.ZillabaseSsoListCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.remove.ZillabaseSsoRemoveCommand;
@@ -67,6 +69,16 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
                 ZillabaseSsoAddCommand.class,
                 ZillabaseSsoListCommand.class,
                 ZillabaseSsoRemoveCommand.class
+            }),
+        @Group(
+            name = "migration",
+            description = "Manage migrations",
+            defaultCommand = Help.class,
+            commands =
+            {
+                Help.class,
+                ZillabaseMigrationAddCommand.class,
+                ZillabaseMigrationListCommand.class
             })
     },
     commands =

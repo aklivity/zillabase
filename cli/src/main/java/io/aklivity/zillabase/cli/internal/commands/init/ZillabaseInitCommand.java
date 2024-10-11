@@ -28,6 +28,11 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
     description = "Initialize a local project")
 public final class ZillabaseInitCommand extends ZillabaseCommand
 {
+    public ZillabaseInitCommand()
+    {
+        super(false);
+    }
+
     @Override
     protected void invoke()
     {

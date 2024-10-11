@@ -14,6 +14,10 @@
  */
 package io.aklivity.zillabase.cli.internal.commands;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import javax.inject.Inject;
 
 import com.github.rvesse.airline.HelpOption;
@@ -23,20 +27,54 @@ public abstract class ZillabaseCommand implements Runnable
 {
     public static final String VERSION = ZillabaseCommand.class.getPackage().getImplementationVersion();
 
+    public static final Path ZILLABASE_PATH = Paths.get("zillabase");
+
     @Inject
     public HelpOption<ZillabaseCommand> helpOption;
 
     @Option(name = { "--debug" })
     public Boolean debug = false;
 
+    private final boolean requiresProject;
+
+    protected ZillabaseCommand()
+    {
+        this(true);
+    }
+
+    protected ZillabaseCommand(
+        boolean requiresProject)
+    {
+        this.requiresProject = requiresProject;
+    }
+
     @Override
     public void run()
     {
-        if (!helpOption.showHelpIfRequested())
+        if (!helpOption.showHelpIfRequested() &&
+            checkProjectIfRequired())
         {
             invoke();
         }
     }
 
     protected abstract void invoke();
+
+
+    protected boolean checkProjectIfRequired()
+    {
+        boolean checkOkay = true;
+
+        if (requiresProject)
+        {
+            boolean exists = Files.exists(ZILLABASE_PATH);
+            if (!exists)
+            {
+                System.out.println("zillabase project not found, needs zillabase init ?");
+            }
+            checkOkay = exists;
+        }
+
+        return checkOkay;
+    }
 }
