@@ -12,25 +12,29 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.asyncapi.list;
+package io.aklivity.zillabase.cli.internal.commands.asyncapi.show;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.rvesse.airline.annotations.Arguments;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
+import com.github.rvesse.airline.annotations.restrictions.Required;
 
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 
 @Command(
-    name = "list",
-    description = "List AsyncAPI specifications")
-public final class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
+    name = "show",
+    description = "Show AsyncAPI specifications")
+public final class ZillabaseAsyncapiShowCommand extends ZillabaseAsyncapiCommand
 {
+    @Required
+    @Arguments(title = {"id"},
+        description = "AsyncAPI specification identifier")
+    public String id;
+
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
     public boolean verbose;
@@ -39,28 +43,12 @@ public final class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
     protected void invoke()
     {
         HttpClient client = HttpClient.newHttpClient();
-        String response = sendHttpRequest(ASYNCAPI_PATH, client);
+
+        String response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, id), client);
 
         if (response != null)
         {
-            try
-            {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode jsonNode = null;
-                jsonNode = mapper.readTree(response);
-                JsonNode artifactsArray = jsonNode.get("artifacts");
-                System.out.println("Registered AsyncAPI Spec:");
-
-                for (JsonNode artifact : artifactsArray)
-                {
-                    String id = artifact.get("id").asText();
-                    System.out.println(id);
-                }
-            }
-            catch (JsonProcessingException e)
-            {
-                throw new RuntimeException(e);
-            }
+            System.out.println(response);
         }
     }
 

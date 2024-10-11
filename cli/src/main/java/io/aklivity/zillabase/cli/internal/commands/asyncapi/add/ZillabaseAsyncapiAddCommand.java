@@ -90,7 +90,6 @@ public final class ZillabaseAsyncapiAddCommand extends ZillabaseAsyncapiCommand
                 .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
                 .POST(HttpRequest.BodyPublishers.ofByteArray(content.readAllBytes()));
 
-
             if (id != null)
             {
                 httpRequest.header("X-Registry-ArtifactId", id);

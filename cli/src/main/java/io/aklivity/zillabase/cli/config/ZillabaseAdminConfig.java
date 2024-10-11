@@ -137,7 +137,7 @@ public final class ZillabaseAdminConfig
                   headers:
                     overrides:
                       :authority: ${{env.APICURIO_HOST}}:${{env.APICURIO_PORT}}
-                      :path: /apis/registry/v2/ids/globalIds/${params.id}
+                      :path: /apis/registry/v2/groups/${{env.REGISTRY_GROUP_ID}}/artifacts/${params.id}
                 exit: apicurio_http_client
               - when:
                   - headers:
