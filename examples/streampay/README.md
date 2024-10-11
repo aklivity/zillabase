@@ -40,7 +40,7 @@ The Zillabase Streampay is exposes common entity CRUD endpoints with the entity 
 Zillabase leverages the AsyncAPI schema definitions to define all of the generated streaming APIs. You can create an `asyncapi.yaml` schema file by running this zillabase command:
 
 ```bash
-zillabase asyncapi list --id 2 >> asyncapi_REST_APIs.yaml
+zillabase asyncapi show http-asyncapi >> asyncapi_REST_APIs.yaml
 ```
 
 Once you have started zillabase and generated your AsyncAPI schema, you can copy it into the [AsyncAPI Studio](https://studio.asyncapi.com/) to get a full picture of all of the streaming APIs you have created.

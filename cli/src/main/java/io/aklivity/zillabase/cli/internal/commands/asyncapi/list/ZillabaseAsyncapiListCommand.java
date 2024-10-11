@@ -14,11 +14,13 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.asyncapi.list;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 
@@ -29,14 +31,6 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCom
     description = "List AsyncAPI specifications")
 public final class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
 {
-    @Option(name = {"--id"},
-        description = "AsyncAPI specification identifier")
-    public String id;
-
-    @Option(name = {"-u", "--url"},
-        description = "Admin Server URL")
-    public URI serverURL;
-
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
     public boolean verbose;
@@ -44,21 +38,29 @@ public final class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
     @Override
     protected void invoke()
     {
-        String response;
         HttpClient client = HttpClient.newHttpClient();
-
-        if (id != null)
-        {
-            response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, id), client);
-        }
-        else
-        {
-            response = sendHttpRequest(ASYNCAPI_PATH, client);
-        }
+        String response = sendHttpRequest(ASYNCAPI_PATH, client);
 
         if (response != null)
         {
-            System.out.println(response);
+            try
+            {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode jsonNode = null;
+                jsonNode = mapper.readTree(response);
+                JsonNode artifactsArray = jsonNode.get("artifacts");
+                System.out.println("Registered AsyncAPI Spec:");
+
+                for (JsonNode artifact : artifactsArray)
+                {
+                    String id = artifact.get("id").asText();
+                    System.out.println(id);
+                }
+            }
+            catch (JsonProcessingException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -66,13 +68,8 @@ public final class ZillabaseAsyncapiListCommand extends ZillabaseAsyncapiCommand
         String path,
         HttpClient client)
     {
-        if (serverURL == null)
-        {
-            serverURL = ADMIN_SERVER_DEFAULT;
-        }
-
         HttpRequest httpRequest = HttpRequest
-            .newBuilder(serverURL.resolve(path))
+            .newBuilder(ADMIN_SERVER_DEFAULT.resolve(path))
             .GET()
             .build();
 

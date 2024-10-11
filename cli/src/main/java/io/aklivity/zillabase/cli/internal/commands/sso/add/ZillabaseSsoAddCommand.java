@@ -15,7 +15,6 @@
 package io.aklivity.zillabase.cli.internal.commands.sso.add;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -60,10 +59,6 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
         description = "Client Secret")
     public String secret;
 
-    @Option(name = {"-u", "--url"},
-        description = "Admin Server URL")
-    public URI serverURL;
-
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
     public boolean verbose;
@@ -100,13 +95,8 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
         String content,
         HttpClient client)
     {
-        if (serverURL == null)
-        {
-            serverURL = ADMIN_SERVER_DEFAULT;
-        }
-
         HttpRequest httpRequest = HttpRequest
-            .newBuilder(serverURL.resolve(SSO_PATH))
+            .newBuilder(ADMIN_SERVER_DEFAULT.resolve(SSO_PATH))
             .header("Keycloak-Realm", realm)
             .POST(HttpRequest.BodyPublishers.ofString(content))
             .build();

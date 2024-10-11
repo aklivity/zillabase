@@ -38,4 +38,3 @@ keycloak:
     client-id: streampay
     redirects:
       - http://localhost:8084/*
-      - https://oauth.pstmn.io/v1/callback

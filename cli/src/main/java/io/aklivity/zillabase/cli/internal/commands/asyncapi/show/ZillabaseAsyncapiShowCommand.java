@@ -12,34 +12,28 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.sso.remove;
+package io.aklivity.zillabase.cli.internal.commands.asyncapi.show;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import com.github.rvesse.airline.annotations.Arguments;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.restrictions.Required;
 
-import io.aklivity.zillabase.cli.internal.commands.sso.ZillabaseSsoCommand;
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 
 @Command(
-    name = "remove",
-    description = "Delete an Identity Provider")
-public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
+    name = "show",
+    description = "Show AsyncAPI specifications")
+public final class ZillabaseAsyncapiShowCommand extends ZillabaseAsyncapiCommand
 {
-    private static final String SUCCESSFULLY_DELETED = "The Identity Provider was successfully deleted";
-
     @Required
-    @Option(name = {"-a", "--alias"},
-        description = "Identity Provider Alias")
-    public String alias;
-
-    @Required
-    @Option(name = {"-r", "--realm"},
-        description = "Keycloak Realm")
-    public String realm;
+    @Arguments(title = {"id"},
+        description = "AsyncAPI specification identifier")
+    public String id;
 
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
@@ -49,7 +43,8 @@ public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
     protected void invoke()
     {
         HttpClient client = HttpClient.newHttpClient();
-        String response = sendHttpRequest(client);
+
+        String response = sendHttpRequest(String.format(ASYNCAPI_ID_PATH, id), client);
 
         if (response != null)
         {
@@ -58,19 +53,19 @@ public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
     }
 
     private String sendHttpRequest(
+        String path,
         HttpClient client)
     {
         HttpRequest httpRequest = HttpRequest
-            .newBuilder(ADMIN_SERVER_DEFAULT.resolve(SSO_ALIAS_PATH.formatted(alias)))
-            .header("Keycloak-Realm", realm)
-            .DELETE()
+            .newBuilder(ADMIN_SERVER_DEFAULT.resolve(path))
+            .GET()
             .build();
 
         String responseBody;
         try
         {
             HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            responseBody = httpResponse.statusCode() == 204 ? SUCCESSFULLY_DELETED : null;
+            responseBody = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
         }
         catch (Exception ex)
         {
