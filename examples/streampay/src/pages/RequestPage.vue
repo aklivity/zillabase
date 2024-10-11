@@ -41,6 +41,17 @@ import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import { v4 } from 'uuid';
 
+interface PaymentRequest {
+    from_user_id: string;
+    from_username: string;
+    to_username: string;
+    to_user_id_identity: string;
+    status: string;
+    id: string;
+    amount: number;
+    notes: string;
+}
+
 const $q = useQuasar()
 const router = useRouter();
 
@@ -71,7 +82,26 @@ async function readRequests() {
     }
   })
     .then((response) => {
-      requests.value = response.data
+      const data = response.data;
+
+      const groupedById: Record<string, PaymentRequest[]> = data.reduce((acc: any, req: PaymentRequest) => {
+          if (!acc[req.id]) {
+              acc[req.id] = [];
+          }
+          acc[req.id].push(req);
+          return acc;
+      }, {});
+
+      const filteredGroups: PaymentRequest[][] = Object.values(groupedById).filter((group) =>
+          group.every((item) => item.status === 'pending')
+      );
+
+      const filteredRequest: PaymentRequest[] = filteredGroups.reduce(
+          (acc: PaymentRequest[], group: PaymentRequest[]) => acc.concat(group),
+          []
+      );
+
+      requests.value = filteredRequest;
     });
   api.get('/streampay_payment_risk_assessment', {
     headers: {

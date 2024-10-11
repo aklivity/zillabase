@@ -123,14 +123,7 @@ function logout() {
     redirectUri: `${window.location.origin}/`
   });
 }
-function incRequest() {
-  request.value++
-}
-function decRequests() {
-  let currentRequests = request.value;
-  currentRequests--;
-  request.value = currentRequests < 0 ? 0 : currentRequests;
-}
+
 function updateBalance(newBalance: number) {
   balance.value = +newBalance.toFixed(2);
 }
@@ -140,12 +133,19 @@ async function authenticatePage() {
     credentials: () => keycloak.token || ''
   });
 
-  requestStream.addEventListener('delete', () => {
-    decRequests();
-  }, false);
+  requestStream.onmessage = function (event: MessageEvent) {
+    const paymentRequest = JSON.parse(event.data);
 
-  requestStream.onmessage = function () {
-    incRequest();
+    if (paymentRequest.status === 'pending')
+    {
+      request.value++;
+    }
+    else if (paymentRequest.status === 'paid' || paymentRequest.status === 'rejected')
+    {
+      let currentRequests = request.value;
+      currentRequests--;
+      request.value = currentRequests < 0 ? 0 : currentRequests;
+    }
   };
 
   balanceStream  = new SecureEventSource(`${streamingUrl}/streampay_balances-stream-identity`, {
