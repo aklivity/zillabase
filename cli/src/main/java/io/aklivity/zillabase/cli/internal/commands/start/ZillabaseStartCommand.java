@@ -26,8 +26,6 @@ import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLA
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
-import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_INTERNAL_URL;
-import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_PORT;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
@@ -151,6 +149,7 @@ import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
+import io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiKafkaFilter;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
@@ -167,6 +166,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncap
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
 
 @Command(
     name = "start",
@@ -194,6 +194,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
     private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
+
+    private final Path seedSqlPath = ZILLABASE_PATH.resolve("seed.sql");
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
 
@@ -291,7 +293,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         seedKafkaAndRegistry(config);
 
-        seedSql(config);
+        processSql(config);
 
         createConfigServerKafkaTopic(config);
 
@@ -300,6 +302,28 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         initializeKeycloakService(config);
 
         publishZillaConfig(config);
+    }
+
+    private void processSql(
+        ZillabaseConfig config)
+    {
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave);
+
+        pgsql.connect();
+
+        if (pgsql.connected)
+        {
+            ZillabaseMigrationsHelper migrations = new ZillabaseMigrationsHelper();
+
+            migrations.list()
+                .filter(m -> pgsql.connected)
+                .forEach(pgsql::process);
+
+            if (pgsql.connected)
+            {
+                pgsql.process(seedSqlPath);
+            }
+        }
     }
 
     private void initializeKeycloakService(
@@ -594,25 +618,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             ex.printStackTrace(System.err);
         }
-    }
-
-    private String readSeedSql()
-    {
-        String content = null;
-        Path seedPath = Paths.get("zillabase/seed.sql");
-        try
-        {
-            if (Files.exists(seedPath) && Files.size(seedPath) != 0 && Files.readAllLines(seedPath)
-                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
-            {
-                content = Files.readString(seedPath);
-            }
-        }
-        catch (IOException ex)
-        {
-            ex.printStackTrace(System.err);
-        }
-        return content;
     }
 
     private KafkaBootstrapRecords readKafkaBootstrapRecords()
@@ -1840,112 +1845,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return URI.create(baseUrl).resolve(path);
     }
 
-    private void seedSql(
-        ZillabaseConfig config)
-    {
-        String content = readSeedSql();
-        if (content != null && !content.isEmpty())
-        {
-            Properties props = new Properties();
-            props.setProperty("user", "root");
-            props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
-
-            boolean connected = false;
-            int retries = 0;
-            int delay = SERVICE_INITIALIZATION_DELAY_MS;
-
-            while (retries < MAX_RETRIES)
-            {
-                try
-                {
-                    Thread.sleep(delay);
-                    try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
-                        .formatted(config.risingwave.url, config.risingwave.db), props);
-                         Statement stmt = conn.createStatement())
-                    {
-                        connected = true;
-                        break;
-                    }
-                }
-                catch (InterruptedException | SQLException ex)
-                {
-                    retries++;
-                    delay *= 2;
-                }
-            }
-
-            if (connected)
-            {
-
-                try
-                {
-                    Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
-                        .formatted(config.risingwave.url, config.risingwave.db), props);
-                    Statement stmt = conn.createStatement();
-                    // Set the timeout in seconds (for example, 30 seconds)
-                    stmt.setQueryTimeout(30);
-                    String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
-                            .replaceAll("--.*?(\\r?\\n)", "");
-
-                    List<String> splitCommands = splitSQL(noCommentsSQL);
-
-                    for (String command : splitCommands)
-                    {
-                        if (!command.trim().isEmpty())
-                        {
-                            command = command.trim().replaceAll("[\\n\\r]+$", "");
-                            System.out.println("Executing command: " + command);
-                            stmt.executeUpdate(command);
-                        }
-                    }
-                }
-                catch (SQLException ex)
-                {
-                    System.out.println("seed.sql failed to be processed. ex: " + ex.getMessage());
-                }
-
-                System.out.println("seed.sql processed successfully!");
-            }
-            else
-            {
-                System.err.println("Failed to connect to " + config.risingwave.url + " after " + MAX_RETRIES + " attempts.");
-            }
-        }
-    }
-
-    private static List<String> splitSQL(
-        String sql)
-    {
-        List<String> result = new ArrayList<>();
-        StringBuilder command = new StringBuilder();
-        boolean insideDollarBlock = false;
-
-        String[] lines = sql.split("\\r?\\n");
-
-        for (String line : lines)
-        {
-            if (line.contains("$$"))
-            {
-                insideDollarBlock = !insideDollarBlock;
-            }
-
-            command.append(line).append("\n");
-
-            if (!insideDollarBlock && line.trim().endsWith(";"))
-            {
-                result.add(command.toString().trim());
-                command.setLength(0);
-            }
-        }
-
-        if (!command.isEmpty())
-        {
-            result.add(command.toString().trim());
-        }
-
-        return result;
-    }
-
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
     {
         private final PrintStream out;
@@ -2375,9 +2274,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             URI apicurio = URI.create(config.registry.apicurio.url);
             URI configServer = URI.create(config.admin.configServerUrl);
-            String risingwaveUrl = config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL)
-                ? DEFAULT_RISINGWAVE_INTERNAL_URL
-                : config.risingwave.url;
+            String risingwaveUrl = config.risingwave.url;
             String[] risingwave = risingwaveUrl.split(":");
 
             List<String> envVars = Arrays.asList(
@@ -2623,6 +2520,161 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withTimeout(SECONDS.toNanos(3L))
                     .withRetries(5)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816")));
+        }
+    }
+
+    private final class PgsqlHelper
+    {
+        private final ZillabaseRisingWaveConfig config;
+        private final String url;
+        private final Properties props;
+
+        private boolean connected;
+
+
+        PgsqlHelper(
+            ZillabaseRisingWaveConfig config)
+        {
+            this.config = config;
+
+            Properties props = new Properties();
+            props.setProperty("user", "root");
+            props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
+
+            this.url = "jdbc:postgresql://localhost:4567/%s".formatted(config.db);
+            this.props = props;
+        }
+
+        void connect()
+        {
+            int retries = 0;
+            int delay = SERVICE_INITIALIZATION_DELAY_MS;
+
+            while (retries < MAX_RETRIES)
+            {
+                try
+                {
+                    Thread.sleep(delay);
+
+                    try (Connection conn = DriverManager.getConnection(url, props);
+                         Statement stmt = conn.createStatement())
+                    {
+                        connected = true;
+                        break;
+                    }
+                }
+                catch (InterruptedException | SQLException ex)
+                {
+                    retries++;
+                    delay *= 2;
+                }
+            }
+
+            if (!connected)
+            {
+                System.err.println("Failed to connect to localhost:4567 after " + MAX_RETRIES + " attempts.");
+            }
+        }
+
+        void process(
+            Path sql)
+        {
+            String content = readSql(sql);
+            if (content != null)
+            {
+                execute(sql.getFileName().toString(), content);
+            }
+        }
+
+        private void execute(
+            String filename,
+            String content)
+        {
+            try
+            {
+                Connection conn = DriverManager.getConnection(url, props);
+                Statement stmt = conn.createStatement();
+                // Set the timeout in seconds (for example, 30 seconds)
+                stmt.setQueryTimeout(30);
+                String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
+                        .replaceAll("--.*?(\\r?\\n)", "");
+
+                List<String> splitCommands = splitSQL(noCommentsSQL);
+
+                for (String command : splitCommands)
+                {
+                    if (!command.trim().isEmpty())
+                    {
+                        command = command.trim().replaceAll("[\\n\\r]+$", "");
+                        System.out.println("Executing command: " + command);
+                        stmt.executeUpdate(command);
+                    }
+                }
+            }
+            catch (SQLException ex)
+            {
+                connected = false;
+                System.out.format("Failed to process %s. ex: %s\n", filename, ex.getMessage());
+            }
+
+            if (connected)
+            {
+                System.out.format("%s processed successfully\n", filename);
+            }
+        }
+
+        private String readSql(
+            Path seedPath)
+        {
+            String content = null;
+            try
+            {
+                if (Files.exists(seedPath) &&
+                    Files.size(seedPath) != 0 &&
+                    Files.readAllLines(seedPath).stream()
+                        .anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
+                {
+                    content = Files.readString(seedPath);
+                }
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
+            return content;
+        }
+
+        private static List<String> splitSQL(
+            String sql)
+        {
+            List<String> result = new ArrayList<>();
+            StringBuilder command = new StringBuilder();
+            boolean insideDollarBlock = false;
+
+            String[] lines = sql.split("\\r?\\n");
+
+            for (String line : lines)
+            {
+                if (line.contains("$$"))
+                {
+                    insideDollarBlock = !insideDollarBlock;
+                }
+
+                command.append(line).append("\n");
+
+                if (!insideDollarBlock && line.trim().endsWith(";"))
+                {
+                    result.add(command.toString().trim());
+                    command.setLength(0);
+                }
+            }
+
+            if (!command.isEmpty())
+            {
+                result.add(command.toString().trim());
+            }
+
+            return result;
         }
     }
 }
