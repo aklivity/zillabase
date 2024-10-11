@@ -13,7 +13,6 @@
   "dependencies": {
     "keycloak-js": "^25.0.6",
     "@quasar/extras": "^1.0.0",
-    "apexcharts": "^3.37.0",
     "axios": "^1.6.0",
     "buffer": "^6.0.3",
     "core-js": "^3.6.5",
@@ -22,8 +21,7 @@
     "uuid": "^9.0.0",
     "vue": "^3.0.0",
     "vue-router": "^4.0.0",
-    "vue-sse": "^2.5.2",
-    "vue3-apexcharts": "^1.4.1"
+    "vue-sse": "^2.5.2"
   },
   "devDependencies": {
     "@quasar/app-webpack": "^3.12.8",
