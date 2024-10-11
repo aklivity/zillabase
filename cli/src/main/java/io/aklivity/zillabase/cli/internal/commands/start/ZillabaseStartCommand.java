@@ -205,6 +205,25 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         final ZillabaseConfig config = readZillabaseConfig();
 
+        startContainers(client, config);
+
+        seedKafkaAndRegistry(config);
+
+        processSql(config);
+
+        createConfigServerKafkaTopic(config);
+
+        processAsyncApiSpecs(config);
+
+        initializeKeycloakService(config);
+
+        publishZillaConfig(config);
+    }
+
+    private void startContainers(
+        DockerClient client,
+        ZillabaseConfig config)
+    {
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
@@ -261,6 +280,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        System.out.println("Started containers successfully");
+
         while (!containerIds.isEmpty())
         {
             for (Iterator<String> i = containerIds.iterator(); i.hasNext(); )
@@ -279,29 +300,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         i.remove();
                     }
                 }
-            }
 
-            try
-            {
-                Thread.sleep(3000L);
-            }
-            catch (InterruptedException ex)
-            {
-                throw new RuntimeException(ex);
+                Thread.onSpinWait();
             }
         }
 
-        seedKafkaAndRegistry(config);
-
-        processSql(config);
-
-        createConfigServerKafkaTopic(config);
-
-        processAsyncApiSpecs(config);
-
-        initializeKeycloakService(config);
-
-        publishZillaConfig(config);
+        System.out.println("Verified containers are healthy");
     }
 
     private void processSql(
