@@ -5,7 +5,7 @@ Zilla is implementing the REST endpoints defined in an AsyncAPI 3.x spec and pro
 
 Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automatically based on the Kafka Cluster metadata information.
 
-#### Install `zillabase`
+## Install `zillabase`
 
 ```bash
 brew tap aklivity/tap
@@ -13,7 +13,7 @@ brew tap aklivity/tap
 brew install zillabase
 ```
 
-#### Start `zillabase` stack:
+## Start `zillabase` stack
 
 ```bash
 zillabase start
@@ -22,50 +22,16 @@ zillabase start
 Output:
 
 ```text
-latest: Pulling from aklivity/zillabase/sso
-3.2.3: Pulling from bitnami/kafka
-latest: Pulling from risingwavelabs/risingwave
-latest-release: Pulling from apicurio/apicurio-registry-mem
-latest: Pulling from bitnami/keycloak
-latest: Pulling from aiven/karapace
-Sep 30, 2024 5:04:43 PM org.postgresql.jdbc.PgConnection <init>
-WARNING: Unsupported Server Version: 1.0.0
+latest: Pulling from aklivity/zillabase
+...
 seed.sql processed successfully!
-Registering zillabase-asyncapi spec
-{
-  "contentId" : 1,
-  "createdBy" : "",
-  "createdOn" : "2024-10-01T00:04:59+0000",
-  "globalId" : 1,
-  "id" : "zillabase-asyncapi-498150925",
-  "modifiedBy" : "",
-  "modifiedOn" : "2024-10-01T00:04:59+0000",
-  "references" : [ ],
-  "state" : "ENABLED",
-  "type" : "ASYNCAPI",
-  "version" : "1"
-}
-Registering zillabase-asyncapi spec
-{
-  "contentId" : 2,
-  "createdBy" : "",
-  "createdOn" : "2024-10-01T00:04:59+0000",
-  "globalId" : 2,
-  "id" : "zillabase-asyncapi-3452784854",
-  "modifiedBy" : "",
-  "modifiedOn" : "2024-10-01T00:04:59+0000",
-  "references" : [ ],
-  "state" : "ENABLED",
-  "type" : "ASYNCAPI",
-  "version" : "1"
-}
+...
 Realm: zillabase created successfully.
-User: John Doe created successfully.
-User: Jane Doe created successfully.
-User: Aklivity Zilla created successfully.
+...
+Config Server is populated with zilla.yaml
 ```
 
-### Using the Streapay APIs
+## Using the Streampay APIs
 
 The Zillabase Streampay is exposes common entity CRUD endpoints with the entity data being stored on Kafka topics if Kafka's cleanup.policy=compact otherwise it exposes only Read mode endpoints.
 
