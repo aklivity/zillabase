@@ -6,12 +6,32 @@ udf:
 keycloak:
   realm: zillabase
   users:
+    - username: allen
+      email: allen.doe@example.com
+      name: Allen Doe
+      password: Test@123
+    - username: bertollo
+      email: bertollo.doe@example.com
+      name: Bertollo Doe
+      password: Test@123
+    - username: candice
+      email: candice.doe@example.com
+      name: Candice Doe
+      password: Test@123
+    - username: dennis
+      email: dennis.doe@example.com
+      name: Dennis Doe
+      password: Test@123
+    - username: elaine
+      email: elaine.doe@example.com
+      name: Elaine Doe
+      password: Test@123
     - username: fred
-      email: john.doe@example.com
+      email: fred.doe@example.com
       name: Fred Doe
       password: Test@123
     - username: greg
-      email: jane.doe@example.com
+      email: greg.doe@example.com
       name: Greg Doe
       password: Test@123
   client:

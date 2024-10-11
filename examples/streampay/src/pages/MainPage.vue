@@ -88,14 +88,18 @@ onMounted(async () => {
       } else {
         let state = '';
 
-        if (activity.eventname === 'PaymentSent' || activity.eventname === 'PaymentReceived') {
+        var from = activity.from_user_id === userId ? 'You' : activity.from_username;
+        var to = activity.to_user_id === userId ? 'you' : activity.to_username;
+
+        if (activity.eventname === 'PaymentSent') {
           state = 'paid';
+        } else if (activity.eventname === 'PaymentReceived') {
+          from = activity.to_user_id;
+          to = activity.from_user_id;
+          state = 'received';
         } else if (activity.eventname === 'PaymentRequested') {
           state = 'requested';
         }
-
-        const from = activity.from_user_id === userId ? 'You' : activity.from_username;
-        const to = activity.to_user_id === userId ? 'you' : activity.to_username;
 
         const avatar = from.charAt(0).toUpperCase();
         const eventName = activity.eventname;
