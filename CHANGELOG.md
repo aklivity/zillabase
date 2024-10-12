@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.4.0](https://github.com/aklivity/zillabase/tree/0.4.0) (2024-10-12)
+
+[Full Changelog](https://github.com/aklivity/zillabase/compare/0.3.0...0.4.0)
+
+**Implemented enhancements:**
+
+- Support sql migrations [\#101](https://github.com/aklivity/zillabase/issues/101)
+- support installing python dependencies from a `requirements.txt` file [\#94](https://github.com/aklivity/zillabase/issues/94)
+
+**Merged pull requests:**
+
+- Show help by default for command groups and when command parsing fails [\#114](https://github.com/aklivity/zillabase/pull/114) ([jfallows](https://github.com/jfallows))
+- Decrease polling interval [\#113](https://github.com/aklivity/zillabase/pull/113) ([akrambek](https://github.com/akrambek))
+- Update zillabase start output to convey when containers are healthy [\#112](https://github.com/aklivity/zillabase/pull/112) ([jfallows](https://github.com/jfallows))
+- Use migrations for functions examples [\#111](https://github.com/aklivity/zillabase/pull/111) ([jfallows](https://github.com/jfallows))
+- Separate streampay seed.sql into sql migrations [\#110](https://github.com/aklivity/zillabase/pull/110) ([jfallows](https://github.com/jfallows))
+- Remove apexchart from Vue boot [\#109](https://github.com/aklivity/zillabase/pull/109) ([jfallows](https://github.com/jfallows))
+- Support sql migrations [\#108](https://github.com/aklivity/zillabase/pull/108) ([jfallows](https://github.com/jfallows))
+- Remove statement page and fix activities logs on main page [\#107](https://github.com/aklivity/zillabase/pull/107) ([akrambek](https://github.com/akrambek))
+- petstore example update to use seed.sql [\#106](https://github.com/aklivity/zillabase/pull/106) ([ankitk-me](https://github.com/ankitk-me))
+- fix: add more users and UI instructions [\#105](https://github.com/aklivity/zillabase/pull/105) ([vordimous](https://github.com/vordimous))
+- Cli and logging [\#104](https://github.com/aklivity/zillabase/pull/104) ([ankitk-me](https://github.com/ankitk-me))
+- feat: add OpenAI and AsyncAPI instructions [\#103](https://github.com/aklivity/zillabase/pull/103) ([vordimous](https://github.com/vordimous))
+- Streampay with OpenAI integration [\#100](https://github.com/aklivity/zillabase/pull/100) ([vordimous](https://github.com/vordimous))
+- fix: try connection multiple times and execute sql once [\#99](https://github.com/aklivity/zillabase/pull/99) ([vordimous](https://github.com/vordimous))
+- support installing python dependencies from a requirements.txt file [\#98](https://github.com/aklivity/zillabase/pull/98) ([ankitk-me](https://github.com/ankitk-me))
+- Support default image version tags, overridable image version tags and function env vars [\#97](https://github.com/aklivity/zillabase/pull/97) ([jfallows](https://github.com/jfallows))
+- fix: update node, fix build warnings and lint errors [\#96](https://github.com/aklivity/zillabase/pull/96) ([vordimous](https://github.com/vordimous))
+- Set docker restart policy to unless-stopped for each container [\#95](https://github.com/aklivity/zillabase/pull/95) ([jfallows](https://github.com/jfallows))
+- fix: remove dollar prefix and folder spelling [\#92](https://github.com/aklivity/zillabase/pull/92) ([vordimous](https://github.com/vordimous))
+
 ## [0.3.0](https://github.com/aklivity/zillabase/tree/0.3.0) (2024-10-07)
 
 [Full Changelog](https://github.com/aklivity/zillabase/compare/0.2.0...0.3.0)
@@ -29,7 +60,11 @@
 
 ## [0.1.0](https://github.com/aklivity/zillabase/tree/0.1.0) (2024-09-19)
 
-[Full Changelog](https://github.com/aklivity/zillabase/compare/500f474c76783292c8848b124cf81831dfb36440...0.1.0)
+[Full Changelog](https://github.com/aklivity/zillabase/compare/0.0.1...0.1.0)
+
+## [0.0.1](https://github.com/aklivity/zillabase/tree/0.0.1) (2024-09-17)
+
+[Full Changelog](https://github.com/aklivity/zillabase/compare/500f474c76783292c8848b124cf81831dfb36440...0.0.1)
 
 **Implemented enhancements:**
 
