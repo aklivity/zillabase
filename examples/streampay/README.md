@@ -1,6 +1,6 @@
-# Zillabase Streampay
+# Zillabase StreamPayAI
 
-This is an implementation of the Streampay App designed to transfer payments from one user to another.
+This is an implementation of the StreamPay App designed to transfer payments from one user to another.
 Zilla is implementing the REST endpoints defined in an AsyncAPI 3.x spec and proxying them onto Kafka topics defined in an AsyncAPI 3.x spec based on the operations defined in each spec.
 
 Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automatically based on the Kafka Cluster metadata information.
