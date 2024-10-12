@@ -62,7 +62,7 @@ Zillabase is a combination of open-source tools and runs via docker compose.
 
 ### Building your first app
 
-Zillabase documentation is in the works. In the meantime the `examples` directory includes two sample Zillabase applications that can be used as scaffolding for your first application. 
+Zillabase documentation is in the works. In the meantime, the `examples` directory includes two sample Zillabase applications that can be used as scaffolding for your first application. 
 
 1) [StreamPay](https://github.com/aklivity/zillabase/tree/develop/examples/streampay): A Venmo-like payment application with real-time AI-powered fraud detection
 
