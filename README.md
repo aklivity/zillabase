@@ -64,7 +64,7 @@ Zillabase is a combination of open-source tools and runs via docker compose.
 
 Zillabase documentation is in the works. In the meantime, the `examples` directory includes two sample Zillabase applications that can be used as scaffolding for your first application. 
 
-1) [StreamPay](https://github.com/aklivity/zillabase/tree/develop/examples/streampay): A Venmo-like payment application with real-time AI-powered fraud detection
+1) [StreamPayAI](https://github.com/aklivity/zillabase/tree/develop/examples/streampay): A Venmo-like payment application with real-time AI-powered fraud detection
 
 2) [PetStore](https://github.com/aklivity/zillabase/tree/develop/examples/petstore): The quintessential OpenAPI/Swagger Petstore demo, but fully event-driven
 
