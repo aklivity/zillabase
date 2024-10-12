@@ -18,13 +18,20 @@ import com.github.rvesse.airline.annotations.Cli;
 import com.github.rvesse.airline.annotations.Group;
 import com.github.rvesse.airline.help.Help;
 
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.ZillabaseAsyncapiCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsyncapiListCommand;
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.remove.ZillabaseAsyncapiRemoveCommand;
+import io.aklivity.zillabase.cli.internal.commands.asyncapi.show.ZillabaseAsyncapiShowCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.ZillabaseConfigCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.add.ZillabaseConfigAddCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.list.ZillabaseConfigListCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.remove.ZillabaseConfigRemoveCommand;
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
+import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
+import io.aklivity.zillabase.cli.internal.commands.migration.add.ZillabaseMigrationAddCommand;
+import io.aklivity.zillabase.cli.internal.commands.migration.list.ZillabaseMigrationListCommand;
+import io.aklivity.zillabase.cli.internal.commands.sso.ZillabaseSsoCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.add.ZillabaseSsoAddCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.list.ZillabaseSsoListCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.remove.ZillabaseSsoRemoveCommand;
@@ -38,18 +45,19 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
     {
         @Group(
             name = "asyncapi",
-            description = "AsyncAPI specification",
-            defaultCommand = Help.class,
+            description = "Manage AsyncAPI specifications",
+            defaultCommand = ZillabaseAsyncapiCommand.Help.class,
             commands =
             {
                 ZillabaseAsyncapiAddCommand.class,
                 ZillabaseAsyncapiListCommand.class,
+                ZillabaseAsyncapiShowCommand.class,
                 ZillabaseAsyncapiRemoveCommand.class
             }),
         @Group(
             name = "config",
-            description = "Zilla Config",
-            defaultCommand = Help.class,
+            description = "Manage zilla configuration",
+            defaultCommand = ZillabaseConfigCommand.Help.class,
             commands =
             {
                 ZillabaseConfigAddCommand.class,
@@ -58,13 +66,22 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
             }),
         @Group(
             name = "sso",
-            description = "Identity Provider",
-            defaultCommand = Help.class,
+            description = "Manage single sign-on providers",
+            defaultCommand = ZillabaseSsoCommand.Help.class,
             commands =
             {
                 ZillabaseSsoAddCommand.class,
                 ZillabaseSsoListCommand.class,
                 ZillabaseSsoRemoveCommand.class
+            }),
+        @Group(
+            name = "migration",
+            description = "Manage migrations",
+            defaultCommand = ZillabaseMigrationCommand.Help.class,
+            commands =
+            {
+                ZillabaseMigrationAddCommand.class,
+                ZillabaseMigrationListCommand.class
             })
     },
     commands =

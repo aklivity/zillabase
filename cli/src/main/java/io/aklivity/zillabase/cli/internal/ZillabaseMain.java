@@ -14,7 +14,12 @@
  */
 package io.aklivity.zillabase.cli.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.github.rvesse.airline.Cli;
+import com.github.rvesse.airline.parser.errors.ParseException;
 
 import io.aklivity.zillabase.cli.internal.util.ZillabaseSystemPropertyUtil;
 
@@ -25,7 +30,20 @@ public final class ZillabaseMain
     {
         ZillabaseSystemPropertyUtil.initialize();
         Cli<Runnable> parser = new Cli<>(ZillabaseCli.class);
-        parser.parse(args).run();
+
+        try
+        {
+            parser.parse(args).run();
+        }
+        catch (ParseException ex)
+        {
+            System.out.format("%s\n\n", ex.getMessage());
+
+            List<String> helpArgs = new ArrayList<>();
+            helpArgs.add("help");
+            helpArgs.addAll(Arrays.asList(args));
+            parser.parse(helpArgs.toArray(String[]::new)).run();
+        }
     }
 
     private ZillabaseMain()

@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.aklivity.zillabase</groupId>
     <artifactId>zillabase</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -109,6 +109,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

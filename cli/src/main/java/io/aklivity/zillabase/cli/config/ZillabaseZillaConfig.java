@@ -18,6 +18,8 @@ import java.util.List;
 
 public class ZillabaseZillaConfig
 {
+    public static final String DEFAULT_ZILLA_TAG = "0.9.99";
+
     private static final List<ZillabaseZillaPortConfig> DEFAULT_PORT_LIST = List.of(
         new ZillabaseZillaPortConfig()
         {
@@ -49,7 +51,7 @@ public class ZillabaseZillaConfig
         }
     );
 
-    public String tag = "latest";
+    public String tag = DEFAULT_ZILLA_TAG;
     public List<ZillabaseZillaPortConfig> ports = DEFAULT_PORT_LIST;
     public List<String> env;
 }

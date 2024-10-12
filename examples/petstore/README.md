@@ -7,15 +7,15 @@ Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automaticall
 #### Install `zillabase`
 
 ```bash
-$ brew tap aklivity/tap
+brew tap aklivity/tap
 
-$ brew install zillabase
+brew install zillabase
 ```
 
 #### Start `zillabase` stack:
 
 ```bash
-$ zillabase start
+zillabase start
 ```
 
 Output:
@@ -26,34 +26,8 @@ latest: Pulling from risingwavelabs/risingwave
 latest-release: Pulling from apicurio/apicurio-registry-mem
 latest: Pulling from bitnami/keycloak
 seed-kafka.yaml processed successfully!
-Registering zillabase-asyncapi spec
-{
-  "contentId" : 5,
-  "createdBy" : "",
-  "createdOn" : "2024-08-15T11:19:52+0000",
-  "globalId" : 6,
-  "id" : "zillabase-asyncapi-4238240106",
-  "modifiedBy" : "",
-  "modifiedOn" : "2024-08-15T11:19:52+0000",
-  "references" : [ ],
-  "state" : "ENABLED",
-  "type" : "ASYNCAPI",
-  "version" : "1"
-}
-Registering zillabase-asyncapi spec
-{
-  "contentId" : 6,
-  "createdBy" : "",
-  "createdOn" : "2024-08-15T11:19:52+0000",
-  "globalId" : 7,
-  "id" : "zillabase-asyncapi-1144525536",
-  "modifiedBy" : "",
-  "modifiedOn" : "2024-08-15T11:19:52+0000",
-  "references" : [ ],
-  "state" : "ENABLED",
-  "type" : "ASYNCAPI",
-  "version" : "1"
-}
+Registered AsyncAPI spec: kafka-asyncapi
+Registered AsyncAPI spec: http-asyncapi
 Config Server is populated with zilla.yaml
 ```
 
@@ -65,26 +39,26 @@ The Zillabase Petstore is an HTTP Kafka proxy and exposes common entity CRUD end
 
 | Protocol | Method | Endpoint            | Topic         | Description            |
 |----------|--------|---------------------|---------------|------------------------|
-| HTTP     | POST   | /petstore-pets      | petstore-pets | Create an entry.       |
-| HTTP     | PUT    | /petstore-pets/{id} | petstore-pets | Update pet by the key. |
-| HTTP     | DELETE | /petstore-pets/{id} | petstore-pets | Delete pet by the key. |
-| HTTP     | GET    | /petstore-pets      | petstore-pets | Fetch all pets.        |
-| HTTP     | GET    | /petstore-pets/{id} | petstore-pets | Fetch pet by the key.  |
+| HTTP     | POST   | /petstore_pets      | petstore_pets | Create an entry.       |
+| HTTP     | PUT    | /petstore_pets/{id} | petstore_pets | Update pet by the key. |
+| HTTP     | DELETE | /petstore_pets/{id} | petstore_pets | Delete pet by the key. |
+| HTTP     | GET    | /petstore_pets      | petstore_pets | Fetch all pets.        |
+| HTTP     | GET    | /petstore_pets/{id} | petstore_pets | Fetch pet by the key.  |
 
-Similarly, endpoints are avaiable to manage customers using `/petstore-customers` & `/petstore-verified-customers`
+Similarly, endpoints are avaiable to manage customers using `/petstore_customers` & `/petstore_verified_customers`
 
 ##### Example:
 
 ##### Publish a valid record
 
 ```bash
-curl -k -v -X POST http://localhost:8080/petstore-pets -H 'Idempotency-Key: 1'  -H 'Content-Type: application/json' -d '{"id": "123","breed": "Awesome Dog"}'
+curl -k -v -X POST http://localhost:8080/petstore_pets -H 'Idempotency-Key: 1'  -H 'Content-Type: application/json' -d '{"id": "123","breed": "Awesome Dog"}'
 ```
 
 Output:
 
 ```text
-> POST /petstore-pets HTTP/1.1
+> POST /petstore_pets HTTP/1.1
 ...
 > Content-Type: application/json
 > Content-Length: 35
@@ -98,13 +72,13 @@ Output:
 ##### Fetch a record
 
 ```bash
-curl -k -v http://localhost:8080/petstore-pets/1
+curl -k -v http://localhost:8080/petstore_pets/1
 ```
 
 Output:
 
 ```text
-> GET /petstore-pets/1 HTTP/1.1
+> GET /petstore_pets/1 HTTP/1.1
 ...
 < HTTP/1.1 200 OK
 < Content-Length: 33

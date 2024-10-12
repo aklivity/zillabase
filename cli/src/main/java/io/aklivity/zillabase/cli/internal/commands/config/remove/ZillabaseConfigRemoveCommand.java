@@ -14,7 +14,6 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.config.remove;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -37,10 +36,6 @@ public final class ZillabaseConfigRemoveCommand extends ZillabaseConfigCommand
         description = "Config identifier")
     public String id;
 
-    @Option(name = {"-u", "--url"},
-        description = "Admin Server URL")
-    public URI serverURL;
-
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
     public boolean verbose;
@@ -61,13 +56,8 @@ public final class ZillabaseConfigRemoveCommand extends ZillabaseConfigCommand
         String path,
         HttpClient client)
     {
-        if (serverURL == null)
-        {
-            serverURL = ADMIN_SERVER_DEFAULT;
-        }
-
         HttpRequest httpRequest = HttpRequest
-            .newBuilder(serverURL.resolve(path))
+            .newBuilder(ADMIN_SERVER_DEFAULT.resolve(path))
             .DELETE()
             .build();
 

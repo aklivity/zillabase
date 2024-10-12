@@ -26,8 +26,6 @@ import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLA
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
-import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_INTERNAL_URL;
-import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_PORT;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
@@ -71,7 +69,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
-import java.util.zip.CRC32C;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -152,6 +149,7 @@ import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
+import io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiKafkaFilter;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
@@ -168,6 +166,7 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncap
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
 
 @Command(
     name = "start",
@@ -187,6 +186,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
     private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
         Pattern.DOTALL);
+    private static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
+    private static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
@@ -194,10 +195,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private final List<String> operations = new ArrayList<>();
     private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
 
-    public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
+    private final Path seedSqlPath = ZILLABASE_PATH.resolve("seed.sql");
 
-    private String kafkaArtifactId;
-    private String httpArtifactId;
+    public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
 
     @Override
     protected void invoke(
@@ -205,6 +205,25 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         final ZillabaseConfig config = readZillabaseConfig();
 
+        startContainers(client, config);
+
+        seedKafkaAndRegistry(config);
+
+        processSql(config);
+
+        createConfigServerKafkaTopic(config);
+
+        processAsyncApiSpecs(config);
+
+        initializeKeycloakService(config);
+
+        publishZillaConfig(config);
+    }
+
+    private void startContainers(
+        DockerClient client,
+        ZillabaseConfig config)
+    {
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
@@ -261,6 +280,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
+        System.out.println("Started containers successfully");
+
         while (!containerIds.isEmpty())
         {
             for (Iterator<String> i = containerIds.iterator(); i.hasNext(); )
@@ -279,29 +300,34 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                         i.remove();
                     }
                 }
-            }
 
-            try
-            {
-                Thread.sleep(3000L);
-            }
-            catch (InterruptedException ex)
-            {
-                throw new RuntimeException(ex);
+                Thread.onSpinWait();
             }
         }
 
-        seedKafkaAndRegistry(config);
+        System.out.println("Verified containers are healthy");
+    }
 
-        seedSql(config);
+    private void processSql(
+        ZillabaseConfig config)
+    {
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave);
 
-        createConfigServerKafkaTopic(config);
+        pgsql.connect();
 
-        processAsyncApiSpecs(config);
+        if (pgsql.connected)
+        {
+            ZillabaseMigrationsHelper migrations = new ZillabaseMigrationsHelper();
 
-        initializeKeycloakService(config);
+            migrations.list()
+                .filter(m -> pgsql.connected)
+                .forEach(pgsql::process);
 
-        publishZillaConfig(config);
+            if (pgsql.connected)
+            {
+                pgsql.process(seedSqlPath);
+            }
+        }
     }
 
     private void initializeKeycloakService(
@@ -598,25 +624,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private String readSeedSql()
-    {
-        String content = null;
-        Path seedPath = Paths.get("zillabase/seed.sql");
-        try
-        {
-            if (Files.exists(seedPath) && Files.size(seedPath) != 0 && Files.readAllLines(seedPath)
-                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
-            {
-                content = Files.readString(seedPath);
-            }
-        }
-        catch (IOException ex)
-        {
-            ex.printStackTrace(System.err);
-        }
-        return content;
-    }
-
     private KafkaBootstrapRecords readKafkaBootstrapRecords()
     {
         KafkaBootstrapRecords records = null;
@@ -729,9 +736,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 }
 
                 Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", httpArtifactId, "version", "latest")));
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", HTTP_ASYNCAPI_ARTIFACT_ID,
+                        "version", "latest")));
                 Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", kafkaArtifactId, "version", "latest")));
+                    "catalog", Map.of("apicurio_catalog", Map.of("subject", KAFKA_ASYNCAPI_ARTIFACT_ID,
+                        "version", "latest")));
 
                 List<ZillaBindingRouteConfig> routes = new ArrayList<>();
 
@@ -1038,14 +1047,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
-        CRC32C crc32c = new CRC32C();
         if (kafkaSpec != null)
         {
-            byte[] kafkaSpecBytes = kafkaSpec.getBytes();
-            crc32c.update(kafkaSpecBytes, 0, kafkaSpecBytes.length);
-            kafkaArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
-
-            registerAsyncApiSpec(kafkaSpec);
+            registerAsyncApiSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
         }
 
         Path httpSpecPath = Paths.get("zillabase/specs/http-asyncapi.yaml");
@@ -1068,12 +1072,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         if (httpSpec != null)
         {
-            crc32c.reset();
-            byte[] httpSpecBytes = httpSpec.getBytes();
-            crc32c.update(httpSpecBytes, 0, httpSpecBytes.length);
-            httpArtifactId = "zillabase-asyncapi-%s".formatted(crc32c.getValue());
-
-            registerAsyncApiSpec(httpSpec);
+            registerAsyncApiSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
             JsonValue jsonValue = Json.createReader(new StringReader(httpSpec)).readValue();
             JsonObject operations = jsonValue.asJsonObject().getJsonObject("operations");
@@ -1222,6 +1221,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     }
 
     private void registerAsyncApiSpec(
+        String id,
         String spec)
     {
         if (spec != null)
@@ -1235,10 +1235,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     writer.write(spec);
                 }
 
-                System.out.println("Registering zillabase-asyncapi spec");
                 ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
                 command.helpOption = new HelpOption<>();
                 command.spec = tempFile.getPath();
+                command.id = id;
                 command.run();
                 tempFile.delete();
             }
@@ -1849,98 +1849,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return URI.create(baseUrl).resolve(path);
     }
 
-    private void seedSql(
-        ZillabaseConfig config)
-    {
-        String content = readSeedSql();
-        if (content != null && !content.isEmpty())
-        {
-            Properties props = new Properties();
-            props.setProperty("user", "root");
-            props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
-
-            boolean status = false;
-            int retries = 0;
-            int delay = SERVICE_INITIALIZATION_DELAY_MS;
-
-            while (retries < MAX_RETRIES)
-            {
-                try
-                {
-                    Thread.sleep(delay);
-                    try (Connection conn = DriverManager.getConnection("jdbc:postgresql://%s/%s"
-                        .formatted(config.risingwave.url, config.risingwave.db), props);
-                         Statement stmt = conn.createStatement())
-                    {
-                        String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
-                                          .replaceAll("--.*?(\\r?\\n)", "");
-
-                        List<String> splitCommands = splitSQL(noCommentsSQL);
-
-                        for (String command : splitCommands)
-                        {
-                            if (!command.trim().isEmpty())
-                            {
-                                command = command.trim().replaceAll("[\\n\\r]+$", "");
-                                System.out.println("Executing command: " + command);
-                                stmt.executeUpdate(command);
-                            }
-                        }
-                        status = true;
-                        break;
-                    }
-                }
-                catch (InterruptedException | SQLException ex)
-                {
-                    retries++;
-                    delay *= 2;
-                }
-            }
-
-            if (status)
-            {
-                System.out.println("seed.sql processed successfully!");
-            }
-            else
-            {
-                System.err.println("Failed to process seed.sql after " + MAX_RETRIES + " attempts.");
-            }
-        }
-    }
-
-    private static List<String> splitSQL(
-        String sql)
-    {
-        List<String> result = new ArrayList<>();
-        StringBuilder command = new StringBuilder();
-        boolean insideDollarBlock = false;
-
-        String[] lines = sql.split("\\r?\\n");
-
-        for (String line : lines)
-        {
-            if (line.contains("$$"))
-            {
-                insideDollarBlock = !insideDollarBlock;
-            }
-
-            command.append(line).append("\n");
-
-            if (!insideDollarBlock && line.trim().endsWith(";"))
-            {
-                result.add(command.toString().trim());
-                command.setLength(0);
-            }
-        }
-
-        if (!command.isEmpty())
-        {
-            result.add(command.toString().trim());
-        }
-
-        return result;
-    }
-
     private static final class PullImageProgressHandler extends ResultCallback.Adapter<PullResponseItem>
     {
         private final PrintStream out;
@@ -2111,11 +2019,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withPortBindings(portBindings))
+                    .withNetworkMode(network)
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withExposedPorts(exposedPorts)
                 .withCmd("start", "-v", "-e", "-c", "%s/config/zilla.yaml".formatted(config.admin.configServerUrl),
-                    "-Pzilla.engine.verbose.composites=true")
+                    "-Pzilla.engine.verbose.composites=true", "-Pzilla.engine.config.poll.interval.seconds=10")
                 .withTty(true)
                 .withEnv(env);
         }
@@ -2126,7 +2035,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKafkaFactory(
             ZillabaseConfig config)
         {
-            super(config, "kafka", "bitnami/kafka:3.2.3");
+            super(config, "kafka", "bitnami/kafka:%s".formatted(config.kafka.tag));
         }
 
         @Override
@@ -2141,9 +2050,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withRestartPolicy(unlessStoppedRestart()))
-                        .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
                 .withExposedPorts(exposedPort)
                 .withTty(true)
                 .withEnv(
@@ -2173,7 +2082,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateApicurioFactory(
             ZillabaseConfig config)
         {
-            super(config, "apicurio", "apicurio/apicurio-registry-mem:latest-release");
+            super(config, "apicurio", "apicurio/apicurio-registry-mem:%s".formatted(config.registry.apicurio.tag));
         }
 
         @Override
@@ -2202,7 +2111,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKarapaceFactory(
             ZillabaseConfig config)
         {
-            super(config, "karapace", "ghcr.io/aiven/karapace:latest");
+            super(config, "karapace", "ghcr.io/aiven/karapace:%s".formatted(config.registry.karapace.tag));
         }
 
         @Override
@@ -2248,7 +2157,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateRisingWaveFactory(
             ZillabaseConfig config)
         {
-            super(config, "risingwave", "risingwavelabs/risingwave:latest");
+            super(config, "risingwave", "risingwavelabs/risingwave:%s".formatted(config.risingwave.tag));
         }
 
         @Override
@@ -2261,8 +2170,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                        .withNetworkMode(network)
-                        .withRestartPolicy(unlessStoppedRestart()))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
                 .withCmd("playground")
                 .withHealthcheck(new HealthCheck()
@@ -2278,7 +2187,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateKeycloakFactory(
             ZillabaseConfig config)
         {
-            super(config, "keycloak", "bitnami/keycloak:latest");
+            super(config, "keycloak", "bitnami/keycloak:%s".formatted(config.keycloak.tag));
         }
 
         @Override
@@ -2335,7 +2244,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                    .withNetworkMode(network))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withEnv(envVars)
                 .withTty(true)
                 .withHealthcheck(new HealthCheck()
@@ -2368,9 +2278,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             URI apicurio = URI.create(config.registry.apicurio.url);
             URI configServer = URI.create(config.admin.configServerUrl);
-            String risingwaveUrl = config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL)
-                ? DEFAULT_RISINGWAVE_INTERNAL_URL
-                : config.risingwave.url;
+            String risingwaveUrl = config.risingwave.url;
             String[] risingwave = risingwaveUrl.split(":");
 
             List<String> envVars = Arrays.asList(
@@ -2396,7 +2304,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
-                    .withPortBindings(portBindings))
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withCmd("start", "-v", "-e")
                 .withExposedPorts(exposedPorts)
                 .withEnv(envVars)
@@ -2429,7 +2338,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateConfigFactory(
             ZillabaseConfig config)
         {
-            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.zilla.tag));
+            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.admin.tag));
         }
 
         @Override
@@ -2445,7 +2354,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withName(name)
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
-                    .withNetworkMode(network))
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withCmd("start", "-v", "-e")
                 .withEnv(envVars)
                 .withTty(true)
@@ -2476,14 +2386,21 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateUdfServerJavaFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.admin.tag));
+            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.udf.java.tag));
         }
 
         @Override
         CreateContainerCmd createContainer(
             DockerClient client)
         {
-            List<String> envVars = Arrays.asList("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+            List<String> envVars = new ArrayList<>();
+            envVars.add("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+
+            List<String> env = config.udf.java.env;
+            if (env != null)
+            {
+                envVars.addAll(env);
+            }
 
             String projectsBasePath = "zillabase/functions/java";
 
@@ -2492,24 +2409,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             if (projectsDirectory.exists() && projectsDirectory.isDirectory())
             {
-                File[] projectDirs = projectsDirectory.listFiles(File::isDirectory);
-                if (projectDirs != null)
+                File targetDir = new File(projectsDirectory, "target");
+                if (targetDir.exists())
                 {
-                    for (File projectDir : projectDirs)
+                    File[] jarFiles = targetDir.listFiles((dir, name) -> name.endsWith(".jar"));
+                    if (jarFiles != null)
                     {
-                        File targetDir = new File(projectDir, "target");
-                        if (targetDir.exists())
+                        for (File jarFile : jarFiles)
                         {
-                            File[] jarFiles = targetDir.listFiles((dir, name) -> name.endsWith(".jar"));
-                            if (jarFiles != null)
-                            {
-                                for (File jarFile : jarFiles)
-                                {
-                                    String jarHostPath = jarFile.getAbsolutePath();
-                                    String jarContainerPath = "/opt/udf/lib/" + jarFile.getName();
-                                    binds.add(new Bind(jarHostPath, new Volume(jarContainerPath)));
-                                }
-                            }
+                            String jarHostPath = jarFile.getAbsolutePath();
+                            String jarContainerPath = "/opt/udf/lib/" + jarFile.getName();
+                            binds.add(new Bind(jarHostPath, new Volume(jarContainerPath)));
                         }
                     }
                 }
@@ -2522,7 +2432,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
-                    .withBinds(binds))
+                    .withBinds(binds)
+                    .withRestartPolicy(unlessStoppedRestart()))
                 .withEnv(envVars)
                 .withTty(true)
                 .withHealthcheck(new HealthCheck()
@@ -2538,7 +2449,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateUdfServerPythonFactory(
             ZillabaseConfig config)
         {
-            super(config, "udf-server-python", "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.admin.tag));
+            super(config, "udf-server-python",
+                    "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.udf.python.tag));
         }
 
         private void importModule(
@@ -2575,6 +2487,16 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             if (projectsDirectory.exists() && projectsDirectory.isDirectory())
             {
+                importModule(projectsDirectory, binds);
+
+                File requirementsFile = new File(projectsDirectory, "requirements.txt");
+                if (requirementsFile.exists() && requirementsFile.isFile())
+                {
+                    String requirementsHostPath = requirementsFile.getAbsolutePath();
+                    String requirementsContainerPath = "/opt/udf/lib/requirements.txt";
+                    binds.add(new Bind(requirementsHostPath, new Volume(requirementsContainerPath)));
+                }
+
                 File[] projectDirs = projectsDirectory.listFiles(File::isDirectory);
                 if (projectDirs != null)
                 {
@@ -2585,6 +2507,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 }
             }
 
+            List<String> env = Optional.ofNullable(config.udf.python.env).orElse(List.of());
+
             return client
                 .createContainerCmd(image)
                 .withLabels(project)
@@ -2594,11 +2518,167 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withBinds(binds))
                 .withTty(true)
+                .withEnv(env)
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
                     .withRetries(5)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816")));
+        }
+    }
+
+    private final class PgsqlHelper
+    {
+        private final ZillabaseRisingWaveConfig config;
+        private final String url;
+        private final Properties props;
+
+        private boolean connected;
+
+
+        PgsqlHelper(
+            ZillabaseRisingWaveConfig config)
+        {
+            this.config = config;
+
+            Properties props = new Properties();
+            props.setProperty("user", "root");
+            props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
+
+            this.url = "jdbc:postgresql://localhost:4567/%s".formatted(config.db);
+            this.props = props;
+        }
+
+        void connect()
+        {
+            int retries = 0;
+            int delay = SERVICE_INITIALIZATION_DELAY_MS;
+
+            while (retries < MAX_RETRIES)
+            {
+                try
+                {
+                    Thread.sleep(delay);
+
+                    try (Connection conn = DriverManager.getConnection(url, props);
+                         Statement stmt = conn.createStatement())
+                    {
+                        connected = true;
+                        break;
+                    }
+                }
+                catch (InterruptedException | SQLException ex)
+                {
+                    retries++;
+                    delay *= 2;
+                }
+            }
+
+            if (!connected)
+            {
+                System.err.println("Failed to connect to localhost:4567 after " + MAX_RETRIES + " attempts.");
+            }
+        }
+
+        void process(
+            Path sql)
+        {
+            String content = readSql(sql);
+            if (content != null)
+            {
+                execute(sql.getFileName().toString(), content);
+            }
+        }
+
+        private void execute(
+            String filename,
+            String content)
+        {
+            try
+            {
+                Connection conn = DriverManager.getConnection(url, props);
+                Statement stmt = conn.createStatement();
+                // Set the timeout in seconds (for example, 30 seconds)
+                stmt.setQueryTimeout(30);
+                String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
+                        .replaceAll("--.*?(\\r?\\n)", "");
+
+                List<String> splitCommands = splitSQL(noCommentsSQL);
+
+                for (String command : splitCommands)
+                {
+                    if (!command.trim().isEmpty())
+                    {
+                        command = command.trim().replaceAll("[\\n\\r]+$", "");
+                        System.out.println("Executing command: " + command);
+                        stmt.executeUpdate(command);
+                    }
+                }
+            }
+            catch (SQLException ex)
+            {
+                connected = false;
+                System.out.format("Failed to process %s. ex: %s\n", filename, ex.getMessage());
+            }
+
+            if (connected)
+            {
+                System.out.format("%s processed successfully\n", filename);
+            }
+        }
+
+        private String readSql(
+            Path seedPath)
+        {
+            String content = null;
+            try
+            {
+                if (Files.exists(seedPath) &&
+                    Files.size(seedPath) != 0 &&
+                    Files.readAllLines(seedPath).stream()
+                        .anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
+                {
+                    content = Files.readString(seedPath);
+                }
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
+            return content;
+        }
+
+        private static List<String> splitSQL(
+            String sql)
+        {
+            List<String> result = new ArrayList<>();
+            StringBuilder command = new StringBuilder();
+            boolean insideDollarBlock = false;
+
+            String[] lines = sql.split("\\r?\\n");
+
+            for (String line : lines)
+            {
+                if (line.contains("$$"))
+                {
+                    insideDollarBlock = !insideDollarBlock;
+                }
+
+                command.append(line).append("\n");
+
+                if (!insideDollarBlock && line.trim().endsWith(";"))
+                {
+                    result.add(command.toString().trim());
+                    command.setLength(0);
+                }
+            }
+
+            if (!command.isEmpty())
+            {
+                result.add(command.toString().trim());
+            }
+
+            return result;
         }
     }
 }

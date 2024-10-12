@@ -12,12 +12,12 @@
             class="text-weight-bold text-h4"
             flat color="primary"
             label="StreamPay"
-            @click="this.$router.push({ path: '/main' })"
+            to="/main"
           />
         </div>
         <div style="margin-top: 100px">
           <div class="text-weight-bold float-right text-h6" style="padding-right: 10px; width: 222px; margin-top: 10px;">
-            Hi, {{ user.firstName }}
+            Hi, {{ name }}
           </div>
         </div>
       </div>
@@ -28,9 +28,9 @@
           size="lg"
           color="primary"
           class="full-width text-white"
-          label="Pay or Request"
+          label="Send or Request"
           rounded
-          @click="this.$router.push({ path: '/payorrequest' })"
+          to="/payorrequest"
         />
       </div>
 
@@ -44,7 +44,7 @@
         <q-item
           clickable
           v-ripple
-          @click="this.$router.push({ path: '/request' })"
+          to="/request"
         >
           <q-item-section avatar>
             <q-icon size="36px" color="primary" name="request_quote" />
@@ -58,7 +58,7 @@
         <q-item
           clickable
           v-ripple
-          @click="this.$router.push({ path: '/statement' })"
+          to="/statement"
         >
           <q-item-section avatar>
             <q-icon size="36px" color="primary" name="insights" />
@@ -86,119 +86,96 @@
   </q-layout>
 </template>
 
-<script lang="ts">
-import {defineComponent, unref, watch} from 'vue';
-import {api, streamingUrl} from "boot/axios";
+<script setup lang="ts">
+import {onBeforeMount, onUnmounted, ref, unref, watch, computed} from 'vue';
+import {streamingUrl} from 'boot/axios';
 import {keycloak, user, SecureEventSource} from 'boot/main';
-import {v4} from "uuid";
 
-export default defineComponent({
-  name: 'MainLayout',
-  data() {
-    return {
-      request: 0,
-      balance: 0
-    }
-  },
-  setup () {
-    return {
-      keycloak,
-      user,
-    }
-  },
-  async mounted() {
-    const userId = this.user?.username;
-    const firstname = this.user?.firstName;
-    const lastName = this.user?.lastName;
-    const username = this.user?.username;
-    const incRequests =  this.incRequest;
-    const decRequests =  this.decRequests;
-    const updateBalance =  this.updateBalance;
-    async function authenticatePage() {
-      const requestStream  = new SecureEventSource(`${streamingUrl}/streampay_payment_requests-stream`, {
-        credentials: () => keycloak.token || ""
-      });
+const request = ref(0);
+const balance = ref(0);
+const name = computed(() => (user?.firstName || 'User'))
 
-      requestStream.addEventListener('delete', () => {
-        decRequests();
-      }, false);
+let requestStream: SecureEventSource;
+let balanceStream: SecureEventSource;
 
-      requestStream.onmessage = function (event: MessageEvent) {
-        incRequests();
-      };
-
-      const balanceStream  = new SecureEventSource(`${streamingUrl}/streampay_balances-stream-identity`, {
-        credentials: () => keycloak.token || ""
-      });
-
-      balanceStream.onmessage = function (event: MessageEvent) {
-        const balance = JSON.parse(event.data);
-        updateBalance(balance.balance);
-      };
-
-      const accessToken = keycloak.token;
-      const authorization = { Authorization: `Bearer ${accessToken}` };
-
-      await api.put(`${streamingUrl}/streampay_users/${userId}`, {
-        'id': userId,
-        'name': `${firstname} ${lastName}`,
-        'username': username
-      }, {
-        headers: {
-          'Idempotency-Key': v4(),
-          ...authorization
-        }
-      })
+onBeforeMount(async () => {
+  const isAuthenticated = async () => {
+    if (unref(keycloak.authenticated)) {
+      return true;
     }
 
-    if (keycloak.authenticated)
-    {
-      await authenticatePage();
-    } else {
-      watch(() => keycloak.authenticated ?? false, (newValue) => {
-        if (newValue) {
-          authenticatePage();
-        }
-      });
-    }
-  },
-  methods: {
-     logout() {
-      keycloak.logout({
-        redirectUri: `${window.location.origin}/`
-      });
-    },
-    incRequest() {
-      this.request++
-    },
-    decRequests() {
-      let currentRequests = this.request;
-      currentRequests--;
-      this.request = currentRequests < 0 ? 0 : currentRequests;
-    },
-    updateBalance(newBalance: number) {
-      this.balance = +newBalance.toFixed(2);
-    },
-  },
-  async beforeCreate() {
-    const isAuthenticated = async () => {
-      if (unref(keycloak.authenticated)) {
-        return true;
-      }
+    await keycloak.login({
+        redirectUri: window.location.href,
+    });
 
-      await keycloak.login({
-         redirectUri: window.location.href,
-      });
+    return false;
+  };
 
-      return false;
-    };
-
-    if (!unref(keycloak.authenticated)) {
-        await keycloak.init({ onLoad: 'login-required' });
-    }
-
-    return isAuthenticated();
+  if (!unref(keycloak.authenticated)) {
+      await keycloak.init({ onLoad: 'login-required' });
   }
 
+  return isAuthenticated();
+});
+
+function logout() {
+  keycloak.logout({
+    redirectUri: `${window.location.origin}/`
+  });
+}
+
+function updateBalance(newBalance: number) {
+  balance.value = +newBalance.toFixed(2);
+}
+
+async function authenticatePage() {
+  requestStream  = new SecureEventSource(`${streamingUrl}/streampay_payment_requests-stream`, {
+    credentials: () => keycloak.token || ''
+  });
+
+  requestStream.onmessage = function (event: MessageEvent) {
+    const paymentRequest = JSON.parse(event.data);
+
+    if (paymentRequest.status === 'pending')
+    {
+      request.value++;
+    }
+    else if (paymentRequest.status === 'paid' || paymentRequest.status === 'rejected')
+    {
+      let currentRequests = request.value;
+      currentRequests--;
+      request.value = currentRequests < 0 ? 0 : currentRequests;
+    }
+  };
+
+  balanceStream  = new SecureEventSource(`${streamingUrl}/streampay_balances-stream-identity`, {
+    credentials: () => keycloak.token || ''
+  });
+
+  balanceStream.onmessage = function (event: MessageEvent) {
+    const balance = JSON.parse(event.data);
+    updateBalance(balance.balance);
+  };
+
+}
+
+if (keycloak.authenticated)
+{
+  authenticatePage();
+} else {
+  watch(() => keycloak.authenticated ?? false, (newValue) => {
+    if (newValue) {
+      authenticatePage();
+    }
+  });
+}
+
+onUnmounted(() => {
+  requestStream?.close();
+  balanceStream?.close();
+})
+
+defineExpose({
+  logout,
 });
 </script>

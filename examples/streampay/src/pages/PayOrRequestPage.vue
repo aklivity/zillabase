@@ -7,22 +7,10 @@
   </q-page>
 </template>
 
-<script lang="ts">
-import {defineComponent, unref} from "vue";
-import PayOrRequestForm from "components/PayOrRequestForm.vue";
-import {useRoute} from "vue-router";
-import {keycloak} from 'boot/main';
+<script setup lang="ts">
+import PayOrRequestForm from 'components/PayOrRequestForm.vue';
+import {useRoute} from 'vue-router';
 
-export default defineComponent({
-  name: 'PayOrRequestPage',
-  components: { PayOrRequestForm },
-  setup() {
-    const route = useRoute();
-    const requestId = route.params.requestId;
-    return {
-      keycloak,
-      requestId
-    };
-  }
-})
+const route = useRoute();
+const requestId = route.params.requestId?.toString();
 </script>

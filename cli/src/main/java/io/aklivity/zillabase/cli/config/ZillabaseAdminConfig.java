@@ -18,6 +18,8 @@ import java.util.List;
 
 public final class ZillabaseAdminConfig
 {
+    public static final String DEFAULT_ADMIN_TAG = ZillabaseZillaConfig.DEFAULT_ZILLA_TAG;
+
     public static final int DEFAULT_ADMIN_HTTP_PORT = 7184;
     public static final int DEFAULT_ADMIN_PGSQL_PORT = 4567;
 
@@ -135,7 +137,7 @@ public final class ZillabaseAdminConfig
                   headers:
                     overrides:
                       :authority: ${{env.APICURIO_HOST}}:${{env.APICURIO_PORT}}
-                      :path: /apis/registry/v2/ids/globalIds/${params.id}
+                      :path: /apis/registry/v2/groups/${{env.REGISTRY_GROUP_ID}}/artifacts/${params.id}
                 exit: apicurio_http_client
               - when:
                   - headers:
@@ -220,6 +222,6 @@ public final class ZillabaseAdminConfig
 
     private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
 
-    public String tag = "latest";
+    public String tag = DEFAULT_ADMIN_TAG;
     public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
 }

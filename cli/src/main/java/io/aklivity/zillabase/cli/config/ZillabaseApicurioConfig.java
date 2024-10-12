@@ -16,10 +16,11 @@ package io.aklivity.zillabase.cli.config;
 
 public final class ZillabaseApicurioConfig
 {
-    private static final String DEFAULT_GROUP_ID = "default";
+    private static final String DEFAULT_APICURIO_TAG = "2.6.x-release";
+    private static final String DEFAULT_APICURIO_URL = "http://apicurio.zillabase.dev:8080";
+    private static final String DEFAULT_APICURIO_GROUP_ID = "default";
 
-    public static final String DEFAULT_APICURIO_URL = "http://apicurio.zillabase.dev:8080";
-
+    public String tag = DEFAULT_APICURIO_TAG;
     public String url = DEFAULT_APICURIO_URL;
-    public String groupId = DEFAULT_GROUP_ID;
+    public String groupId = DEFAULT_APICURIO_GROUP_ID;
 }

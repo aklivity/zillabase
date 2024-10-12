@@ -64,7 +64,6 @@ public class ZillabaseAsyncapiCommandIT
         ZillabaseAsyncapiListCommand command = new ZillabaseAsyncapiListCommand();
         command.helpOption = new HelpOption<>();
         command.verbose = true;
-        command.id = "1";
 
         command.run();
 

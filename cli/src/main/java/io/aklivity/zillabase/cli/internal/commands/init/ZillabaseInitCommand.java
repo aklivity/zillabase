@@ -28,12 +28,16 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
     description = "Initialize a local project")
 public final class ZillabaseInitCommand extends ZillabaseCommand
 {
+    public ZillabaseInitCommand()
+    {
+        super(false);
+    }
+
     @Override
     protected void invoke()
     {
         Path configPath = Paths.get("zillabase/config.yaml");
         Path seedPath = Paths.get("zillabase/seed.sql");
-        Path seedKafkaPath = Paths.get("zillabase/seed-kafka.yaml");
 
         init:
         try
@@ -50,11 +54,6 @@ public final class ZillabaseInitCommand extends ZillabaseCommand
             if (!Files.exists(seedPath))
             {
                 Files.writeString(seedPath, "-- seed\n");
-            }
-
-            if (!Files.exists(seedKafkaPath))
-            {
-                Files.writeString(seedKafkaPath, "# topics\n");
             }
 
             System.out.format("Finished zillabase init\n");

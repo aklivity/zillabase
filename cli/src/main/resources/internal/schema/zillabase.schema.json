@@ -44,6 +44,10 @@
         "bootstrapUrl":
         {
           "type": "string"
+        },
+        "tag":
+        {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -69,6 +73,10 @@
             "groupId":
             {
               "type": "string"
+            },
+            "tag":
+            {
+              "type": "string"
             }
           },
           "additionalProperties": false,
@@ -87,6 +95,10 @@
               "type": "string"
             },
             "context":
+            {
+              "type": "string"
+            },
+            "tag":
             {
               "type": "string"
             }
@@ -112,12 +124,60 @@
         "db":
         {
           "type": "string"
+        },
+        "tag":
+        {
+          "type": "string"
+        }
+      }
+    },
+    "udf":
+    {
+      "type": "object",
+      "properties":
+      {
+        "java":
+        {
+          "type": "object",
+          "properties":
+          {
+            "env":
+            {
+                "type": "array",
+                "items":
+                {
+                  "type": "string"
+                }
+            },
+            "tag":
+            {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "python":
+        {
+          "type": "object",
+          "properties":
+          {
+            "env":
+            {
+                "type": "array",
+                "items":
+                {
+                  "type": "string"
+                }
+            },
+            "tag":
+            {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       },
-      "required":
-      [
-        "url"
-      ]
+      "additionalProperties": false
     },
     "zilla":
     {
@@ -248,6 +308,10 @@
             "client-id",
             "redirects"
           ]
+        },
+        "tag":
+        {
+          "type": "string"
         }
       },
       "additionalProperties": false,
