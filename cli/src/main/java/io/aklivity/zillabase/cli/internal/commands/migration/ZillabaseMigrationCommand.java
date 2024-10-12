@@ -20,6 +20,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import com.github.rvesse.airline.annotations.Command;
+
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
 
@@ -44,5 +46,16 @@ public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
     {
         return helper.list()
             .map(p -> p.getFileName().toString());
+    }
+
+    @Command(
+        name = "help",
+        hidden = true)
+    public static final class Help<T> extends com.github.rvesse.airline.help.Help<T>
+    {
+        public Help()
+        {
+            this.command.add("migration");
+        }
     }
 }
