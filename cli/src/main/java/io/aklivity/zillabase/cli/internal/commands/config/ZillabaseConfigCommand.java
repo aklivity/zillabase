@@ -16,10 +16,23 @@ package io.aklivity.zillabase.cli.internal.commands.config;
 
 import java.net.URI;
 
+import com.github.rvesse.airline.annotations.Command;
+
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 
 public abstract class ZillabaseConfigCommand extends ZillabaseCommand
 {
     protected static final String CONFIG_ID_PATH = "config/%s";
     protected static final URI ADMIN_SERVER_DEFAULT = URI.create("http://localhost:7184/v1/");
+
+    @Command(
+        name = "help",
+        hidden = true)
+    public static final class Help<T> extends com.github.rvesse.airline.help.Help<T>
+    {
+        public Help()
+        {
+            this.command.add("config");
+        }
+    }
 }
