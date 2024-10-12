@@ -2024,7 +2024,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withExposedPorts(exposedPorts)
                 .withCmd("start", "-v", "-e", "-c", "%s/config/zilla.yaml".formatted(config.admin.configServerUrl),
-                    "-Pzilla.engine.verbose.composites=true")
+                    "-Pzilla.engine.verbose.composites=true", "-Pzilla.engine.config.poll.interval.seconds=10")
                 .withTty(true)
                 .withEnv(env);
         }
