@@ -86,7 +86,7 @@ Login using Keycloak with one of the users pre-created in [zillabase/config.yaml
 keycloak:
   realm: zillabase
   users:
- - username: allen
+    - username: allen
       email: allen.doe@example.com
       name: Allen Doe
       password: Test@123
@@ -118,7 +118,7 @@ To enable the OpenAI fraud detection integration, you must [create an `OPENAI_AP
 udf:
   python:
     env:
- - OPENAI_API_KEY=<your OpenAI API key>
+      - OPENAI_API_KEY=<your OpenAI API key>
 ```
 
 ### OpenAI Fraud Risk with Zillabase
