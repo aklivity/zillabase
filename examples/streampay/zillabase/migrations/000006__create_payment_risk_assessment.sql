@@ -2,7 +2,7 @@
 
 -- python user-defined function
 CREATE FUNCTION assess_fraud(varchar, varchar, double precision) RETURNS struct<summary varchar, risk varchar>
-LANGUAGE python AS assess_fraud;
+LANGUAGE python AS 'assess_fraud';
 
 CREATE MATERIALIZED VIEW streampay_payment_risk_assessment AS
   SELECT
@@ -19,7 +19,7 @@ CREATE MATERIALIZED VIEW streampay_payment_risk_assessment AS
   ) AS ar;
 
 CREATE FUNCTION process_embedding(varchar, varchar, double precision, varchar) RETURNS boolean
-LANGUAGE python AS process_embedding;
+LANGUAGE python AS 'process_embedding';
 
 CREATE VIEW streampay_payment_process_embedding AS
   SELECT

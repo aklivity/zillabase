@@ -6,7 +6,7 @@ CREATE VIEW request_payments AS
           WHEN sc.request_id IS NULL OR sc.request_id = '' THEN generate_unique_id()::varchar
           ELSE sc.request_id
       END AS id,
-      encode(sc.owner_id, 'escape') AS from_user_id,
+      encode(sc.zilla_identity, 'escape') AS from_user_id,
       u_from.username AS from_username,
       sc.user_id AS to_user_id_identity,
       u_to.username AS to_username,
@@ -18,7 +18,7 @@ CREATE VIEW request_payments AS
   JOIN
       streampay_users u_to ON sc.user_id = u_to.id
   JOIN
-      streampay_users u_from ON encode(sc.owner_id, 'escape') = u_from.id
+      streampay_users u_from ON encode(sc.zilla_identity, 'escape') = u_from.id
   WHERE
       sc.type = 'RequestPayment';
 
