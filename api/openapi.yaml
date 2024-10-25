@@ -176,6 +176,10 @@ paths:
             type: string
       requestBody:
         description: Update an existent config in the config server
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AsyncAPI"
         required: true
       responses:
         "204":
@@ -203,7 +207,7 @@ paths:
   /storage/buckets:
     get:
       tags:
-        - buckets
+        - storage
       summary: List all Buckets
       operationId: listBuckets
       responses:
@@ -220,7 +224,7 @@ paths:
   /storage/buckets/{bucket-name}:
     post:
       tags:
-        - buckets
+        - storage
       summary: Create a bucket
       description: Create a bucket
       operationId: createBucket
@@ -238,7 +242,7 @@ paths:
           description: Bad Request
     delete:
       tags:
-        - buckets
+        - storage
       summary: Delete a bucket
       description: Delete a bucket by name
       operationId: deleteBucket
@@ -257,7 +261,7 @@ paths:
   /storage/objects:
     get:
       tags:
-        - objects
+        - storage
       summary: List all objects across all buckets
       description: Retrieve a list of all objects in the storage system, across all buckets
       operationId: listObjects
@@ -275,7 +279,7 @@ paths:
   /storage/objects/{bucket-name}:
     get:
       tags:
-        - objects
+        - storage
       summary: List all objects in a specific bucket
       description: Retrieve a list of all objects within a specified bucket
       operationId: listBucketObjects
@@ -302,7 +306,7 @@ paths:
   /storage/objects/{bucket-name}/{file-name}:
     get:
       tags:
-        - objects
+        - storage
       summary: Retrieve an object
       description: Retrieve a specific object by bucket and file name
       operationId: getObject
@@ -330,7 +334,7 @@ paths:
           description: Object not found
     post:
       tags:
-        - objects
+        - storage
       summary: Create an object
       description: Upload a specific object in a bucket
       operationId: createObject
@@ -360,7 +364,7 @@ paths:
           description: Bad Request
     put:
       tags:
-        - objects
+        - storage
       summary: Update an object
       description: Update an existing object in a specified bucket
       operationId: updateObject
@@ -400,7 +404,7 @@ paths:
           description: Precondition Failed
     delete:
       tags:
-        - objects
+        - storage
       summary: Delete an object
       description: Delete a specific object by bucket and file name
       operationId: deleteObject
@@ -425,7 +429,7 @@ paths:
   /auth/users:
     post:
       tags:
-        - users
+        - auth
       summary: Create a new user
       operationId: createUser
       parameters:
@@ -440,7 +444,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateUserRequest"
+              $ref: "#/components/schemas/UserRequest"
       responses:
         '201':
           description: User created successfully
@@ -448,7 +452,7 @@ paths:
           description: Invalid request
     get:
       tags:
-        - users
+        - auth
       summary: List all users
       operationId: listUsers
       parameters:
@@ -464,13 +468,11 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UserResponse"
+                $ref: "#/components/schemas/Users"
   /auth/users/{user-id}:
     get:
       tags:
-        - users
+        - auth
       summary: Get a specific user
       description: Retrieve details of a specific user by user ID.
       operationId: getUser
@@ -493,12 +495,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserResponse"
+                $ref: "#/components/schemas/User"
         "404":
           description: User not found
     delete:
       tags:
-        - users
+        - auth
       summary: Delete a specific user
       description: Delete a specific user by user ID.
       operationId: deleteUser
@@ -525,7 +527,7 @@ paths:
   /auth/sso/providers:
     get:
       tags:
-        - sso
+        - auth
       summary: List Identity Providers
       description: Retrieve a list of all Identity Providers configured.
       operationId: listIdentityProviders
@@ -542,8 +544,6 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
                   $ref: "#/components/schemas/IdentityProviders"
         "400":
           description: Invalid request parameters
@@ -551,7 +551,7 @@ paths:
           description: No Identity Providers found
     post:
       tags:
-        - sso
+        - auth
       summary: Add a new Identity Provider
       description: Add a new Identity Provider.
       operationId: addIdentityProvider
@@ -576,7 +576,7 @@ paths:
   /auth/sso/providers/{provider-id}:
     get:
       tags:
-        - sso
+        - auth
       summary: Get a specific Identity Provider
       description: Retrieve details of a specific Identity Provider by its ID.
       operationId: getIdentityProvider
@@ -604,7 +604,7 @@ paths:
           description: Identity Provider not found
     delete:
       tags:
-        - sso
+        - auth
       summary: Delete an Identity Provider
       description: Remove an Identity Provider.
       operationId: deleteIdentityProvider
@@ -747,4 +747,4 @@ components:
     Users:
       type: array
       items:
-        $ref: "#/components/schemas/UserResponse"
+        $ref: "#/components/schemas/User"
