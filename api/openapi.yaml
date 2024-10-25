@@ -329,7 +329,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ObjectContent"
+                $ref: "#/components/schemas/StorageObjectContent"
         "404":
           description: Object not found
     post:
@@ -356,7 +356,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ObjectContent"
+              $ref: "#/components/schemas/StorageObjectContent"
       responses:
         "204":
           description: Object created successfully
@@ -392,7 +392,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ObjectContent"
+              $ref: "#/components/schemas/StorageObjectContent"
       responses:
         "200":
           description: Object updated successfully
@@ -567,7 +567,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/IdentityProvider"
+              $ref: "#/components/schemas/IdentityProviderRequest"
       responses:
         "201":
           description: Identity Provider added successfully
@@ -599,7 +599,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IdentityProviderResponse"
+                $ref: "#/components/schemas/IdentityProvider"
         "404":
           description: Identity Provider not found
     delete:
@@ -661,14 +661,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StorageObject"
-    ObjectContent:
+    StorageObjectContent:
       oneOf:
         - type: string
           description: File content
         - type: string
           format: binary
           description: File content (binary)
-    IdentityProvider:
+    IdentityProviderRequest:
       type: object
       properties:
         providerId:
@@ -692,7 +692,7 @@ components:
         - realm
         - clientId
         - secret
-    IdentityProviderResponse:
+    IdentityProvider:
       type: object
       properties:
         providerId:
@@ -710,7 +710,7 @@ components:
     IdentityProviders:
       type: array
       items:
-        $ref: "#/components/schemas/IdentityProviderResponse"
+        $ref: "#/components/schemas/IdentityProvider"
     UserRequest:
       type: object
       properties:
