@@ -176,6 +176,10 @@ paths:
             type: string
       requestBody:
         description: Update an existent config in the config server
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AsyncAPI"
         required: true
       responses:
         "204":
@@ -200,6 +204,428 @@ paths:
       responses:
         "400":
           description: Invalid ID supplied
+  /storage/buckets:
+    get:
+      tags:
+        - storage
+      summary: List all Buckets
+      operationId: listBuckets
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Buckets"
+        "400":
+          description: Invalid output value
+  /storage/buckets/{bucket-name}:
+    post:
+      tags:
+        - storage
+      summary: Create a bucket
+      description: Create a bucket
+      operationId: createBucket
+      parameters:
+        - name: bucket-name
+          in: path
+          description: Name of the bucket
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Bad Request
+    delete:
+      tags:
+        - storage
+      summary: Delete a bucket
+      description: Delete a bucket by name
+      operationId: deleteBucket
+      parameters:
+        - name: bucket-name
+          in: path
+          description: Name of the bucket
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Successful operation
+        "404":
+          description: Not found
+  /storage/objects:
+    get:
+      tags:
+        - storage
+      summary: List all objects across all buckets
+      description: Retrieve a list of all objects in the storage system, across all buckets
+      operationId: listObjects
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorageObjects"
+        "400":
+          description: Invalid request parameters
+  /storage/objects/{bucket-name}:
+    get:
+      tags:
+        - storage
+      summary: List all objects in a specific bucket
+      description: Retrieve a list of all objects within a specified bucket
+      operationId: listBucketObjects
+      parameters:
+        - name: bucket-name
+          in: path
+          description: Name of the bucket
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorageObject"
+        "400":
+          description: Invalid request parameters
+        "404":
+          description: Bucket not found
+  /storage/objects/{bucket-name}/{file-name}:
+    get:
+      tags:
+        - storage
+      summary: Retrieve an object
+      description: Retrieve a specific object by bucket and file name
+      operationId: getObject
+      parameters:
+        - name: bucket-name
+          in: path
+          description: Name of the bucket
+          required: true
+          schema:
+            type: string
+        - name: file-name
+          in: path
+          description: Name of the file within the bucket
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageObjectContent"
+        "404":
+          description: Object not found
+    post:
+      tags:
+        - storage
+      summary: Create an object
+      description: Upload a specific object in a bucket
+      operationId: createObject
+      parameters:
+        - name: bucket-name
+          in: path
+          description: Name of the bucket
+          required: true
+          schema:
+            type: string
+        - name: file-name
+          in: path
+          description: Name of the file
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorageObjectContent"
+      responses:
+        "204":
+          description: Object created successfully
+        "400":
+          description: Bad Request
+    put:
+      tags:
+        - storage
+      summary: Update an object
+      description: Update an existing object in a specified bucket
+      operationId: updateObject
+      parameters:
+        - name: bucket-name
+          in: path
+          description: Name of the bucket
+          required: true
+          schema:
+            type: string
+        - name: file-name
+          in: path
+          description: Name of the file within the bucket
+          required: true
+          schema:
+            type: string
+        - name: etag
+          in: header
+          description: A hash representing the current content of the object.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorageObjectContent"
+      responses:
+        "200":
+          description: Object updated successfully
+        "400":
+          description: Bad Request
+        "404":
+          description: Object not found
+        "412":
+          description: Precondition Failed
+    delete:
+      tags:
+        - storage
+      summary: Delete an object
+      description: Delete a specific object by bucket and file name
+      operationId: deleteObject
+      parameters:
+        - name: bucket-name
+          in: path
+          description: Name of the bucket
+          required: true
+          schema:
+            type: string
+        - name: file-name
+          in: path
+          description: Name of the file within the bucket
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Object deleted successfully
+        "404":
+          description: Not found
+  /auth/users:
+    post:
+      tags:
+        - auth
+      summary: Create a new user
+      operationId: createUser
+      parameters:
+        - name: realm
+          in: header
+          description: Realm
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Invalid request
+    get:
+      tags:
+        - auth
+      summary: List all users
+      operationId: listUsers
+      parameters:
+        - name: realm
+          in: header
+          description: Realm
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Users"
+  /auth/users/{user-id}:
+    get:
+      tags:
+        - auth
+      summary: Get a specific user
+      description: Retrieve details of a specific user by user ID.
+      operationId: getUser
+      parameters:
+        - name: user-id
+          in: path
+          description: ID of the user to retrieve
+          required: true
+          schema:
+            type: string
+        - name: realm
+          in: header
+          description: Realm
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+    delete:
+      tags:
+        - auth
+      summary: Delete a specific user
+      description: Delete a specific user by user ID.
+      operationId: deleteUser
+      parameters:
+        - name: user-id
+          in: path
+          description: ID of the user to delete
+          required: true
+          schema:
+            type: string
+        - name: realm
+          in: header
+          description: Realm
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: User deleted successfully
+        "400":
+          description: Invalid user ID supplied
+        "404":
+          description: User not found
+  /auth/sso/providers:
+    get:
+      tags:
+        - auth
+      summary: List Identity Providers
+      description: Retrieve a list of all Identity Providers configured.
+      operationId: listIdentityProviders
+      parameters:
+        - name: realm
+          in: header
+          description: Realm in the Identity Providers
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation, returns the list of Identity Providers
+          content:
+            application/json:
+              schema:
+                  $ref: "#/components/schemas/IdentityProviders"
+        "400":
+          description: Invalid request parameters
+        "404":
+          description: No Identity Providers found
+    post:
+      tags:
+        - auth
+      summary: Add a new Identity Provider
+      description: Add a new Identity Provider.
+      operationId: addIdentityProvider
+      parameters:
+        - name: realm
+          in: header
+          description: Realm
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityProviderRequest"
+      responses:
+        "201":
+          description: Identity Provider added successfully
+        "400":
+          description: Invalid request parameters
+  /auth/sso/providers/{provider-id}:
+    get:
+      tags:
+        - auth
+      summary: Get a specific Identity Provider
+      description: Retrieve details of a specific Identity Provider by its ID.
+      operationId: getIdentityProvider
+      parameters:
+        - name: provider-id
+          in: path
+          description: ID of the Identity Provider to retrieve
+          required: true
+          schema:
+            type: string
+        - name: realm
+          in: header
+          description: Realm in the Identity Provider
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityProvider"
+        "404":
+          description: Identity Provider not found
+    delete:
+      tags:
+        - auth
+      summary: Delete an Identity Provider
+      description: Remove an Identity Provider.
+      operationId: deleteIdentityProvider
+      parameters:
+        - name: provider-id
+          in: path
+          description: ID of the Identity Provider to delete
+          required: true
+          schema:
+            type: string
+        - name: realm
+          in: header
+          description: Realm to filter the Identity Provider
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Identity Provider deleted successfully
+        "404":
+          description: Identity Provider not found
 components:
   schemas:
     AsyncAPI:
@@ -209,3 +635,116 @@ components:
       maxItems: 100
       items:
         $ref: "#/components/schemas/AsyncAPI"
+    Bucket:
+      type: string
+    Buckets:
+      type: array
+      items:
+        $ref: "#/components/schemas/Bucket"
+    StorageObject:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the object or directory
+        type:
+          type: string
+          enum: [ file, directory ]
+          description: Indicates whether the object is a file or a directory
+    StorageObjects:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the bucket
+        type:
+          type: array
+          items:
+            $ref: "#/components/schemas/StorageObject"
+    StorageObjectContent:
+      oneOf:
+        - type: string
+          description: File content
+        - type: string
+          format: binary
+          description: File content (binary)
+    IdentityProviderRequest:
+      type: object
+      properties:
+        providerId:
+          type: string
+          description: Identity Provider ID
+        alias:
+          type: string
+          description: Identity Provider Alias
+        realm:
+          type: string
+          description: Realm
+        clientId:
+          type: string
+          description: Client ID for the Identity Provider
+        secret:
+          type: string
+          description: Client Secret for the Identity Provider
+      required:
+        - providerId
+        - alias
+        - realm
+        - clientId
+        - secret
+    IdentityProvider:
+      type: object
+      properties:
+        providerId:
+          type: string
+          description: Identity Provider ID
+        alias:
+          type: string
+          description: Identity Provider Alias
+        realm:
+          type: string
+          description: Realm
+        clientId:
+          type: string
+          description: Client ID for the Identity Provider
+    IdentityProviders:
+      type: array
+      items:
+        $ref: "#/components/schemas/IdentityProvider"
+    UserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - email
+        - firstName
+        - lastName
+        - password
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+    Users:
+      type: array
+      items:
+        $ref: "#/components/schemas/User"
