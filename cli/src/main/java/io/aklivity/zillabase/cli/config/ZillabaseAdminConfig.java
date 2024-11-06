@@ -183,6 +183,43 @@ public final class ZillabaseAdminConfig
                     overrides:
                       :authority: ${{env.SSO_ADMIN_HOST}}:${{env.SSO_ADMIN_PORT}}
                 exit: sso_http_client
+              - when:
+                  - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/storage/*
+                exit: http_filesystem_proxy
+          http_filesystem_proxy:
+              type: http-filesystem
+                  kind: proxy
+                  routes:
+                    - when:
+                        - path: /v1/storage/buckets
+                      exit: east_filesystem_server
+                    - when:
+                        - path: /v1/storage/buckets/{bucket}
+                      exit: east_filesystem_server
+                      with:
+                        directory: ${params.bucket}
+                    - when:
+                        - path: /v1/storage/buckets/{bucket}
+                      exit: east_filesystem_server
+                      with:
+                        directory: ${params.bucket}
+                    - when:
+                        - path: /v1/storage/objects
+                      exit: east_filesystem_server
+                    - when:
+                        - path: /v1/storage/objects/{bucket}
+                      exit: east_filesystem_server
+                      with:
+                        directory: ${params.bucket}
+                    - when:
+                        - path: /v1/storage/objects/{bucket}/{path}
+                      exit: east_filesystem_server
+                      with:
+                        directory: ${params.bucket}
+                        path: ${params.path}
           config_http_client:
             type: http
             kind: client
@@ -213,6 +250,11 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.SSO_ADMIN_HOST}}
               port: ${{env.SSO_ADMIN_PORT}}
+          filesystem_server:
+            type: filesystem
+            kind: server
+            options:
+              location: /var/storage/
         telemetry:
           exporters:
             stdout_logs_exporter:
