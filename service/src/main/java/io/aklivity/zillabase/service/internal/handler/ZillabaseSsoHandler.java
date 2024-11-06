@@ -14,7 +14,6 @@
  */
 package io.aklivity.zillabase.service.internal.handler;
 
-import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 
 import java.net.http.HttpClient;
@@ -22,12 +21,12 @@ import java.net.http.HttpRequest;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseSsoUtil;
+import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUtil;
 
 public class ZillabaseSsoHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
-    private final ZillabaseSsoUtil util;
+    private final ZillabaseAuthUtil util;
     private final String keycloakUrl;
 
     public ZillabaseSsoHandler(
@@ -35,7 +34,7 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseSsoUtil(client, keycloakUrl);
+        this.util = new ZillabaseAuthUtil(client, keycloakUrl);
         this.keycloakUrl = keycloakUrl;
     }
 
@@ -73,19 +72,17 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
 
             if (!badMethod)
             {
-                boolean error = buildResponse(client, exchange, builder.build());
-
-                if (error)
-                {
-                    exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, NO_RESPONSE_BODY);
-                }
+                buildResponse(client, exchange, builder.build());
             }
-
-            exchange.close();
         }
         catch (Exception ex)
         {
+            badGatewayResponse(exchange);
             ex.printStackTrace(System.err);
+        }
+        finally
+        {
+            exchange.close();
         }
     }
 }

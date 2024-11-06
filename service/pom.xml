@@ -33,6 +33,10 @@
       <artifactId>yasson</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.aklivity.k3po</groupId>
       <artifactId>control-junit</artifactId>
       <scope>test</scope>
@@ -140,8 +144,8 @@
           <filter>${*}</filter>
           <images combine.children="append">
             <image>
-              <alias>admin</alias>
-              <name>ghcr.io/aklivity/zillabase/sso:%v</name>
+              <alias>auth</alias>
+              <name>ghcr.io/aklivity/zillabase/auth:%v</name>
               <build>
                 <contextDir>${project.basedir}</contextDir>
                 <tags>

@@ -16,32 +16,38 @@ package io.aklivity.zillabase.service.internal.handler;
 
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpExchange;
 
 import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUtil;
 
-public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
+public class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
 {
-    private static final Pattern PATH_PATTERN = Pattern.compile("/v1/sso/(.*)");
+    private static final Pattern PATH_PATTERN = Pattern.compile("/v1/auth/users/(.*)");
 
     private final HttpClient client;
     private final ZillabaseAuthUtil util;
-    private final Matcher matcher;
     private final String keycloakUrl;
+    private final Matcher matcher;
 
-    public ZillabaseSsoAliasHandler(
+    public ZillabaseAuthUserIdHandler(
         HttpClient client,
         String keycloakUrl)
     {
         this.client = client;
         this.util = new ZillabaseAuthUtil(client, keycloakUrl);
-        this.matcher = PATH_PATTERN.matcher("");
         this.keycloakUrl = keycloakUrl;
+        this.matcher = PATH_PATTERN.matcher("");
     }
 
     @Override
@@ -51,12 +57,11 @@ public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
         String path = exchange.getRequestURI().getPath();
         if (matcher.reset(path).matches())
         {
-            String alias = matcher.group(1);
+            String userId = matcher.group(1);
             String method = exchange.getRequestMethod();
-            boolean badMethod = false;
             HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(keycloakUrl,
-                "/admin/realms/%s/identity-provider/instances/%s".formatted(
-                    exchange.getRequestHeaders().getFirst("Keycloak-Realm"), alias)));
+                "/admin/realms/%s/users/%s".formatted(
+                    exchange.getRequestHeaders().getFirst("Keycloak-Realm"), userId)));
 
             try
             {
@@ -68,21 +73,23 @@ public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
                     case "GET":
                         builder.header("Authorization", "Bearer %s".formatted(token))
                             .GET();
+                        handleExchangeForGetRequest(exchange, builder.build());
+                        break;
+                    case "PUT":
+                        builder.header("Authorization", "Bearer " + token)
+                            .header("Content-Type", "application/json")
+                            .PUT(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes()));
+                        buildResponse(client, exchange, builder.build());
                         break;
                     case "DELETE":
                         builder.header("Authorization", "Bearer %s".formatted(token))
                             .DELETE();
+                        buildResponse(client, exchange, builder.build());
                         break;
                     default:
                         exchange.sendResponseHeaders(HTTP_BAD_METHOD, NO_RESPONSE_BODY);
-                        badMethod = true;
                         break;
                     }
-                }
-
-                if (!badMethod)
-                {
-                    buildResponse(client, exchange, builder.build());
                 }
             }
             catch (Exception ex)
@@ -94,6 +101,32 @@ public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
             {
                 exchange.close();
             }
+        }
+    }
+
+    private void handleExchangeForGetRequest(
+        HttpExchange exchange,
+        HttpRequest request) throws IOException, InterruptedException
+    {
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        String responseBody = response.body();
+        if (response.statusCode() == 200 && responseBody != null && !responseBody.isEmpty())
+        {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode originalJson = objectMapper.readTree(responseBody);
+
+            ObjectNode filteredUser = filterUserInfo(originalJson, objectMapper);
+            byte[] responseBytes = objectMapper.writeValueAsBytes(filteredUser);
+            exchange.sendResponseHeaders(response.statusCode(), responseBytes.length);
+            try (OutputStream os = exchange.getResponseBody())
+            {
+                os.write(responseBytes);
+            }
+        }
+        else
+        {
+            exchange.sendResponseHeaders(response.statusCode(), 0);
         }
     }
 }

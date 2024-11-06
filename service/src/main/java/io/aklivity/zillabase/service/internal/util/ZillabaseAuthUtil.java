@@ -24,7 +24,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 
-public class ZillabaseSsoUtil
+public class ZillabaseAuthUtil
 {
     private static final String DEFAULT_ADMIN_CREDENTIAL = "admin";
     private static final String CONNECT_TOKEN_PATH = "/realms/master/protocol/openid-connect/token";
@@ -32,7 +32,7 @@ public class ZillabaseSsoUtil
     private final HttpClient client;
     private final URI baseUrl;
 
-    public ZillabaseSsoUtil(
+    public ZillabaseAuthUtil(
         HttpClient client,
         String keycloakUrl)
     {

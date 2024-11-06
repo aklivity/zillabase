@@ -18,9 +18,9 @@ import io.aklivity.zillabase.cli.internal.Zillabase;
 
 public final class ZillabaseSsoConfig
 {
-    private static final String DEFAULT_SSO_TAG = Zillabase.version();
-    public static final int DEFAULT_SSO_PORT = 7185;
-    public static final String DEFAULT_SSO_HOST = "sso.zillabase.dev";
+    private static final String DEFAULT_AUTH_TAG = Zillabase.version();
+    public static final int DEFAULT_AUTH_PORT = 7185;
+    public static final String DEFAULT_AUTH_HOST = "auth.zillabase.dev";
 
-    public String tag = DEFAULT_SSO_TAG;
+    public String tag = DEFAULT_AUTH_TAG;
 }

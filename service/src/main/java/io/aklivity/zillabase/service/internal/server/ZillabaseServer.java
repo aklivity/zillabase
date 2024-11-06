@@ -20,6 +20,8 @@ import java.net.http.HttpClient;
 
 import com.sun.net.httpserver.HttpServer;
 
+import io.aklivity.zillabase.service.internal.handler.ZillabaseAuthUserIdHandler;
+import io.aklivity.zillabase.service.internal.handler.ZillabaseAuthUsersHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseSsoAliasHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseSsoHandler;
 
@@ -62,6 +64,8 @@ public class ZillabaseServer implements Runnable
     {
         server.createContext("/v1/sso", new ZillabaseSsoHandler(client, keycloakUrl));
         server.createContext("/v1/sso/", new ZillabaseSsoAliasHandler(client, keycloakUrl));
+        server.createContext("/v1/auth/users", new ZillabaseAuthUsersHandler(client, keycloakUrl));
+        server.createContext("/v1/auth/users/", new ZillabaseAuthUserIdHandler(client, keycloakUrl));
 
         server.start();
 
