@@ -16,7 +16,7 @@ package io.aklivity.zillabase.cli.config;
 
 import io.aklivity.zillabase.cli.internal.Zillabase;
 
-public final class ZillabaseSsoConfig
+public final class ZillabaseAuthConfig
 {
     private static final String DEFAULT_AUTH_TAG = Zillabase.version();
     public static final int DEFAULT_AUTH_PORT = 7185;
