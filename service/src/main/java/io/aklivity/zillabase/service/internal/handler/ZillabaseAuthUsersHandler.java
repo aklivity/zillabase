@@ -25,26 +25,27 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
-import jakarta.json.JsonWriter;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthHelper;
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUserInfo;
+import io.aklivity.zillabase.service.internal.common.ZillabaseAuthHelper;
+import io.aklivity.zillabase.service.internal.common.ZillabaseAuthUserInfo;
+import io.aklivity.zillabase.service.internal.common.ZillabaseAuthUserRequest;
 
 public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
-    private final ZillabaseAuthHelper util;
+    private final ZillabaseAuthHelper helper;
     private final String keycloakUrl;
     private final Jsonb jsonb;
 
@@ -53,7 +54,7 @@ public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseAuthHelper(client, keycloakUrl);
+        this.helper = new ZillabaseAuthHelper(client, keycloakUrl);
         this.keycloakUrl = keycloakUrl;
         this.jsonb = JsonbBuilder.newBuilder().build();
     }
@@ -68,7 +69,7 @@ public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
                 exchange.getRequestHeaders().getFirst("Keycloak-Realm"))));
         try
         {
-            String token = util.fetchAccessToken();
+            String token = helper.fetchAccessToken();
             if (token != null)
             {
                 switch (method)
@@ -137,25 +138,25 @@ public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        try (JsonReader reader = Json.createReader(requestBody);
-             JsonWriter writer = Json.createWriter(outputStream))
+        try
         {
-            JsonObject user = reader.readObject();
+            ZillabaseAuthUserRequest user = jsonb.fromJson(requestBody, ZillabaseAuthUserRequest.class);
 
-            JsonObject request = Json.createObjectBuilder()
-                .add("username", user.getString("username"))
-                .add("email", user.getString("email"))
-                .add("firstName", user.getString("firstName"))
-                .add("lastName", user.getString("lastName"))
-                .add("enabled", true)
-                .add("credentials", Json.createArrayBuilder()
-                    .add(Json.createObjectBuilder()
-                        .add("type", "password")
-                        .add("value", user.getString("password"))
-                        .add("temporary", false)))
-                .build();
+            Map<String, Object> request = new HashMap<>();
+            request.put("username", user.username);
+            request.put("email", user.email);
+            request.put("firstName", user.firstName);
+            request.put("lastName", user.lastName);
+            request.put("enabled", true);
 
-            writer.writeObject(request);
+            Map<String, Object> credentials = new HashMap<>();
+            credentials.put("type", "password");
+            credentials.put("value", user.password);
+            credentials.put("temporary", false);
+
+            request.put("credentials", List.of(credentials));
+
+            outputStream.write(jsonb.toJson(request).getBytes());
         }
         catch (Exception ex)
         {

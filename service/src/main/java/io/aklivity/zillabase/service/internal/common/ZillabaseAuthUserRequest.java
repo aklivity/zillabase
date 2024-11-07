@@ -12,13 +12,13 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.internal.util;
+package io.aklivity.zillabase.service.internal.common;
 
-public class ZillabaseAuthUserInfo
+public class ZillabaseAuthUserRequest
 {
-    public String id;
     public String username;
     public String email;
     public String firstName;
     public String lastName;
+    public String password;
 }

@@ -29,15 +29,15 @@ import jakarta.json.bind.JsonbBuilder;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthHelper;
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUserInfo;
+import io.aklivity.zillabase.service.internal.common.ZillabaseAuthHelper;
+import io.aklivity.zillabase.service.internal.common.ZillabaseAuthUserInfo;
 
 public class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
 {
     private static final Pattern PATH_PATTERN = Pattern.compile("/v1/auth/users/(.*)");
 
     private final HttpClient client;
-    private final ZillabaseAuthHelper util;
+    private final ZillabaseAuthHelper helper;
     private final String keycloakUrl;
     private final Matcher matcher;
     private final Jsonb jsonb;
@@ -47,7 +47,7 @@ public class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseAuthHelper(client, keycloakUrl);
+        this.helper = new ZillabaseAuthHelper(client, keycloakUrl);
         this.keycloakUrl = keycloakUrl;
         this.matcher = PATH_PATTERN.matcher("");
         this.jsonb = JsonbBuilder.newBuilder().build();
@@ -68,7 +68,7 @@ public class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
 
             try
             {
-                String token = util.fetchAccessToken();
+                String token = helper.fetchAccessToken();
                 if (token != null)
                 {
                     switch (method)
