@@ -24,30 +24,33 @@ import java.net.http.HttpResponse;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUtil;
+import io.aklivity.zillabase.service.internal.util.ZillabaseAuthHelper;
+import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUserInfo;
 
 public class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
 {
     private static final Pattern PATH_PATTERN = Pattern.compile("/v1/auth/users/(.*)");
 
     private final HttpClient client;
-    private final ZillabaseAuthUtil util;
+    private final ZillabaseAuthHelper util;
     private final String keycloakUrl;
     private final Matcher matcher;
+    private final Jsonb jsonb;
 
     public ZillabaseAuthUserIdHandler(
         HttpClient client,
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseAuthUtil(client, keycloakUrl);
+        this.util = new ZillabaseAuthHelper(client, keycloakUrl);
         this.keycloakUrl = keycloakUrl;
         this.matcher = PATH_PATTERN.matcher("");
+        this.jsonb = JsonbBuilder.newBuilder().build();
     }
 
     @Override
@@ -113,11 +116,9 @@ public class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
         String responseBody = response.body();
         if (response.statusCode() == 200 && responseBody != null && !responseBody.isEmpty())
         {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode originalJson = objectMapper.readTree(responseBody);
+            ZillabaseAuthUserInfo user = jsonb.fromJson(responseBody, ZillabaseAuthUserInfo.class);
 
-            ObjectNode filteredUser = filterUserInfo(originalJson, objectMapper);
-            byte[] responseBytes = objectMapper.writeValueAsBytes(filteredUser);
+            byte[] responseBytes = jsonb.toJson(user).getBytes();
             exchange.sendResponseHeaders(response.statusCode(), responseBytes.length);
             try (OutputStream os = exchange.getResponseBody())
             {

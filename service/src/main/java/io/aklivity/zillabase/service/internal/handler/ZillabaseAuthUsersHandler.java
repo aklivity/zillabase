@@ -20,33 +20,42 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonWriter;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUtil;
+import io.aklivity.zillabase.service.internal.util.ZillabaseAuthHelper;
+import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUserInfo;
 
 public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
-    private final ZillabaseAuthUtil util;
+    private final ZillabaseAuthHelper util;
     private final String keycloakUrl;
+    private final Jsonb jsonb;
 
     public ZillabaseAuthUsersHandler(
         HttpClient client,
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseAuthUtil(client, keycloakUrl);
+        this.util = new ZillabaseAuthHelper(client, keycloakUrl);
         this.keycloakUrl = keycloakUrl;
+        this.jsonb = JsonbBuilder.newBuilder().build();
     }
 
     @Override
@@ -101,20 +110,20 @@ public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
         String responseBody = response.body();
         if (response.statusCode() == 200 && responseBody != null && !responseBody.isEmpty())
         {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode users = objectMapper.readTree(responseBody);
-            ArrayNode filteredUsers = objectMapper.createArrayNode();
-
-            for (JsonNode userNode : users)
+            try (JsonReader jsonReader = Json.createReader(new StringReader(responseBody)))
             {
-                filteredUsers.add(filterUserInfo(userNode, objectMapper));
-            }
-
-            byte[] responseBytes = objectMapper.writeValueAsBytes(filteredUsers);
-            exchange.sendResponseHeaders(response.statusCode(), responseBytes.length);
-            try (OutputStream os = exchange.getResponseBody())
-            {
-                os.write(responseBytes);
+                List<ZillabaseAuthUserInfo> users = new ArrayList<>();
+                JsonArray usersList = jsonReader.readArray();
+                for (JsonValue user : usersList)
+                {
+                    users.add(jsonb.fromJson(user.toString(), ZillabaseAuthUserInfo.class));
+                }
+                byte[] responseBytes = jsonb.toJson(users).getBytes();
+                exchange.sendResponseHeaders(response.statusCode(), responseBytes.length);
+                try (OutputStream os = exchange.getResponseBody())
+                {
+                    os.write(responseBytes);
+                }
             }
         }
         else
@@ -126,30 +135,29 @@ public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
     private byte[] transformRequestBody(
         InputStream requestBody)
     {
-        ObjectMapper mapper = new ObjectMapper();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        try
+        try (JsonReader reader = Json.createReader(requestBody);
+             JsonWriter writer = Json.createWriter(outputStream))
         {
-            Map<String, Object> userRequestMap = mapper.readValue(requestBody, Map.class);
+            JsonObject user = reader.readObject();
 
-            Map<String, Object> requestBodyMap = new HashMap<>();
-            requestBodyMap.put("username", userRequestMap.get("username"));
-            requestBodyMap.put("email", userRequestMap.get("email"));
-            requestBodyMap.put("firstName", userRequestMap.get("firstName"));
-            requestBodyMap.put("lastName", userRequestMap.get("lastName"));
-            requestBodyMap.put("enabled", true);
+            JsonObject request = Json.createObjectBuilder()
+                .add("username", user.getString("username"))
+                .add("email", user.getString("email"))
+                .add("firstName", user.getString("firstName"))
+                .add("lastName", user.getString("lastName"))
+                .add("enabled", true)
+                .add("credentials", Json.createArrayBuilder()
+                    .add(Json.createObjectBuilder()
+                        .add("type", "password")
+                        .add("value", user.getString("password"))
+                        .add("temporary", false)))
+                .build();
 
-            Map<String, Object> credentials = new HashMap<>();
-            credentials.put("type", "password");
-            credentials.put("value", userRequestMap.get("password"));
-            credentials.put("temporary", false);
-
-            requestBodyMap.put("credentials", List.of(credentials));
-
-            mapper.writeValue(outputStream, requestBodyMap);
+            writer.writeObject(request);
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             ex.printStackTrace(System.err);
         }

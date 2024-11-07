@@ -23,14 +23,14 @@ import java.util.regex.Pattern;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUtil;
+import io.aklivity.zillabase.service.internal.util.ZillabaseAuthHelper;
 
 public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
 {
     private static final Pattern PATH_PATTERN = Pattern.compile("/v1/sso/(.*)");
 
     private final HttpClient client;
-    private final ZillabaseAuthUtil util;
+    private final ZillabaseAuthHelper util;
     private final Matcher matcher;
     private final String keycloakUrl;
 
@@ -39,7 +39,7 @@ public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseAuthUtil(client, keycloakUrl);
+        this.util = new ZillabaseAuthHelper(client, keycloakUrl);
         this.matcher = PATH_PATTERN.matcher("");
         this.keycloakUrl = keycloakUrl;
     }

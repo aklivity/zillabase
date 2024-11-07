@@ -22,11 +22,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Optional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -70,29 +66,5 @@ public abstract class ZillabaseServerHandler implements HttpHandler
         {
             ex.printStackTrace(System.err);
         }
-    }
-
-    protected ObjectNode filterUserInfo(
-        JsonNode userNode,
-        ObjectMapper objectMapper)
-    {
-        ObjectNode filteredUser = objectMapper.createObjectNode();
-
-        filteredUser.put("id", getValue(userNode, "id"));
-        filteredUser.put("username", getValue(userNode, "username"));
-        filteredUser.put("email", getValue(userNode, "email"));
-        filteredUser.put("firstName", getValue(userNode, "firstName"));
-        filteredUser.put("lastName", getValue(userNode, "lastName"));
-        return filteredUser;
-    }
-
-    private String getValue(
-        JsonNode node,
-        String fieldName)
-    {
-        return Optional.ofNullable(node)
-            .map(n -> n.get(fieldName))
-            .map(JsonNode::asText)
-            .orElse(null);
     }
 }

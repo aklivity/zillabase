@@ -21,12 +21,12 @@ import java.net.http.HttpRequest;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseAuthUtil;
+import io.aklivity.zillabase.service.internal.util.ZillabaseAuthHelper;
 
 public class ZillabaseSsoHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
-    private final ZillabaseAuthUtil util;
+    private final ZillabaseAuthHelper util;
     private final String keycloakUrl;
 
     public ZillabaseSsoHandler(
@@ -34,7 +34,7 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
         String keycloakUrl)
     {
         this.client = client;
-        this.util = new ZillabaseAuthUtil(client, keycloakUrl);
+        this.util = new ZillabaseAuthHelper(client, keycloakUrl);
         this.keycloakUrl = keycloakUrl;
     }
 
