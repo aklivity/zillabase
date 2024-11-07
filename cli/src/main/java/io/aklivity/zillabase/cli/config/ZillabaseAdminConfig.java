@@ -185,8 +185,6 @@ public final class ZillabaseAdminConfig
                 exit: sso_http_client
               - when:
                   - headers:
-                      :scheme: http
-                      :authority: localhost:7184
                       :path: /v1/storage/*
                 exit: http_filesystem_proxy
           http_filesystem_proxy:
@@ -194,28 +192,26 @@ public final class ZillabaseAdminConfig
                   kind: proxy
                   routes:
                     - when:
-                        - path: /v1/storage/buckets
-                      exit: east_filesystem_server
-                    - when:
-                        - path: /v1/storage/buckets/{bucket}
-                      exit: east_filesystem_server
-                      with:
-                        directory: ${params.bucket}
-                    - when:
-                        - path: /v1/storage/buckets/{bucket}
+                        - method: GET
+                          path: /v1/storage/buckets
+                        - method: POST
+                          path: /v1/storage/buckets/{bucket}
+                        - method: DELETE
+                          path: /v1/storage/buckets/{bucket}
                       exit: east_filesystem_server
                       with:
                         directory: ${params.bucket}
                     - when:
-                        - path: /v1/storage/objects
-                      exit: east_filesystem_server
-                    - when:
-                        - path: /v1/storage/objects/{bucket}
-                      exit: east_filesystem_server
-                      with:
-                        directory: ${params.bucket}
-                    - when:
-                        - path: /v1/storage/objects/{bucket}/{path}
+                        - method: GET
+                          path: /v1/storage/objects/{bucket}
+                        - method: GET
+                          path: /v1/storage/objects/{bucket}/{path}
+                        - method: POST
+                          path: /v1/storage/objects/{bucket}/{path}
+                        - method: PUT
+                          path: /v1/storage/objects/{bucket}/{path}
+                        - method: DELETE
+                          path: /v1/storage/objects/{bucket}/{path}
                       exit: east_filesystem_server
                       with:
                         directory: ${params.bucket}
