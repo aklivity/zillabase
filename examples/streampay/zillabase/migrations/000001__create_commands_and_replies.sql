@@ -21,7 +21,7 @@ CREATE ZSTREAM streampay_commands (
     notes VARCHAR
 ) WITH (
     reply_to = 'streampay_replies',
-    FUNCTION = compute_status_and_correlation_id,
-    timestamp = timestamp,
-    identity = owner_id
+    function = compute_status_and_correlation_id,
+    timestamp = 'timestamp',
+    identity = 'owner_id'
 );
