@@ -1,10 +1,5 @@
 -- create_balances
 
-CREATE STREAM streampay_balance_histories(
-    balance DOUBLE PRECISION,
-    zilla_timestamp TIMESTAMP
-);
-
 CREATE VIEW user_transactions AS
   SELECT
       encode(zilla_identity, 'escape') AS user_id,
@@ -31,7 +26,7 @@ CREATE VIEW all_user_transactions AS
   FROM
       user_transactions;
 
-CREATE MATERIALIZED VIEW streampay_balances AS
+CREATE ZVIEW streampay_balances AS
   SELECT
       user_id,
       SUM(net_amount) AS balance
