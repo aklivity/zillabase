@@ -25,9 +25,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -38,11 +36,12 @@ import jakarta.json.bind.JsonbBuilder;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.common.ZillabaseAuthHelper;
-import io.aklivity.zillabase.service.internal.common.ZillabaseAuthUserInfo;
-import io.aklivity.zillabase.service.internal.common.ZillabaseAuthUserRequest;
+import io.aklivity.zillabase.service.internal.helper.ZillabaseAuthHelper;
+import io.aklivity.zillabase.service.internal.model.ZillabaseAuthUserInfo;
+import io.aklivity.zillabase.service.internal.model.ZillabaseAuthUserRequest;
+import io.aklivity.zillabase.service.internal.model.ZillabaseAuthUserRequestView;
 
-public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
+public final class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
     private final ZillabaseAuthHelper helper;
@@ -142,19 +141,7 @@ public class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
         {
             ZillabaseAuthUserRequest user = jsonb.fromJson(requestBody, ZillabaseAuthUserRequest.class);
 
-            Map<String, Object> request = new HashMap<>();
-            request.put("username", user.username);
-            request.put("email", user.email);
-            request.put("firstName", user.firstName);
-            request.put("lastName", user.lastName);
-            request.put("enabled", true);
-
-            Map<String, Object> credentials = new HashMap<>();
-            credentials.put("type", "password");
-            credentials.put("value", user.password);
-            credentials.put("temporary", false);
-
-            request.put("credentials", List.of(credentials));
+            ZillabaseAuthUserRequestView request = ZillabaseAuthUserRequestView.of(user);
 
             outputStream.write(jsonb.toJson(request).getBytes());
         }

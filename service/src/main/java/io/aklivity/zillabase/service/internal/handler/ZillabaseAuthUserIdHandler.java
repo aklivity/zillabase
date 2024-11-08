@@ -29,10 +29,10 @@ import jakarta.json.bind.JsonbBuilder;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.common.ZillabaseAuthHelper;
-import io.aklivity.zillabase.service.internal.common.ZillabaseAuthUserInfo;
+import io.aklivity.zillabase.service.internal.helper.ZillabaseAuthHelper;
+import io.aklivity.zillabase.service.internal.model.ZillabaseAuthUserInfo;
 
-public class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
+public final class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
 {
     private static final Pattern PATH_PATTERN = Pattern.compile("/v1/auth/users/(.*)");
 

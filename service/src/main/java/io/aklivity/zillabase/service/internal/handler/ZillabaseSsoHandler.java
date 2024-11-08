@@ -21,7 +21,7 @@ import java.net.http.HttpRequest;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.common.ZillabaseAuthHelper;
+import io.aklivity.zillabase.service.internal.helper.ZillabaseAuthHelper;
 
 public class ZillabaseSsoHandler extends ZillabaseServerHandler
 {
