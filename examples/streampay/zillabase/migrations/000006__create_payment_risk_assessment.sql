@@ -8,8 +8,7 @@ CREATE ZMVIEW streampay_payment_risk_assessment AS
   SELECT
       ar.id,
       ar.to_user_id_identity,
-      (ar.fraud).summary AS summary,
-      (ar.fraud).risk AS risk
+      (ar.fraud).*
   FROM (
     SELECT
       *,

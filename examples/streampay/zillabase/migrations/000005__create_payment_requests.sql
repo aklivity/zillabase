@@ -8,7 +8,7 @@ CREATE VIEW request_payments AS
       END AS id,
       encode(sc.zilla_identity, 'escape') AS from_user_id,
       u_from.username AS from_username,
-      sc.user_id AS to_user_id_identity,
+      sc.user_id AS to_user_id,
       u_to.username AS to_username,
       sc.amount,
       sc.notes,
@@ -40,7 +40,7 @@ CREATE ZMVIEW streampay_payment_requests AS
       rp.id,
       rp.from_user_id,
       rp.from_username,
-      rp.to_user_id_identity,
+      rp.to_user_id,
       rp.to_username,
       rp.amount,
       rp.notes,
@@ -49,3 +49,5 @@ CREATE ZMVIEW streampay_payment_requests AS
       request_payments rp
   LEFT JOIN
       status_updates su ON su.id = rp.id;
+
+COMMENT ON COLUMN streampay_payment_requests.to_user_id IS 'identity';
