@@ -1,6 +1,6 @@
 -- create_activities
 
-CREATE ZVIEW streampay_activities AS
+CREATE ZMVIEW streampay_activities AS
   SELECT
       generate_unique_id()::varchar AS id,
       'PaymentSent' AS eventName,

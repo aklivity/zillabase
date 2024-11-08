@@ -35,7 +35,7 @@ CREATE VIEW status_updates AS
       sc.type IN ('SendPayment', 'RejectRequest')
     AND (sc.request_id IS NOT NULL AND sc.request_id <> '');
 
-CREATE ZVIEW streampay_payment_requests AS
+CREATE ZMVIEW streampay_payment_requests AS
   SELECT
       rp.id,
       rp.from_user_id,

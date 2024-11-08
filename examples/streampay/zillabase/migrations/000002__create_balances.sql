@@ -26,7 +26,7 @@ CREATE VIEW all_user_transactions AS
   FROM
       user_transactions;
 
-CREATE ZVIEW streampay_balances AS
+CREATE ZMVIEW streampay_balances AS
   SELECT
       user_id,
       SUM(net_amount) AS balance
