@@ -17,6 +17,7 @@ package io.aklivity.zillabase.service.internal.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
+import java.util.Optional;
 
 import com.sun.net.httpserver.HttpServer;
 
@@ -27,29 +28,33 @@ import io.aklivity.zillabase.service.internal.handler.ZillabaseSsoHandler;
 
 public class ZillabaseServer implements Runnable
 {
-    private static final String ADMIN_PORT = "ADMIN_PORT";
-    private static final int DEFAULT_ADMIN_PORT = 7185;
+    private static final String AUTH_SERVER_PORT = "AUTH_SERVER_PORT";
+    private static final int DEFAULT_AUTH_PORT = 7185;
     private static final String DEFAULT_KEYCLOAK_URL = "http://keycloak.zillabase.dev:8180";
     private static final String KEYCLOAK_URL = "KEYCLOAK_URL";
+    private static final String KEYCLOAK_REALM = "KEYCLOAK_REALM";
+    private static final String DEFAULT_REALM = "zillabase";
 
     private final HttpServer server;
     private final HttpClient client;
     private final int port;
     private final boolean debug;
-    private final String keycloakUrl;
+    private final String url;
+    private final String realm;
 
     public ZillabaseServer()
     {
         String debug = System.getenv("DEBUG");
         this.debug = debug != null && "true".equals(debug);
 
-        String keycloakUrl = System.getenv(KEYCLOAK_URL);
-        this.keycloakUrl = keycloakUrl != null ? keycloakUrl : DEFAULT_KEYCLOAK_URL;
+        this.url = Optional.ofNullable(System.getenv(KEYCLOAK_URL)).orElse(DEFAULT_KEYCLOAK_URL);
+        this.realm = Optional.ofNullable(System.getenv(KEYCLOAK_REALM)).orElse(DEFAULT_REALM);
+        this.port = Optional.ofNullable(System.getenv(AUTH_SERVER_PORT))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_AUTH_PORT);
 
         try
         {
-            String adminPort = System.getenv(ADMIN_PORT);
-            this.port = adminPort != null ? Integer.parseInt(adminPort) : DEFAULT_ADMIN_PORT;
             this.server = HttpServer.create(new InetSocketAddress(port), 0);
             this.client = HttpClient.newHttpClient();
         }
@@ -62,10 +67,10 @@ public class ZillabaseServer implements Runnable
     @Override
     public void run()
     {
-        server.createContext("/v1/sso", new ZillabaseSsoHandler(client, keycloakUrl));
-        server.createContext("/v1/sso/", new ZillabaseSsoAliasHandler(client, keycloakUrl));
-        server.createContext("/v1/auth/users", new ZillabaseAuthUsersHandler(client, keycloakUrl));
-        server.createContext("/v1/auth/users/", new ZillabaseAuthUserIdHandler(client, keycloakUrl));
+        server.createContext("/v1/sso", new ZillabaseSsoHandler(client, url, realm));
+        server.createContext("/v1/sso/", new ZillabaseSsoAliasHandler(client, url, realm));
+        server.createContext("/v1/auth/users", new ZillabaseAuthUsersHandler(client, url, realm));
+        server.createContext("/v1/auth/users/", new ZillabaseAuthUserIdHandler(client, url, realm));
 
         server.start();
 
@@ -75,9 +80,10 @@ public class ZillabaseServer implements Runnable
         {
             System.out.format("""
                 environment:
-                  ADMIN_PORT=%d
+                  AUTH_SERVER_PORT=%d
                   KEYCLOAK_URL=%s
-                """, port, keycloakUrl);
+                  KEYCLOAK_REALM=%s
+                """, port, url, realm);
         }
 
     }

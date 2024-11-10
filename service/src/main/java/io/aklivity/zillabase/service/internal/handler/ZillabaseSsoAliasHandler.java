@@ -32,16 +32,19 @@ public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
     private final HttpClient client;
     private final ZillabaseAuthHelper helper;
     private final Matcher matcher;
-    private final String keycloakUrl;
+    private final String url;
+    private final String realm;
 
     public ZillabaseSsoAliasHandler(
         HttpClient client,
-        String keycloakUrl)
+        String url,
+        String realm)
     {
         this.client = client;
-        this.helper = new ZillabaseAuthHelper(client, keycloakUrl);
+        this.helper = new ZillabaseAuthHelper(client, url);
         this.matcher = PATH_PATTERN.matcher("");
-        this.keycloakUrl = keycloakUrl;
+        this.url = url;
+        this.realm = realm;
     }
 
     @Override
@@ -54,9 +57,8 @@ public class ZillabaseSsoAliasHandler extends ZillabaseServerHandler
             String alias = matcher.group(1);
             String method = exchange.getRequestMethod();
             boolean badMethod = false;
-            HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(keycloakUrl,
-                "/admin/realms/%s/identity-provider/instances/%s".formatted(
-                    exchange.getRequestHeaders().getFirst("Keycloak-Realm"), alias)));
+            HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(url,
+                "/admin/realms/%s/identity-provider/instances/%s".formatted(realm, alias)));
 
             try
             {

@@ -67,7 +67,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <environmentVariables>
-            <ADMIN_PORT>7184</ADMIN_PORT>
+            <AUTH_SERVER_PORT>7184</AUTH_SERVER_PORT>
             <DEBUG>true</DEBUG>
             <KEYCLOAK_URL>http://localhost:8180</KEYCLOAK_URL>
           </environmentVariables>

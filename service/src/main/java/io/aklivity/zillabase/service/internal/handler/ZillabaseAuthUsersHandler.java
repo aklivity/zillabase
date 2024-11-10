@@ -45,17 +45,20 @@ public final class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
     private final ZillabaseAuthHelper helper;
-    private final String keycloakUrl;
+    private final String url;
     private final Jsonb jsonb;
+    private final String realm;
 
     public ZillabaseAuthUsersHandler(
         HttpClient client,
-        String keycloakUrl)
+        String url,
+        String realm)
     {
         this.client = client;
-        this.helper = new ZillabaseAuthHelper(client, keycloakUrl);
-        this.keycloakUrl = keycloakUrl;
+        this.helper = new ZillabaseAuthHelper(client, url);
+        this.url = url;
         this.jsonb = JsonbBuilder.newBuilder().build();
+        this.realm = realm;
     }
 
     @Override
@@ -63,9 +66,8 @@ public final class ZillabaseAuthUsersHandler extends ZillabaseServerHandler
         HttpExchange exchange)
     {
         String method = exchange.getRequestMethod();
-        HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(keycloakUrl,
-            "/admin/realms/%s/users".formatted(
-                exchange.getRequestHeaders().getFirst("Keycloak-Realm"))));
+        HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(url,
+            "/admin/realms/%s/users".formatted(realm)));
         try
         {
             String token = helper.fetchAccessToken();

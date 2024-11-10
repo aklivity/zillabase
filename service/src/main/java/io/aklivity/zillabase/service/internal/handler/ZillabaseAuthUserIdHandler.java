@@ -38,19 +38,22 @@ public final class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
 
     private final HttpClient client;
     private final ZillabaseAuthHelper helper;
-    private final String keycloakUrl;
+    private final String url;
     private final Matcher matcher;
     private final Jsonb jsonb;
+    private final String realm;
 
     public ZillabaseAuthUserIdHandler(
         HttpClient client,
-        String keycloakUrl)
+        String url,
+        String realm)
     {
         this.client = client;
-        this.helper = new ZillabaseAuthHelper(client, keycloakUrl);
-        this.keycloakUrl = keycloakUrl;
+        this.helper = new ZillabaseAuthHelper(client, url);
+        this.url = url;
         this.matcher = PATH_PATTERN.matcher("");
         this.jsonb = JsonbBuilder.newBuilder().build();
+        this.realm = realm;
     }
 
     @Override
@@ -62,9 +65,8 @@ public final class ZillabaseAuthUserIdHandler extends ZillabaseServerHandler
         {
             String userId = matcher.group(1);
             String method = exchange.getRequestMethod();
-            HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(keycloakUrl,
-                "/admin/realms/%s/users/%s".formatted(
-                    exchange.getRequestHeaders().getFirst("Keycloak-Realm"), userId)));
+            HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(url,
+                "/admin/realms/%s/users/%s".formatted(realm, userId)));
 
             try
             {

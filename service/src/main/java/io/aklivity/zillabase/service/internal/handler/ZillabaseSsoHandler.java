@@ -27,15 +27,18 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
     private final ZillabaseAuthHelper helper;
-    private final String keycloakUrl;
+    private final String url;
+    private final String realm;
 
     public ZillabaseSsoHandler(
         HttpClient client,
-        String keycloakUrl)
+        String url,
+        String realm)
     {
         this.client = client;
-        this.helper = new ZillabaseAuthHelper(client, keycloakUrl);
-        this.keycloakUrl = keycloakUrl;
+        this.helper = new ZillabaseAuthHelper(client, url);
+        this.url = url;
+        this.realm = realm;
     }
 
     @Override
@@ -43,9 +46,8 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
         HttpExchange exchange)
     {
         String method = exchange.getRequestMethod();
-        HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(keycloakUrl,
-            "/admin/realms/%s/identity-provider/instances".formatted(
-                exchange.getRequestHeaders().getFirst("Keycloak-Realm"))));
+        HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(url,
+            "/admin/realms/%s/identity-provider/instances".formatted(realm)));
         boolean badMethod = false;
         try
         {

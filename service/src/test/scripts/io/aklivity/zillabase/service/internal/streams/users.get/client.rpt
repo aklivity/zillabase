@@ -18,7 +18,6 @@ connected
 
 write http:method "GET"
 write http:version "HTTP/1.1"
-write http:header "Keycloak-Realm" "zillabase"
 write http:content-length
 
 write close

@@ -2235,7 +2235,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             List<String> envVars = Arrays.asList(
-                "ADMIN_PORT=%d".formatted(DEFAULT_AUTH_PORT),
+                "AUTH_SERVER_PORT=%d".formatted(DEFAULT_AUTH_PORT),
+                "KEYCLOAK_REALM=%s".formatted(config.keycloak.realm),
                 "DEBUG=%s".formatted(true));
 
             return client
