@@ -171,8 +171,8 @@ public final class ZillabaseAdminConfig
                 with:
                   headers:
                     overrides:
-                      :authority: ${{env.SSO_ADMIN_HOST}}:${{env.SSO_ADMIN_PORT}}
-                exit: sso_http_client
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
               - when:
                   - headers:
                       :scheme: http
@@ -181,8 +181,28 @@ public final class ZillabaseAdminConfig
                 with:
                   headers:
                     overrides:
-                      :authority: ${{env.SSO_ADMIN_HOST}}:${{env.SSO_ADMIN_PORT}}
-                exit: sso_http_client
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
+              - when:
+                  - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/auth/users
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
+              - when:
+                  - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/auth/users/*
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
           config_http_client:
             type: http
             kind: client
@@ -203,16 +223,16 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.APICURIO_HOST}}
               port: ${{env.APICURIO_PORT}}
-          sso_http_client:
+          auth_http_client:
             type: http
             kind: client
-            exit: sso_tcp_client
-          sso_tcp_client:
+            exit: auth_tcp_client
+          auth_tcp_client:
             type: tcp
             kind: client
             options:
-              host: ${{env.SSO_ADMIN_HOST}}
-              port: ${{env.SSO_ADMIN_PORT}}
+              host: ${{env.AUTH_ADMIN_HOST}}
+              port: ${{env.AUTH_ADMIN_PORT}}
         telemetry:
           exporters:
             stdout_logs_exporter:

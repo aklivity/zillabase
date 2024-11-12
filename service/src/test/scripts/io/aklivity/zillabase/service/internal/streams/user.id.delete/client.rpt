@@ -13,25 +13,16 @@
 # specific language governing permissions and limitations under the License.
 #
 
-connect "http://localhost:7184/v1/sso"
+connect "http://localhost:7184/v1/auth/users/66844793-5a2e-4cb0-8c0e-082d06cf186f"
 connected
 
-write http:method "POST"
+write http:method "DELETE"
 write http:version "HTTP/1.1"
 write http:content-length
-
-write '{'
-        '"alias": "github",'
-        '"providerId": "github",'
-        '"enabled": true,'
-        '"config": {'
-          '"clientId": "streampay"'
-        '}'
-      '}'
 
 write close
 
 read http:version "HTTP/1.1"
-read http:status "201" "Created"
+read http:status "204" "No Content"
 
 read closed

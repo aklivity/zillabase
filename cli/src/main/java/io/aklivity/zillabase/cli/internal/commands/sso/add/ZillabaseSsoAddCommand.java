@@ -97,7 +97,6 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
     {
         HttpRequest httpRequest = HttpRequest
             .newBuilder(ADMIN_SERVER_DEFAULT.resolve(SSO_PATH))
-            .header("Keycloak-Realm", realm)
             .POST(HttpRequest.BodyPublishers.ofString(content))
             .build();
 

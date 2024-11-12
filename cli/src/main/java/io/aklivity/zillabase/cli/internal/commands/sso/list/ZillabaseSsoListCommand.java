@@ -61,7 +61,6 @@ public final class ZillabaseSsoListCommand extends ZillabaseSsoCommand
     {
         HttpRequest httpRequest = HttpRequest
             .newBuilder(ADMIN_SERVER_DEFAULT.resolve(alias == null ? SSO_PATH : SSO_ALIAS_PATH.formatted(alias)))
-            .header("Keycloak-Realm", realm)
             .GET()
             .build();
 

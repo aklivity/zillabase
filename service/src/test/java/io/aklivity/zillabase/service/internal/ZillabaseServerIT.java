@@ -55,4 +55,40 @@ public class ZillabaseServerIT
     {
         k3po.finish();
     }
+
+    @Test
+    @Specification({
+        "${app}/user.add/client",
+        "${app}/user.add/server"})
+    public void shouldAddUser() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "${app}/users.get/client",
+        "${app}/users.get/server"})
+    public void shouldGetAllUser() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "${app}/user.id.get/client",
+        "${app}/user.id.get/server"})
+    public void shouldGetUserById() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "${app}/user.id.delete/client",
+        "${app}/user.id.delete/server"})
+    public void shouldDeleteUserById() throws Exception
+    {
+        k3po.finish();
+    }
 }

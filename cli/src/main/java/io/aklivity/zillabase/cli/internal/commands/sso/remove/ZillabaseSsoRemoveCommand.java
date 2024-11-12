@@ -62,7 +62,6 @@ public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
     {
         HttpRequest httpRequest = HttpRequest
             .newBuilder(ADMIN_SERVER_DEFAULT.resolve(SSO_ALIAS_PATH.formatted(alias)))
-            .header("Keycloak-Realm", realm)
             .DELETE()
             .build();
 
