@@ -21,13 +21,13 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
+import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
+import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
-import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_HOST;
-import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_PORT;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
@@ -227,7 +227,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
-        factories.add(new CreateSsoFactory(config));
+        factories.add(new CreateAuthFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
         factories.add(new CreateKafkaFactory(config));
@@ -2222,12 +2222,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private static final class CreateSsoFactory extends CreateContainerFactory
+    private static final class CreateAuthFactory extends CreateContainerFactory
     {
-        CreateSsoFactory(
+        CreateAuthFactory(
             ZillabaseConfig config)
         {
-            super(config, "sso", "ghcr.io/aklivity/zillabase/sso:%s".formatted(config.sso.tag));
+            super(config, "auth", "ghcr.io/aklivity/zillabase/auth:%s".formatted(config.auth.tag));
         }
 
         @Override
@@ -2235,7 +2235,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             List<String> envVars = Arrays.asList(
-                "ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
+                "AUTH_SERVER_PORT=%d".formatted(DEFAULT_AUTH_PORT),
+                "KEYCLOAK_REALM=%s".formatted(config.keycloak.realm),
                 "DEBUG=%s".formatted(true));
 
             return client
@@ -2252,7 +2253,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
                     .withRetries(5)
-                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s".formatted(DEFAULT_SSO_PORT))));
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s".formatted(DEFAULT_AUTH_PORT))));
         }
     }
 
@@ -2290,8 +2291,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "APICURIO_HOST=%s".formatted(apicurio.getHost()),
                 "APICURIO_PORT=%d".formatted(apicurio.getPort()),
                 "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
-                "SSO_ADMIN_HOST=%s".formatted(DEFAULT_SSO_HOST),
-                "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
+                "AUTH_ADMIN_HOST=%s".formatted(DEFAULT_AUTH_HOST),
+                "AUTH_ADMIN_PORT=%d".formatted(DEFAULT_AUTH_PORT),
                 "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl),
                 "UDF_JAVA_SERVER=%s".formatted("http://udf-server-java.zillabase.dev:8815"),

@@ -14,6 +14,9 @@
  */
 package io.aklivity.zillabase.service.internal.handler;
 
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
+
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -34,31 +37,34 @@ public abstract class ZillabaseServerHandler implements HttpHandler
         return URI.create(baseUrl).resolve(path);
     }
 
-    protected boolean buildResponse(
+    protected void buildResponse(
         HttpClient client,
         HttpExchange exchange,
-        HttpRequest request)
+        HttpRequest request) throws IOException, InterruptedException
     {
-        boolean error = false;
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        long contentLength = response.body() != null ? response.body().getBytes().length : 0;
+        exchange.sendResponseHeaders(response.statusCode(), contentLength);
+        if (response.body() != null && !response.body().isEmpty())
+        {
+            try (OutputStream os = exchange.getResponseBody())
+            {
+                os.write(response.body().getBytes());
+            }
+        }
+    }
+
+    protected void badGatewayResponse(
+        HttpExchange exchange)
+    {
         try
         {
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            long contentLength = response.body() != null ? response.body().getBytes().length : 0;
-            exchange.sendResponseHeaders(response.statusCode(), contentLength);
-            if (response.body() != null && !response.body().isEmpty())
-            {
-                try (OutputStream os = exchange.getResponseBody())
-                {
-                    os.write(response.body().getBytes());
-                }
-            }
+            exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, NO_RESPONSE_BODY);
         }
         catch (Exception ex)
         {
-            error = true;
             ex.printStackTrace(System.err);
         }
-        return error;
     }
 }

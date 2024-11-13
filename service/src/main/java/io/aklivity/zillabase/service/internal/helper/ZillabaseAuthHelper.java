@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.internal.util;
+package io.aklivity.zillabase.service.internal.helper;
 
 import java.io.StringReader;
 import java.net.URI;
@@ -24,7 +24,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 
-public class ZillabaseSsoUtil
+public class ZillabaseAuthHelper
 {
     private static final String DEFAULT_ADMIN_CREDENTIAL = "admin";
     private static final String CONNECT_TOKEN_PATH = "/realms/master/protocol/openid-connect/token";
@@ -32,7 +32,7 @@ public class ZillabaseSsoUtil
     private final HttpClient client;
     private final URI baseUrl;
 
-    public ZillabaseSsoUtil(
+    public ZillabaseAuthHelper(
         HttpClient client,
         String keycloakUrl)
     {

@@ -14,7 +14,6 @@
  */
 package io.aklivity.zillabase.service.internal.handler;
 
-import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 
 import java.net.http.HttpClient;
@@ -22,21 +21,24 @@ import java.net.http.HttpRequest;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import io.aklivity.zillabase.service.internal.util.ZillabaseSsoUtil;
+import io.aklivity.zillabase.service.internal.helper.ZillabaseAuthHelper;
 
 public class ZillabaseSsoHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
-    private final ZillabaseSsoUtil util;
-    private final String keycloakUrl;
+    private final ZillabaseAuthHelper helper;
+    private final String url;
+    private final String realm;
 
     public ZillabaseSsoHandler(
         HttpClient client,
-        String keycloakUrl)
+        String url,
+        String realm)
     {
         this.client = client;
-        this.util = new ZillabaseSsoUtil(client, keycloakUrl);
-        this.keycloakUrl = keycloakUrl;
+        this.helper = new ZillabaseAuthHelper(client, url);
+        this.url = url;
+        this.realm = realm;
     }
 
     @Override
@@ -44,13 +46,12 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
         HttpExchange exchange)
     {
         String method = exchange.getRequestMethod();
-        HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(keycloakUrl,
-            "/admin/realms/%s/identity-provider/instances".formatted(
-                exchange.getRequestHeaders().getFirst("Keycloak-Realm"))));
+        HttpRequest.Builder builder = HttpRequest.newBuilder(toURI(url,
+            "/admin/realms/%s/identity-provider/instances".formatted(realm)));
         boolean badMethod = false;
         try
         {
-            String token = util.fetchAccessToken();
+            String token = helper.fetchAccessToken();
             if (token != null)
             {
                 switch (method)
@@ -73,19 +74,17 @@ public class ZillabaseSsoHandler extends ZillabaseServerHandler
 
             if (!badMethod)
             {
-                boolean error = buildResponse(client, exchange, builder.build());
-
-                if (error)
-                {
-                    exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, NO_RESPONSE_BODY);
-                }
+                buildResponse(client, exchange, builder.build());
             }
-
-            exchange.close();
         }
         catch (Exception ex)
         {
+            badGatewayResponse(exchange);
             ex.printStackTrace(System.err);
+        }
+        finally
+        {
+            exchange.close();
         }
     }
 }

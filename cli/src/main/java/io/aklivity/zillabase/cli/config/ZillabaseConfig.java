@@ -22,6 +22,6 @@ public final class ZillabaseConfig
     public ZillabaseRisingWaveConfig risingwave = new ZillabaseRisingWaveConfig();
     public ZillabaseZillaConfig zilla = new ZillabaseZillaConfig();
     public ZillabaseKeycloakConfig keycloak = new ZillabaseKeycloakConfig();
-    public ZillabaseSsoConfig sso = new ZillabaseSsoConfig();
+    public ZillabaseAuthConfig auth = new ZillabaseAuthConfig();
     public ZillabaseUdfConfig udf = new ZillabaseUdfConfig();
 }

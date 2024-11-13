@@ -13,7 +13,7 @@
 # specific language governing permissions and limitations under the License.
 #
 
-connect "http://localhost:7184/v1/sso"
+connect "http://localhost:7184/v1/auth/users"
 connected
 
 write http:method "POST"
@@ -21,12 +21,11 @@ write http:version "HTTP/1.1"
 write http:content-length
 
 write '{'
-        '"alias": "github",'
-        '"providerId": "github",'
-        '"enabled": true,'
-        '"config": {'
-          '"clientId": "streampay"'
-        '}'
+        '"username": "john_doe",'
+        '"email": "john.doe@example.com",'
+        '"firstName": "John",'
+        '"lastName": "Doe",'
+        '"password": "P@ssw0rd123"'
       '}'
 
 write close

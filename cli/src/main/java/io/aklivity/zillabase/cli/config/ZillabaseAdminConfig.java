@@ -171,8 +171,8 @@ public final class ZillabaseAdminConfig
                 with:
                   headers:
                     overrides:
-                      :authority: ${{env.SSO_ADMIN_HOST}}:${{env.SSO_ADMIN_PORT}}
-                exit: sso_http_client
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
               - when:
                   - headers:
                       :scheme: http
@@ -181,41 +181,28 @@ public final class ZillabaseAdminConfig
                 with:
                   headers:
                     overrides:
-                      :authority: ${{env.SSO_ADMIN_HOST}}:${{env.SSO_ADMIN_PORT}}
-                exit: sso_http_client
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
               - when:
                   - headers:
-                      :path: /v1/storage/*
-                exit: http_filesystem_proxy
-          http_filesystem_proxy:
-              type: http-filesystem
-                  kind: proxy
-                  routes:
-                    - when:
-                        - method: GET
-                          path: /v1/storage/buckets
-                        - method: POST
-                          path: /v1/storage/buckets/{bucket}
-                        - method: DELETE
-                          path: /v1/storage/buckets/{bucket}
-                      exit: east_filesystem_server
-                      with:
-                        directory: ${params.bucket}
-                    - when:
-                        - method: GET
-                          path: /v1/storage/objects/{bucket}
-                        - method: GET
-                          path: /v1/storage/objects/{bucket}/{path}
-                        - method: POST
-                          path: /v1/storage/objects/{bucket}/{path}
-                        - method: PUT
-                          path: /v1/storage/objects/{bucket}/{path}
-                        - method: DELETE
-                          path: /v1/storage/objects/{bucket}/{path}
-                      exit: east_filesystem_server
-                      with:
-                        directory: ${params.bucket}
-                        path: ${params.path}
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/auth/users
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
+              - when:
+                  - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/auth/users/*
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
           config_http_client:
             type: http
             kind: client
@@ -236,21 +223,16 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.APICURIO_HOST}}
               port: ${{env.APICURIO_PORT}}
-          sso_http_client:
+          auth_http_client:
             type: http
             kind: client
-            exit: sso_tcp_client
-          sso_tcp_client:
+            exit: auth_tcp_client
+          auth_tcp_client:
             type: tcp
             kind: client
             options:
-              host: ${{env.SSO_ADMIN_HOST}}
-              port: ${{env.SSO_ADMIN_PORT}}
-          filesystem_server:
-            type: filesystem
-            kind: server
-            options:
-              location: /var/storage/
+              host: ${{env.AUTH_ADMIN_HOST}}
+              port: ${{env.AUTH_ADMIN_PORT}}
         telemetry:
           exporters:
             stdout_logs_exporter:
