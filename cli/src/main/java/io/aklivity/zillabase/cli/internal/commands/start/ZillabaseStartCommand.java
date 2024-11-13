@@ -2323,7 +2323,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 File tempFile = File.createTempFile("zillabase-admin-server-zilla", ".yaml");
                 Path configPath = Paths.get(tempFile.getPath());
                 Files.writeString(configPath, ZILLABASE_ADMIN_SERVER_ZILLA_YAML);
-                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")));
+                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")),
+                    new Bind("/var/storage", new Volume("/var/storage")));
                 tempFile.deleteOnExit();
             }
             catch (IOException ex)

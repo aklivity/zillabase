@@ -258,24 +258,6 @@ paths:
           description: Successful operation
         "404":
           description: Not found
-  /storage/objects:
-    get:
-      tags:
-        - storage
-      summary: List all objects across all buckets
-      description: Retrieve a list of all objects in the storage system, across all buckets
-      operationId: listObjects
-      responses:
-        "200":
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/StorageObjects"
-        "400":
-          description: Invalid request parameters
   /storage/objects/{bucket-name}:
     get:
       tags:

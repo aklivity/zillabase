@@ -203,6 +203,10 @@ public final class ZillabaseAdminConfig
                     overrides:
                       :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
                 exit: auth_http_client
+              - when:
+                  - headers:
+                      :path: /v1/storage/*
+                exit: http_filesystem_proxy
           config_http_client:
             type: http
             kind: client
@@ -233,6 +237,40 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.AUTH_ADMIN_HOST}}
               port: ${{env.AUTH_ADMIN_PORT}}
+          http_filesystem_proxy:
+            type: http-filesystem
+            kind: proxy
+            routes:
+              - when:
+                  - method: GET
+                    path: /v1/storage/buckets
+                  - method: POST
+                    path: /v1/storage/buckets/{bucket}
+                  - method: DELETE
+                    path: /v1/storage/buckets/{bucket}
+                exit: filesystem_server
+                with:
+                  directory: ${params.bucket}
+              - when:
+                  - method: GET
+                    path: /v1/storage/objects/{bucket}/{path}
+                  - method: GET
+                    path: /v1/storage/objects/{bucket}
+                  - method: POST
+                    path: /v1/storage/objects/{bucket}/{path}
+                  - method: PUT
+                    path: /v1/storage/objects/{bucket}/{path}
+                  - method: DELETE
+                    path: /v1/storage/objects/{bucket}/{path}
+                exit: filesystem_server
+                with:
+                  directory: ${params.bucket}
+                  path: ${params.path}
+          filesystem_server:
+            type: filesystem
+            kind: server
+            options:
+              location: /var/storage/
         telemetry:
           exporters:
             stdout_logs_exporter:
