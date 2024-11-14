@@ -20,7 +20,6 @@ import java.net.http.HttpResponse;
 
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
-import com.github.rvesse.airline.annotations.restrictions.Required;
 
 import io.aklivity.zillabase.cli.internal.commands.sso.ZillabaseSsoCommand;
 
@@ -29,11 +28,6 @@ import io.aklivity.zillabase.cli.internal.commands.sso.ZillabaseSsoCommand;
     description = "List Identity Provider")
 public final class ZillabaseSsoListCommand extends ZillabaseSsoCommand
 {
-    @Required
-    @Option(name = {"-r", "--realm"},
-        description = "Keycloak Realm")
-    public String realm;
-
     @Option(name = {"-a", "--alias"},
         description = "Identity Provider Alias")
     public String alias;

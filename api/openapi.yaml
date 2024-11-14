@@ -659,9 +659,6 @@ components:
         alias:
           type: string
           description: Identity Provider Alias
-        realm:
-          type: string
-          description: Realm
         clientId:
           type: string
           description: Client ID for the Identity Provider
@@ -671,7 +668,6 @@ components:
       required:
         - providerId
         - alias
-        - realm
         - clientId
         - secret
     IdentityProvider:
@@ -683,12 +679,12 @@ components:
         alias:
           type: string
           description: Identity Provider Alias
-        realm:
-          type: string
-          description: Realm
-        clientId:
-          type: string
-          description: Client ID for the Identity Provider
+        config:
+          type: object
+          properties:
+            clientId:
+              type: string
+              description: Client ID for the Identity Provider
     IdentityProviders:
       type: array
       items:
