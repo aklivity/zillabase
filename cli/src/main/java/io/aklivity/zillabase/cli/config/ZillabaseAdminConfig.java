@@ -45,7 +45,6 @@ public final class ZillabaseAdminConfig
                   - port: 4567
                 exit: pgsql_server
               - when:
-                  - port: 4567
                   - port: 7184
                 exit: http_server
           pgsql_server:
@@ -107,8 +106,6 @@ public final class ZillabaseAdminConfig
             routes:
               - when:
                   - headers:
-                      :scheme: http
-                      :authority: localhost:4567
                       upgrade: websocket
                 exit: ws_server
               - when:
