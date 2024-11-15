@@ -1,7 +1,5 @@
--- Migration 4: Create streampay_balances table
-
 -- Table for tracking user balances
-CREATE TABLE streampay_balances (
+CREATE ZTABLE streampay_balances (
     user_id VARCHAR PRIMARY KEY,
     balance DOUBLE PRECISION
 );
