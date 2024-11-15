@@ -45,6 +45,7 @@ public final class ZillabaseAdminConfig
                   - port: 4567
                 exit: pgsql_server
               - when:
+                  - port: 4567
                   - port: 7184
                 exit: http_server
           pgsql_server:
@@ -104,6 +105,12 @@ public final class ZillabaseAdminConfig
             type: http
             kind: server
             routes:
+              - when:
+                  - headers:
+                      :scheme: http
+                      :authority: localhost:4567
+                      upgrade: websocket
+                exit: ws_server
               - when:
                   - headers:
                       :scheme: http
@@ -266,6 +273,10 @@ public final class ZillabaseAdminConfig
                 with:
                   directory: ${params.bucket}
                   path: ${params.path}
+          ws_server:
+            type: ws
+            kind: server
+            exit: pgsql_server
           filesystem_server:
             type: filesystem
             kind: server
