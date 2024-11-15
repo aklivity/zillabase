@@ -1,5 +1,5 @@
 -- Table for logging events related to transactions and requests
-CREATE ZTABLE streampay_events (
+CREATE TABLE streampay_events (
     id VARCHAR PRIMARY KEY,
     event_name VARCHAR,
     from_user_id VARCHAR,
