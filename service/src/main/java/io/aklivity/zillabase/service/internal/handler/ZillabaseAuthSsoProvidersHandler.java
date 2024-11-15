@@ -41,7 +41,7 @@ import io.aklivity.zillabase.service.internal.model.ZillabaseAuthSsoInfo;
 import io.aklivity.zillabase.service.internal.model.ZillabaseAuthSsoRequest;
 import io.aklivity.zillabase.service.internal.model.ZillabaseAuthSsoRequestView;
 
-public class ZillabaseAuthSsoHandler extends ZillabaseServerHandler
+public class ZillabaseAuthSsoProvidersHandler extends ZillabaseServerHandler
 {
     private final HttpClient client;
     private final ZillabaseAuthHelper helper;
@@ -49,7 +49,7 @@ public class ZillabaseAuthSsoHandler extends ZillabaseServerHandler
     private final String realm;
     private final Jsonb jsonb;
 
-    public ZillabaseAuthSsoHandler(
+    public ZillabaseAuthSsoProvidersHandler(
         HttpClient client,
         String url,
         String realm)

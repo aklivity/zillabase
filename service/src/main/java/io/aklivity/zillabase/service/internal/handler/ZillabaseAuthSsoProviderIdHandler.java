@@ -32,7 +32,7 @@ import com.sun.net.httpserver.HttpExchange;
 import io.aklivity.zillabase.service.internal.helper.ZillabaseAuthHelper;
 import io.aklivity.zillabase.service.internal.model.ZillabaseAuthSsoInfo;
 
-public class ZillabaseAuthSsoAliasHandler extends ZillabaseServerHandler
+public class ZillabaseAuthSsoProviderIdHandler extends ZillabaseServerHandler
 {
     private static final Pattern PATH_PATTERN = Pattern.compile("/v1/auth/sso/providers/(.*)");
 
@@ -43,7 +43,7 @@ public class ZillabaseAuthSsoAliasHandler extends ZillabaseServerHandler
     private final String realm;
     private final Jsonb jsonb;
 
-    public ZillabaseAuthSsoAliasHandler(
+    public ZillabaseAuthSsoProviderIdHandler(
         HttpClient client,
         String url,
         String realm)
