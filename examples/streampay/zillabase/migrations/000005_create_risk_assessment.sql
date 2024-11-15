@@ -7,7 +7,7 @@ LANGUAGE python AS 'assess_fraud';
 CREATE ZVIEW streampay_payment_risk_assessment AS
   SELECT
       ar.id,
-      ar.to_user_id_identity,
+      ar.to_user_id,
       (ar.fraud).*
   FROM (
     SELECT
@@ -16,6 +16,8 @@ CREATE ZVIEW streampay_payment_risk_assessment AS
     FROM
       streampay_payment_requests
   ) AS ar;
+
+COMMENT ON COLUMN streampay_payment_risk_assessment.to_user_id IS 'identity';
 
 CREATE FUNCTION process_embedding(varchar, varchar, double precision, varchar) RETURNS boolean
 LANGUAGE python AS 'process_embedding';
