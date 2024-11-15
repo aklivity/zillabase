@@ -5,7 +5,7 @@ CREATE ZTABLE streampay_balances (
 );
 
 -- Function to update a user’s balance
-CREATE FUNCTION process_user_balance(user_id VARCHAR, amount DOUBLE PRECISION) RETURNS VOID AS $$
+CREATE FUNCTION adjust_user_balance(user_id VARCHAR, amount DOUBLE PRECISION) RETURNS VOID AS $$
 BEGIN
     UPDATE streampay_balances
     SET balance = balance + amount

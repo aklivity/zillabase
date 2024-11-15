@@ -1,5 +1,5 @@
 -- Table for logging events related to transactions and requests
-CREATE TABLE streampay_events (
+CREATE ZTABLE streampay_events (
     id VARCHAR PRIMARY KEY,
     event_name VARCHAR,
     from_user_id VARCHAR,
@@ -17,13 +17,3 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- View to retrieve transaction history from streampay_events
-CREATE ZVIEW streampay_transaction_history AS
-SELECT
-    event_name,
-    from_user_id,
-    to_user_id,
-    amount,
-    notes,
-    timestamp
-FROM streampay_events;

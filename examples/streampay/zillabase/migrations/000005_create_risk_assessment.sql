@@ -4,6 +4,7 @@
 CREATE FUNCTION assess_fraud(varchar, varchar, double precision) RETURNS struct<summary varchar, risk varchar>
 LANGUAGE python AS 'assess_fraud';
 
+-- create_payment_risk_assessment
 CREATE ZVIEW streampay_payment_risk_assessment AS
   SELECT
       ar.id,
@@ -19,10 +20,11 @@ CREATE ZVIEW streampay_payment_risk_assessment AS
 
 COMMENT ON COLUMN streampay_payment_risk_assessment.to_user_id IS 'identity';
 
+-- python user-defined function
 CREATE FUNCTION process_embedding(varchar, varchar, double precision, varchar) RETURNS boolean
 LANGUAGE python AS 'process_embedding';
 
-CREATE VIEW streampay_payment_process_embedding AS
+CREATE ZVIEW streampay_payment_process_embedding AS
   SELECT
       id,
       process_embedding(from_username, to_username, amount, eventName) AS result

@@ -1,5 +1,5 @@
 -- Table for storing payment requests with status tracking
-CREATE TABLE streampay_payment_requests (
+CREATE ZTABLE streampay_payment_requests (
     id VARCHAR PRIMARY KEY,
     from_user_id VARCHAR,
     from_username VARCHAR,
@@ -45,15 +45,3 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- View to show all payment requests with status
-CREATE ZVIEW streampay_payment_requests_status AS
-SELECT
-    id,
-    from_user_id,
-    from_username,
-    to_user_id,
-    to_username,
-    amount,
-    notes,
-    status
-FROM streampay_payment_requests;
