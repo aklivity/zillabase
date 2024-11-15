@@ -50,7 +50,7 @@ CREATE ZSTREAM streampay_commands (
     notes VARCHAR
 ) WITH (
     reply_to = 'streampay_replies',
-    reply_function = compute_status,
+    function = compute_status,
     timestamp = 'timestamp',
     identity = 'owner_id'
 );
