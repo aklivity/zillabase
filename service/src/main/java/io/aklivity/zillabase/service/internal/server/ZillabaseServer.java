@@ -21,10 +21,10 @@ import java.util.Optional;
 
 import com.sun.net.httpserver.HttpServer;
 
+import io.aklivity.zillabase.service.internal.handler.ZillabaseAuthSsoProviderIdHandler;
+import io.aklivity.zillabase.service.internal.handler.ZillabaseAuthSsoProvidersHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseAuthUserIdHandler;
 import io.aklivity.zillabase.service.internal.handler.ZillabaseAuthUsersHandler;
-import io.aklivity.zillabase.service.internal.handler.ZillabaseSsoAliasHandler;
-import io.aklivity.zillabase.service.internal.handler.ZillabaseSsoHandler;
 
 public class ZillabaseServer implements Runnable
 {
@@ -67,8 +67,8 @@ public class ZillabaseServer implements Runnable
     @Override
     public void run()
     {
-        server.createContext("/v1/sso", new ZillabaseSsoHandler(client, url, realm));
-        server.createContext("/v1/sso/", new ZillabaseSsoAliasHandler(client, url, realm));
+        server.createContext("/v1/auth/sso/providers", new ZillabaseAuthSsoProvidersHandler(client, url, realm));
+        server.createContext("/v1/auth/sso/providers/", new ZillabaseAuthSsoProviderIdHandler(client, url, realm));
         server.createContext("/v1/auth/users", new ZillabaseAuthUsersHandler(client, url, realm));
         server.createContext("/v1/auth/users/", new ZillabaseAuthUserIdHandler(client, url, realm));
 

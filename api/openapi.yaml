@@ -414,13 +414,6 @@ paths:
         - auth
       summary: Create a new user
       operationId: createUser
-      parameters:
-        - name: realm
-          in: header
-          description: Realm
-          required: true
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -437,13 +430,6 @@ paths:
         - auth
       summary: List all users
       operationId: listUsers
-      parameters:
-        - name: realm
-          in: header
-          description: Realm
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: A list of users
@@ -462,12 +448,6 @@ paths:
         - name: user-id
           in: path
           description: ID of the user to retrieve
-          required: true
-          schema:
-            type: string
-        - name: realm
-          in: header
-          description: Realm
           required: true
           schema:
             type: string
@@ -493,12 +473,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: realm
-          in: header
-          description: Realm
-          required: true
-          schema:
-            type: string
       responses:
         "204":
           description: User deleted successfully
@@ -513,13 +487,6 @@ paths:
       summary: List Identity Providers
       description: Retrieve a list of all Identity Providers configured.
       operationId: listIdentityProviders
-      parameters:
-        - name: realm
-          in: header
-          description: Realm in the Identity Providers
-          required: true
-          schema:
-            type: string
       responses:
         "200":
           description: Successful operation, returns the list of Identity Providers
@@ -537,13 +504,6 @@ paths:
       summary: Add a new Identity Provider
       description: Add a new Identity Provider.
       operationId: addIdentityProvider
-      parameters:
-        - name: realm
-          in: header
-          description: Realm
-          required: true
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -563,15 +523,9 @@ paths:
       description: Retrieve details of a specific Identity Provider by its ID.
       operationId: getIdentityProvider
       parameters:
-        - name: provider-id
+        - name: alias
           in: path
-          description: ID of the Identity Provider to retrieve
-          required: true
-          schema:
-            type: string
-        - name: realm
-          in: header
-          description: Realm in the Identity Provider
+          description: Alias of the Identity Provider to retrieve
           required: true
           schema:
             type: string
@@ -591,15 +545,9 @@ paths:
       description: Remove an Identity Provider.
       operationId: deleteIdentityProvider
       parameters:
-        - name: provider-id
+        - name: alias
           in: path
-          description: ID of the Identity Provider to delete
-          required: true
-          schema:
-            type: string
-        - name: realm
-          in: header
-          description: Realm to filter the Identity Provider
+          description: Alias of the Identity Provider to delete
           required: true
           schema:
             type: string
@@ -659,9 +607,6 @@ components:
         alias:
           type: string
           description: Identity Provider Alias
-        realm:
-          type: string
-          description: Realm
         clientId:
           type: string
           description: Client ID for the Identity Provider
@@ -671,7 +616,6 @@ components:
       required:
         - providerId
         - alias
-        - realm
         - clientId
         - secret
     IdentityProvider:
@@ -683,12 +627,12 @@ components:
         alias:
           type: string
           description: Identity Provider Alias
-        realm:
-          type: string
-          description: Realm
-        clientId:
-          type: string
-          description: Client ID for the Identity Provider
+        config:
+          type: object
+          properties:
+            clientId:
+              type: string
+              description: Client ID for the Identity Provider
     IdentityProviders:
       type: array
       items:

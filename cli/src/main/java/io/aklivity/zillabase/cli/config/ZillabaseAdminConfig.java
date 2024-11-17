@@ -167,7 +167,7 @@ public final class ZillabaseAdminConfig
                   - headers:
                       :scheme: http
                       :authority: localhost:7184
-                      :path: /v1/sso
+                      :path: /v1/auth/sso/providers
                 with:
                   headers:
                     overrides:
@@ -177,7 +177,7 @@ public final class ZillabaseAdminConfig
                   - headers:
                       :scheme: http
                       :authority: localhost:7184
-                      :path: /v1/sso/*
+                      :path: /v1/auth/sso/providers/*
                 with:
                   headers:
                     overrides:
