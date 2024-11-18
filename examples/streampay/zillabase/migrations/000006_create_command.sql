@@ -6,8 +6,8 @@ BEGIN
     CASE command.type
         WHEN 'SendPayment' THEN
             IF (SELECT balance FROM streampay_balances WHERE user_id = command.user_id) >= command.amount THEN
-                process_user_balance(command.user_id, -command.amount);
-                process_user_balance(command.request_id, command.amount);
+                adjust_user_balance(command.user_id, -command.amount);
+                adjust_user_balance(command.request_id, command.amount);
                 reply.status := '200';  -- Success
                 log_event('PaymentSent', command.user_id, command.request_id, command.amount, command.notes);
             ELSE
