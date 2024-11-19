@@ -4,6 +4,10 @@
   "type": "object",
   "properties":
   {
+    "backup":
+    {
+      "type": "boolean"
+    },
     "admin":
     {
       "type": "object",

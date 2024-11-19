@@ -18,13 +18,16 @@ import java.util.List;
 import java.util.Map;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectVolumeResponse;
 import com.github.dockerjava.api.command.RemoveContainerCmd;
 import com.github.dockerjava.api.command.RemoveNetworkCmd;
+import com.github.dockerjava.api.command.RemoveVolumeCmd;
 import com.github.dockerjava.api.command.StopContainerCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Network;
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 
 @Command(
@@ -32,9 +35,13 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
     description = "Stop containers for local development")
 public final class ZillabaseStopCommand extends ZillabaseDockerCommand
 {
+    private static final String RESET = "\u001B[0m";
+    private static final String GREEN = "\u001B[32m";
+
     @Override
     protected void invoke(
-        DockerClient client)
+        DockerClient client,
+        ZillabaseConfig config)
     {
         Map<String, String> project = Map.of("com.docker.compose.project", "zillabase");
 
@@ -59,6 +66,27 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
         networks.stream()
             .filter(n -> networkName.equals(n.getName()))
             .forEach(n -> removeNetwork(client, n.getId()));
+
+        if (config.backup)
+        {
+            System.out.println("Local data are backed up to docker volume. Use docker to show them: " +
+                GREEN + "docker volume ls --filter label=io.aklivity=zillabase" + RESET);
+        }
+        else
+        {
+            List<InspectVolumeResponse> volumes = client.listVolumesCmd().exec().getVolumes();
+            if (volumes != null)
+            {
+                for (InspectVolumeResponse volume : volumes)
+                {
+                    Map<String, String> labels = volume.getLabels();
+                    if (labels != null && !labels.isEmpty() && "zillabase".equals(labels.get("io.aklivity")))
+                    {
+                        removeVolume(client, volume.getName());
+                    }
+                }
+            }
+        }
     }
 
     private static void stopContainer(
@@ -91,4 +119,15 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
             command.exec();
         }
     }
+
+    private static void removeVolume(
+        DockerClient client,
+        String volume)
+    {
+        try (RemoveVolumeCmd command = client.removeVolumeCmd(volume))
+        {
+            command.exec();
+        }
+    }
+
 }
