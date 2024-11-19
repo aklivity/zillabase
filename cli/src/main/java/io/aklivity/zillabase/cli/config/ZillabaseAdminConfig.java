@@ -106,6 +106,10 @@ public final class ZillabaseAdminConfig
             routes:
               - when:
                   - headers:
+                      upgrade: websocket
+                exit: ws_server
+              - when:
+                  - headers:
                       :scheme: http
                       :authority: localhost:7184
                       :path: /v1/config/{id}
@@ -266,6 +270,10 @@ public final class ZillabaseAdminConfig
                 with:
                   directory: ${params.bucket}
                   path: ${params.path}
+          ws_server:
+            type: ws
+            kind: server
+            exit: pgsql_server
           filesystem_server:
             type: filesystem
             kind: server
