@@ -24,5 +24,4 @@ public final class ZillabaseConfig
     public ZillabaseKeycloakConfig keycloak = new ZillabaseKeycloakConfig();
     public ZillabaseAuthConfig auth = new ZillabaseAuthConfig();
     public ZillabaseUdfConfig udf = new ZillabaseUdfConfig();
-    public boolean backup = false;
 }

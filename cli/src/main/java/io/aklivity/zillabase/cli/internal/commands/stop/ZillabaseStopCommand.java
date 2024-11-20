@@ -26,6 +26,7 @@ import com.github.dockerjava.api.command.StopContainerCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Network;
 import com.github.rvesse.airline.annotations.Command;
+import com.github.rvesse.airline.annotations.Option;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
@@ -37,6 +38,11 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
 {
     private static final String RESET = "\u001B[0m";
     private static final String GREEN = "\u001B[32m";
+
+    @Option(name = {"--no-backup"},
+        description = "Show verbose output",
+        hidden = true)
+    public boolean noBackup = true;
 
     @Override
     protected void invoke(
@@ -67,12 +73,7 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
             .filter(n -> networkName.equals(n.getName()))
             .forEach(n -> removeNetwork(client, n.getId()));
 
-        if (config.backup)
-        {
-            System.out.println("Local data are backed up to docker volume. Use docker to show them: " +
-                GREEN + "docker volume ls --filter label=io.aklivity=zillabase" + RESET);
-        }
-        else
+        if (noBackup)
         {
             List<InspectVolumeResponse> volumes = client.listVolumesCmd().exec().getVolumes();
             if (volumes != null)
@@ -86,6 +87,11 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
                     }
                 }
             }
+        }
+        else
+        {
+            System.out.println("Local data are backed up to docker volume. Use docker to show them: " +
+                GREEN + "docker volume ls --filter label=io.aklivity=zillabase" + RESET);
         }
     }
 
