@@ -14,26 +14,7 @@
  */
 package io.aklivity.zillabase.cli.internal.commands;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
-
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbException;
-import jakarta.json.spi.JsonProvider;
-import jakarta.json.stream.JsonParser;
-
-import org.leadpony.justify.api.JsonSchema;
-import org.leadpony.justify.api.JsonSchemaReader;
-import org.leadpony.justify.api.JsonValidationService;
-import org.leadpony.justify.api.ProblemHandler;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -41,8 +22,6 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
-
-import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 
 public abstract class ZillabaseDockerCommand extends ZillabaseCommand
 {
@@ -62,59 +41,10 @@ public abstract class ZillabaseDockerCommand extends ZillabaseCommand
             .build();
 
         DockerClient client = DockerClientImpl.getInstance(config, httpClient);
-        final ZillabaseConfig zillabaseConfig = readZillabaseConfig();
 
-        invoke(client, zillabaseConfig);
+        invoke(client);
     }
 
     protected abstract void invoke(
-        DockerClient client,
-        ZillabaseConfig config);
-
-    private ZillabaseConfig readZillabaseConfig()
-    {
-        ZillabaseConfig config;
-
-        Path configPath = Paths.get("zillabase/config.yaml");
-        try
-        {
-            if (Files.size(configPath) == 0 || Files.readAllLines(configPath)
-                .stream().allMatch(line -> line.trim().isEmpty() || line.trim().startsWith("#")))
-            {
-                config = new ZillabaseConfig();
-            }
-            else
-            {
-                try (InputStream inputStream = Files.newInputStream(configPath);
-                     InputStream schemaStream = getClass().getResourceAsStream("/internal/schema/zillabase.schema.json"))
-                {
-                    JsonProvider schemaProvider = JsonProvider.provider();
-                    JsonReader schemaReader = schemaProvider.createReader(schemaStream);
-                    JsonObject schemaObject = schemaReader.readObject();
-
-                    JsonParser schemaParser = schemaProvider.createParserFactory(null)
-                        .createParser(new StringReader(schemaObject.toString()));
-
-                    JsonValidationService service = JsonValidationService.newInstance();
-                    JsonSchemaReader reader = service.createSchemaReader(schemaParser);
-                    JsonSchema schema = reader.read();
-
-                    JsonProvider provider = service.createJsonProvider(schema, parser -> ProblemHandler.throwing());
-
-                    Jsonb jsonb = JsonbBuilder.newBuilder()
-                        .withProvider(provider)
-                        .build();
-                    config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
-                }
-            }
-        }
-        catch (IOException | JsonbException ex)
-        {
-            System.err.println("Error resolving config, reverting to default.");
-            ex.printStackTrace(System.err);
-            config = new ZillabaseConfig();
-        }
-
-        return config;
-    }
+        DockerClient client);
 }

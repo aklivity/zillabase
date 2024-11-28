@@ -14,6 +14,9 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.stop;
 
+import static io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand.PROJECT_NAME;
+import static io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand.VOLUME_LABEL;
+
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +31,6 @@ import com.github.dockerjava.api.model.Network;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 
-import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 
 @Command(
@@ -46,8 +48,7 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
 
     @Override
     protected void invoke(
-        DockerClient client,
-        ZillabaseConfig config)
+        DockerClient client)
     {
         Map<String, String> project = Map.of("com.docker.compose.project", "zillabase");
 
@@ -82,7 +83,7 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
                 {
                     Map<String, String> labels = volume.getLabels();
                     if (labels != null && !labels.isEmpty() &&
-                        "zillabase".equals(labels.get("io.aklivity.zillabase.cli.project")))
+                        PROJECT_NAME.equals(labels.get(VOLUME_LABEL)))
                     {
                         removeVolume(client, volume.getName());
                     }
@@ -92,7 +93,7 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
         else
         {
             System.out.println("Local data are backed up to docker volume. Use docker to show them: " +
-                GREEN + "docker volume ls --filter label=io.aklivity=zillabase" + RESET);
+                GREEN + "docker volume ls --filter label=%s=%s".formatted(VOLUME_LABEL, PROJECT_NAME) + RESET);
         }
     }
 

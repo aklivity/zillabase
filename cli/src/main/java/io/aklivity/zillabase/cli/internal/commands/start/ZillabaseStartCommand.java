@@ -36,6 +36,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.net.URI;
@@ -76,6 +77,9 @@ import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
+import jakarta.json.spi.JsonProvider;
+import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParsingException;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -87,6 +91,10 @@ import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 import org.fusesource.jansi.Ansi;
+import org.leadpony.justify.api.JsonSchema;
+import org.leadpony.justify.api.JsonSchemaReader;
+import org.leadpony.justify.api.JsonValidationService;
+import org.leadpony.justify.api.ProblemHandler;
 import org.postgresql.jdbc.PreferQueryMode;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
@@ -184,21 +192,24 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final String ZILLABASE_POSTGRES_VOLUME_NAME = "zillabase_postgres";
     private static final String ZILLABASE_MINIO_VOLUME_NAME = "zillabase_minio";
 
+    public static final String PROJECT_NAME = ZILLABASE_PATH.toAbsolutePath().getParent().getFileName().toString();
+    public static final String VOLUME_LABEL = "io.aklivity.zillabase.cli.project";
+
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
     private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
     private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
-
     private final Path seedSqlPath = ZILLABASE_PATH.resolve("seed.sql");
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
 
     @Override
     protected void invoke(
-        DockerClient client,
-        ZillabaseConfig config)
+        DockerClient client)
     {
+        final ZillabaseConfig config = readZillabaseConfig();
+
         startContainers(client, config);
 
         seedKafkaAndRegistry(config);
@@ -639,6 +650,53 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             System.err.println("Failed to process seed-kafka.yaml : %s".formatted(ex.getMessage()));
         }
         return records;
+    }
+
+    protected ZillabaseConfig readZillabaseConfig()
+    {
+        ZillabaseConfig config;
+
+        Path configPath = Paths.get("zillabase/config.yaml");
+        try
+        {
+            if (Files.size(configPath) == 0 || Files.readAllLines(configPath)
+                .stream().allMatch(line -> line.trim().isEmpty() || line.trim().startsWith("#")))
+            {
+                config = new ZillabaseConfig();
+            }
+            else
+            {
+                try (InputStream inputStream = Files.newInputStream(configPath);
+                     InputStream schemaStream = getClass().getResourceAsStream("/internal/schema/zillabase.schema.json"))
+                {
+                    JsonProvider schemaProvider = JsonProvider.provider();
+                    JsonReader schemaReader = schemaProvider.createReader(schemaStream);
+                    JsonObject schemaObject = schemaReader.readObject();
+
+                    JsonParser schemaParser = schemaProvider.createParserFactory(null)
+                        .createParser(new StringReader(schemaObject.toString()));
+
+                    JsonValidationService service = JsonValidationService.newInstance();
+                    JsonSchemaReader reader = service.createSchemaReader(schemaParser);
+                    JsonSchema schema = reader.read();
+
+                    JsonProvider provider = service.createJsonProvider(schema, parser -> ProblemHandler.throwing());
+
+                    Jsonb jsonb = JsonbBuilder.newBuilder()
+                        .withProvider(provider)
+                        .build();
+                    config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
+                }
+            }
+        }
+        catch (IOException | JsonbException ex)
+        {
+            System.err.println("Error resolving config, reverting to default.");
+            ex.printStackTrace(System.err);
+            config = new ZillabaseConfig();
+        }
+
+        return config;
     }
 
     private void publishZillaConfig(
@@ -1996,7 +2054,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             client.createVolumeCmd()
                 .withName(ZILLABASE_KAFKA_VOLUME_NAME)
-                .withLabels(Map.of("io.aklivity.zillabase.cli.project", "zillabase"))
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
                 .exec();
 
             return client
@@ -2123,7 +2181,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             client.createVolumeCmd()
                 .withName(ZILLABASE_POSTGRES_VOLUME_NAME)
-                .withLabels(Map.of("io.aklivity.zillabase.cli.project", "zillabase"))
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
                 .exec();
 
             return client
@@ -2164,7 +2222,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             client.createVolumeCmd()
                 .withName(ZILLABASE_MINIO_VOLUME_NAME)
-                .withLabels(Map.of("io.aklivity.zillabase.cli.project", "zillabase"))
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
                 .exec();
 
             return client
