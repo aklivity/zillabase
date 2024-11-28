@@ -40,7 +40,7 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
     private static final String GREEN = "\u001B[32m";
 
     @Option(name = {"--no-backup"},
-        description = "Show verbose output",
+        description = "Deletes all data volumes after stopping.",
         hidden = true)
     public boolean noBackup = true;
 
@@ -81,7 +81,8 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
                 for (InspectVolumeResponse volume : volumes)
                 {
                     Map<String, String> labels = volume.getLabels();
-                    if (labels != null && !labels.isEmpty() && "zillabase".equals(labels.get("io.aklivity")))
+                    if (labels != null && !labels.isEmpty() &&
+                        "zillabase".equals(labels.get("io.aklivity.zillabase.cli.project")))
                     {
                         removeVolume(client, volume.getName());
                     }
