@@ -652,7 +652,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return records;
     }
 
-    protected ZillabaseConfig readZillabaseConfig()
+    private ZillabaseConfig readZillabaseConfig()
     {
         ZillabaseConfig config;
 
