@@ -1,6 +1,6 @@
-# Zillabase Streampay
+# Zillabase StreamPayAI
 
-This is an implementation of the Streampay App designed to transfer payments from one user to another.
+This is an implementation of the StreamPay App designed to transfer payments from one user to another.
 Zilla is implementing the REST endpoints defined in an AsyncAPI 3.x spec and proxying them onto Kafka topics defined in an AsyncAPI 3.x spec based on the operations defined in each spec.
 
 Both HTTP AsyncAPI 3.x spec & Kafka AsyncAPI 3.x spec are generated automatically based on the Kafka Cluster metadata information.
@@ -86,7 +86,7 @@ Login using Keycloak with one of the users pre-created in [zillabase/config.yaml
 keycloak:
   realm: zillabase
   users:
- - username: allen
+    - username: allen
       email: allen.doe@example.com
       name: Allen Doe
       password: Test@123
@@ -118,7 +118,7 @@ To enable the OpenAI fraud detection integration, you must [create an `OPENAI_AP
 udf:
   python:
     env:
- - OPENAI_API_KEY=<your OpenAI API key>
+      - OPENAI_API_KEY=<your OpenAI API key>
 ```
 
 ### OpenAI Fraud Risk with Zillabase

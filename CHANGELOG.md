@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/aklivity/zillabase/tree/HEAD)
+## [0.4.0](https://github.com/aklivity/zillabase/tree/0.4.0) (2024-10-12)
 
-[Full Changelog](https://github.com/aklivity/zillabase/compare/0.3.0...HEAD)
+[Full Changelog](https://github.com/aklivity/zillabase/compare/0.3.0...0.4.0)
 
 **Implemented enhancements:**
 
