@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased](https://github.com/aklivity/zillabase/tree/HEAD)
+
+[Full Changelog](https://github.com/aklivity/zillabase/compare/0.5.0...HEAD)
+
+**Merged pull requests:**
+
+- Upgrade zilla version [\#146](https://github.com/aklivity/zillabase/pull/146) ([jfallows](https://github.com/jfallows))
+
 ## [0.5.0](https://github.com/aklivity/zillabase/tree/0.5.0) (2024-12-01)
 
 [Full Changelog](https://github.com/aklivity/zillabase/compare/0.4.0...0.5.0)

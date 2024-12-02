@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.aklivity.zillabase</groupId>
   <artifactId>zillabase</artifactId>
-  <version>develop-SNAPSHOT</version>
+  <version>0.5.1</version>
   <packaging>pom</packaging>
   <name>zillabase</name>
   <url>https://github.com/aklivity/zillabase</url>
