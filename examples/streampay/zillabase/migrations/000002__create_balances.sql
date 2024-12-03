@@ -1,13 +1,13 @@
 -- create_balances
 
 CREATE STREAM streampay_balance_histories(
-    balance DOUBLE PRECISION
-)
-INCLUDE timestamp AS timestamp;
+    balance DOUBLE PRECISION,
+    zilla_timestamp TIMESTAMP
+);
 
 CREATE VIEW user_transactions AS
   SELECT
-      encode(owner_id, 'escape') AS user_id,
+      encode(zilla_identity, 'escape') AS user_id,
       -amount AS net_amount
   FROM streampay_commands
   WHERE type = 'SendPayment'

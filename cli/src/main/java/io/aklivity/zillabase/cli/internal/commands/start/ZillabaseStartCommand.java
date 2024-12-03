@@ -279,7 +279,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
-        System.out.println("Started containers successfully");
+        System.out.println("Started containers successfully, awaiting health checks");
 
         while (!containerIds.isEmpty())
         {
@@ -2540,7 +2540,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
-                    .withRetries(5)
+                    .withRetries(60)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816")));
         }
     }
