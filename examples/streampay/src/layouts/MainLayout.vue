@@ -55,18 +55,7 @@
           </q-item-section>
         </q-item>
 
-        <q-item
-          clickable
-          v-ripple
-          to="/statement"
-        >
-          <q-item-section avatar>
-            <q-icon size="36px" color="primary" name="insights" />
-          </q-item-section>
-
-          <q-item-section>Statement</q-item-section>
-        </q-item>
-      </q-list>
+    </q-list>
 
       <div class="absolute-bottom text-weight-bold" style="padding-left: 80px; padding-right: 80px; margin-bottom: 30px;">
         <q-btn
