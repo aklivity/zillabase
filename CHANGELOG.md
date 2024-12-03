@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased](https://github.com/aklivity/zillabase/tree/HEAD)
+
+[Full Changelog](https://github.com/aklivity/zillabase/compare/0.5.1...HEAD)
+
+**Merged pull requests:**
+
+- Upgrade zilla version [\#149](https://github.com/aklivity/zillabase/pull/149) ([jfallows](https://github.com/jfallows))
+- Fix minor issues in streampay UI [\#148](https://github.com/aklivity/zillabase/pull/148) ([akrambek](https://github.com/akrambek))
+
 ## [0.5.1](https://github.com/aklivity/zillabase/tree/0.5.1) (2024-12-02)
 
 [Full Changelog](https://github.com/aklivity/zillabase/compare/0.5.0...0.5.1)
