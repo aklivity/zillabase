@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.5.1](https://github.com/aklivity/zillabase/tree/0.5.1) (2024-12-02)
+
+[Full Changelog](https://github.com/aklivity/zillabase/compare/0.5.0...0.5.1)
+
+**Merged pull requests:**
+
+- Upgrade zilla version [\#146](https://github.com/aklivity/zillabase/pull/146) ([jfallows](https://github.com/jfallows))
+
+## [0.5.0](https://github.com/aklivity/zillabase/tree/0.5.0) (2024-12-01)
+
+[Full Changelog](https://github.com/aklivity/zillabase/compare/0.4.0...0.5.0)
+
+**Closed issues:**
+
+- Update schemas to catalog z related queries into a separate schema and make  `public` schema as default [\#137](https://github.com/aklivity/zillabase/issues/137)
+
+**Merged pull requests:**
+
+- Upgrade zilla and openapi versions [\#144](https://github.com/aklivity/zillabase/pull/144) ([akrambek](https://github.com/akrambek))
+- Update risingwave docker image version [\#134](https://github.com/aklivity/zillabase/pull/134) ([akrambek](https://github.com/akrambek))
+- Update sql queries to follow new include format [\#117](https://github.com/aklivity/zillabase/pull/117) ([akrambek](https://github.com/akrambek))
+- indentation fix for config in readme file [\#116](https://github.com/aklivity/zillabase/pull/116) ([ankitk-me](https://github.com/ankitk-me))
+- Fix request payment accept and reject functionality [\#115](https://github.com/aklivity/zillabase/pull/115) ([akrambek](https://github.com/akrambek))
+
 ## [0.4.0](https://github.com/aklivity/zillabase/tree/0.4.0) (2024-10-12)
 
 [Full Changelog](https://github.com/aklivity/zillabase/compare/0.3.0...0.4.0)
