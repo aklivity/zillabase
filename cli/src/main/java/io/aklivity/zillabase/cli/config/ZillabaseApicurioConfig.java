@@ -16,7 +16,7 @@ package io.aklivity.zillabase.cli.config;
 
 public final class ZillabaseApicurioConfig
 {
-    private static final String DEFAULT_APICURIO_TAG = "2.6.x-release";
+    private static final String DEFAULT_APICURIO_TAG = "3.0.4";
     private static final String DEFAULT_APICURIO_URL = "http://apicurio.zillabase.dev:8080";
     private static final String DEFAULT_APICURIO_GROUP_ID = "default";
 
