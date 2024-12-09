@@ -23,8 +23,8 @@ import io.aklivity.zillabase.cli.internal.commands.asyncapi.list.ZillabaseAsynca
 import io.aklivity.zillabase.cli.internal.commands.asyncapi.show.ZillabaseAsyncapiShowCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.ZillabaseConfigCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.add.ZillabaseConfigAddCommand;
-import io.aklivity.zillabase.cli.internal.commands.config.list.ZillabaseConfigListCommand;
 import io.aklivity.zillabase.cli.internal.commands.config.remove.ZillabaseConfigRemoveCommand;
+import io.aklivity.zillabase.cli.internal.commands.config.show.ZillabaseConfigShowCommand;
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
 import io.aklivity.zillabase.cli.internal.commands.migration.add.ZillabaseMigrationAddCommand;
@@ -57,7 +57,7 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
             commands =
             {
                 ZillabaseConfigAddCommand.class,
-                ZillabaseConfigListCommand.class,
+                ZillabaseConfigShowCommand.class,
                 ZillabaseConfigRemoveCommand.class
             }),
         @Group(
