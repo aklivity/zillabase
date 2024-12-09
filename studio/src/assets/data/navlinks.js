@@ -10,16 +10,6 @@ const NavLinks = [
     ],
   },
   {
-    groupTitle: "Docs",
-    children: [
-      {
-        title: "API Docs",
-        icon: "/icons/document-text.svg",
-        href: "/apidoc",
-      },
-    ],
-  },
-  {
     groupTitle: "General",
     children: [
       {
@@ -51,6 +41,16 @@ const NavLinks = [
         title: "Storage",
         icon: "/icons/storage.svg",
         href: "/storage",
+      },
+    ],
+  },
+  {
+    groupTitle: "Docs",
+    children: [
+      {
+        title: "API Docs",
+        icon: "/icons/document-text.svg",
+        href: "/apidoc",
       },
     ],
   },

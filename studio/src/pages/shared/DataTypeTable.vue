@@ -72,12 +72,19 @@
             </template>
             <template v-else>
               <q-btn
+                icon="img:/icons/setting-2.svg"
+                flat
+                dense
+                class="filter-custom-dark"
+                @click="onSettingsClick(props.row)"
+              />
+              <q-btn
                 unelevated
                 icon="add"
                 color="light-green"
                 @click="addRow"
-                style="width: 30px; min-height: 30px"
-                class="rounded-10 q-pa-none text-custom-dark-color"
+                style="width: 28px; min-height: 28px"
+                class="rounded-10 q-pa-none text-custom-dark-color q-ml-sm"
               />
             </template>
           </template>

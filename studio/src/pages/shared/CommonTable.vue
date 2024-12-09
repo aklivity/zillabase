@@ -82,7 +82,6 @@
       flat
       bordered
       :rows-per-page-options="showPagination ? [5, 10, 20] : [0]"
-      :hide-bottom="hideBottom"
       :no-data-label="noDataLabel"
       :selection="isMultipleChecked ? 'multiple' : 'none'"
       v-model:selected="selectedRows"
@@ -420,7 +419,7 @@ export default defineComponent({
     },
     noDataLabel: {
       type: String,
-      default: "",
+      default: "No data available",
     },
   },
   data() {
