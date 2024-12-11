@@ -21,6 +21,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
+import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_APICURIO_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
@@ -28,6 +29,7 @@ import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLA
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
@@ -229,11 +231,32 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateAuthFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
-        factories.add(new CreateKafkaFactory(config));
-        factories.add(new CreateRisingWaveFactory(config));
-        factories.add(new CreateApicurioFactory(config));
-        factories.add(new CreateKeycloakFactory(config));
-        factories.add(new CreateKarapaceFactory(config));
+
+        if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
+        {
+            factories.add(new CreateKafkaFactory(config));
+        }
+
+        if (config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL))
+        {
+            factories.add(new CreateRisingWaveFactory(config));
+        }
+
+        if (config.registry.apicurio.url.equals(DEFAULT_APICURIO_URL))
+        {
+            factories.add(new CreateApicurioFactory(config));
+        }
+
+        if (config.keycloak.realm != null)
+        {
+            factories.add(new CreateKeycloakFactory(config));
+        }
+
+        if (config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL))
+        {
+            factories.add(new CreateKarapaceFactory(config));
+        }
+
         factories.add(new CreateAdminFactory(config));
         factories.add(new CreateUdfServerJavaFactory(config));
         factories.add(new CreateUdfServerPythonFactory(config));
