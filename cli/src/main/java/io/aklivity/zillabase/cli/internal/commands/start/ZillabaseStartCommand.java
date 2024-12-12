@@ -192,6 +192,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final String ZILLABASE_KAFKA_VOLUME_NAME = "zillabase_kafka";
     private static final String ZILLABASE_POSTGRES_VOLUME_NAME = "zillabase_postgres";
     private static final String ZILLABASE_MINIO_VOLUME_NAME = "zillabase_minio";
+    private static final String ZILLABASE_UDF_PYTHON_VOLUME_NAME = "zillabase_udf_python";
 
     public static final String PROJECT_NAME = ZILLABASE_PATH.toAbsolutePath().getParent().getFileName().toString();
     public static final String VOLUME_LABEL = "io.aklivity.zillabase.cli.project";
@@ -2252,7 +2253,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateMinioFactory(
             ZillabaseConfig config)
         {
-            super(config, "minio", "quay.io/minio/minio:latest");
+            super(config, "minio", "quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z");
         }
 
         @Override
@@ -2648,6 +2649,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             File projectsDirectory = new File(projectsBasePath);
             List<Bind> binds = new ArrayList<>();
+
+            client.createVolumeCmd()
+                .withName(ZILLABASE_UDF_PYTHON_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+            binds.add(new Bind(ZILLABASE_UDF_PYTHON_VOLUME_NAME, new Volume("/usr/local/lib")));
 
             if (projectsDirectory.exists() && projectsDirectory.isDirectory())
             {
