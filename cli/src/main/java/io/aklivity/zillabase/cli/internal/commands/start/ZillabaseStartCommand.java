@@ -189,13 +189,19 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         Pattern.DOTALL);
     private static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
     private static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
+    private static final String ZILLABASE_KAFKA_VOLUME_NAME = "zillabase_kafka";
+    private static final String ZILLABASE_POSTGRES_VOLUME_NAME = "zillabase_postgres";
+    private static final String ZILLABASE_MINIO_VOLUME_NAME = "zillabase_minio";
+    private static final String ZILLABASE_UDF_PYTHON_VOLUME_NAME = "zillabase_udf_python";
+
+    public static final String PROJECT_NAME = ZILLABASE_PATH.toAbsolutePath().getParent().getFileName().toString();
+    public static final String VOLUME_LABEL = "io.aklivity.zillabase.cli.project";
 
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
     private final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
     private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
     private final List<String> operations = new ArrayList<>();
     private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
-
     private final Path seedSqlPath = ZILLABASE_PATH.resolve("seed.sql");
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
@@ -231,6 +237,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateAuthFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
+        factories.add(new CreateMinioFactory(config));
+        factories.add(new CreatePostgresFactory(config));
 
         if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
         {
@@ -2082,6 +2090,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(9092);
+            String volume = "/bitnami/kafka";
+
+            client.createVolumeCmd()
+                .withName(ZILLABASE_KAFKA_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
 
             return client
                 .createContainerCmd(image)
@@ -2090,7 +2104,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
-                    .withRestartPolicy(unlessStoppedRestart()))
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(ZILLABASE_KAFKA_VOLUME_NAME, new Volume(volume))))
                 .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
                 .withExposedPorts(exposedPort)
                 .withTty(true)
@@ -2102,7 +2117,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     "KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093",
                     "KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT",
                     "KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER",
-                    "KAFKA_CFG_LOG_DIRS=/tmp/logs",
+                    "KAFKA_CFG_LOG_DIRS=%s/logs".formatted(volume),
                     "KAFKA_CFG_PROCESS_ROLES=broker,controller",
                     "KAFKA_CFG_LISTENERS=CLIENT://:9092,INTERNAL://:29092,CONTROLLER://:9093",
                     "KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL",
@@ -2121,7 +2136,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateApicurioFactory(
             ZillabaseConfig config)
         {
-            super(config, "apicurio", "apicurio/apicurio-registry-mem:%s".formatted(config.registry.apicurio.tag));
+            super(config, "apicurio", "apicurio/apicurio-registry:%s".formatted(config.registry.apicurio.tag));
         }
 
         @Override
@@ -2137,6 +2152,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
+                .withEnv("APICURIO_STORAGE_KIND=kafkasql",
+                    "APICURIO_KAFKASQL_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl))
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
@@ -2190,6 +2207,91 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
+    private static final class CreatePostgresFactory extends CreateContainerFactory
+    {
+        CreatePostgresFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "postgres", "postgres:15-alpine");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            client.createVolumeCmd()
+                .withName(ZILLABASE_POSTGRES_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(
+                        ZILLABASE_POSTGRES_VOLUME_NAME, new Volume("/var/lib/postgresql/data"))))
+                .withEnv(
+                    "POSTGRES_USER=postgres",
+                    "POSTGRES_DB=metadata",
+                    "POSTGRES_HOST_AUTH_METHOD=trust",
+                    "POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C")
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(2L))
+                    .withTimeout(SECONDS.toNanos(5L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD-SHELL", "pg_isready -U postgres")));
+        }
+    }
+
+
+    private static final class CreateMinioFactory extends CreateContainerFactory
+    {
+        CreateMinioFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "minio", "quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            client.createVolumeCmd()
+                .withName(ZILLABASE_MINIO_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(ZILLABASE_MINIO_VOLUME_NAME, new Volume("/data"))))
+                .withTty(true)
+                .withCmd("server", "--address", "0.0.0.0:9301", "/data")
+                .withEnv("MINIO_ROOT_PASSWORD=hummockadmin",
+                    "MINIO_ROOT_USER=hummockadmin")
+                .withEntrypoint(
+                    "/bin/sh", "-c",
+                    String.join(" && ",
+                        "set -e",
+                        "mkdir -p /data/hummock001",
+                        "/usr/bin/docker-entrypoint.sh \"$0\" \"$@\""))
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(1L))
+                    .withTimeout(SECONDS.toNanos(5L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/9301")));
+        }
+    }
+
 
     private static final class CreateRisingWaveFactory extends CreateContainerFactory
     {
@@ -2212,7 +2314,29 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
-                .withCmd("playground")
+                .withEnv("RW_STANDALONE_META_OPTS=" +
+                        "--listen-addr 0.0.0.0:5690 " +
+                        "--advertise-addr 0.0.0.0:5690 " +
+                        "--dashboard-host 0.0.0.0:5691 " +
+                        "--backend sql " +
+                        "--sql-endpoint postgres://postgres:@postgres.zillabase.dev:5432/metadata " +
+                        "--state-store hummock+minio://hummockadmin:hummockadmin@minio.zillabase.dev:9301/hummock001 " +
+                        "--data-directory hummock_001",
+                    "RW_STANDALONE_COMPUTE_OPTS=" +
+                        "--listen-addr 0.0.0.0:5688 " +
+                        "--advertise-addr 0.0.0.0:5688 " +
+                        "--meta-address http://0.0.0.0:5690 ",
+                    "RW_STANDALONE_FRONTEND_OPTS=" +
+                        "--listen-addr 0.0.0.0:4566 " +
+                        "--advertise-addr 0.0.0.0:4566 " +
+                        "--health-check-listener-addr 0.0.0.0:6786 " +
+                        "--meta-addr http://0.0.0.0:5690 ",
+                    "RW_STANDALONE_COMPACTOR_OPTS=" +
+                        "--listen-addr 0.0.0.0:6660 " +
+                        "--advertise-addr 0.0.0.0:6660 " +
+                        "--meta-address http://0.0.0.0:5690"
+                )
+                .withCmd("standalone")
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
@@ -2525,6 +2649,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             File projectsDirectory = new File(projectsBasePath);
             List<Bind> binds = new ArrayList<>();
+
+            client.createVolumeCmd()
+                .withName(ZILLABASE_UDF_PYTHON_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+            binds.add(new Bind(ZILLABASE_UDF_PYTHON_VOLUME_NAME, new Volume("/usr/local/lib")));
 
             if (projectsDirectory.exists() && projectsDirectory.isDirectory())
             {
