@@ -12,16 +12,9 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.config;
+package io.aklivity.zillabase.cli.internal.asyncapi;
 
-public final class ZillabaseApicurioConfig
+public class AsyncapiSpecRegisterResponse
 {
-    private static final String DEFAULT_APICURIO_TAG = "3.0.4";
-    private static final String DEFAULT_APICURIO_GROUP_ID = "default";
-
-    public static final String DEFAULT_APICURIO_URL = "http://apicurio.zillabase.dev:8080";
-
-    public String tag = DEFAULT_APICURIO_TAG;
-    public String url = DEFAULT_APICURIO_URL;
-    public String groupId = DEFAULT_APICURIO_GROUP_ID;
+    public String id;
 }

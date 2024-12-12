@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.config.list;
+package io.aklivity.zillabase.cli.internal.commands.config.show;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -25,9 +25,9 @@ import com.github.rvesse.airline.annotations.restrictions.Required;
 import io.aklivity.zillabase.cli.internal.commands.config.ZillabaseConfigCommand;
 
 @Command(
-    name = "list",
-    description = "List a config")
-public final class ZillabaseConfigListCommand extends ZillabaseConfigCommand
+    name = "show",
+    description = "Show a config")
+public final class ZillabaseConfigShowCommand extends ZillabaseConfigCommand
 {
     @Required
     @Option(name = {"--id"},

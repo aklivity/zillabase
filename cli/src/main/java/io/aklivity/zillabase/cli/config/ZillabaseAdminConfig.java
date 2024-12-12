@@ -106,6 +106,10 @@ public final class ZillabaseAdminConfig
             routes:
               - when:
                   - headers:
+                      upgrade: websocket
+                exit: ws_server
+              - when:
+                  - headers:
                       :scheme: http
                       :authority: localhost:7184
                       :path: /v1/config/{id}
@@ -130,30 +134,6 @@ public final class ZillabaseAdminConfig
               - when:
                   - headers:
                       :method: GET
-                      :scheme: http
-                      :authority: localhost:7184
-                      :path: /v1/asyncapis/{id}
-                with:
-                  headers:
-                    overrides:
-                      :authority: ${{env.APICURIO_HOST}}:${{env.APICURIO_PORT}}
-                      :path: /apis/registry/v2/groups/${{env.REGISTRY_GROUP_ID}}/artifacts/${params.id}
-                exit: apicurio_http_client
-              - when:
-                  - headers:
-                      :method: PUT
-                      :scheme: http
-                      :authority: localhost:7184
-                      :path: /v1/asyncapis/{id}
-                with:
-                  headers:
-                    overrides:
-                      :authority: ${{env.APICURIO_HOST}}:${{env.APICURIO_PORT}}
-                      :path: /apis/registry/v2/groups/${{env.REGISTRY_GROUP_ID}}/artifacts/${params.id}
-                exit: apicurio_http_client
-              - when:
-                  - headers:
-                      :method: DELETE
                       :scheme: http
                       :authority: localhost:7184
                       :path: /v1/asyncapis/{id}
@@ -266,6 +246,10 @@ public final class ZillabaseAdminConfig
                 with:
                   directory: ${params.bucket}
                   path: ${params.path}
+          ws_server:
+            type: ws
+            kind: server
+            exit: pgsql_server
           filesystem_server:
             type: filesystem
             kind: server

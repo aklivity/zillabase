@@ -21,6 +21,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
+import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_APICURIO_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
@@ -28,6 +29,7 @@ import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLA
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
@@ -142,7 +144,6 @@ import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
 import com.github.dockerjava.api.model.Volume;
-import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
@@ -151,6 +152,7 @@ import io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiKafkaFilter;
+import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiSpecRegisterResponse;
 import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseKafkaOperationBinding;
@@ -162,7 +164,6 @@ import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingRouteConfig
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaCatalogConfig;
 import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
@@ -235,13 +236,34 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateAuthFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
-        factories.add(new CreateKafkaFactory(config));
         factories.add(new CreateMinioFactory(config));
         factories.add(new CreatePostgresFactory(config));
-        factories.add(new CreateRisingWaveFactory(config));
-        factories.add(new CreateApicurioFactory(config));
-        factories.add(new CreateKeycloakFactory(config));
-        factories.add(new CreateKarapaceFactory(config));
+
+        if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
+        {
+            factories.add(new CreateKafkaFactory(config));
+        }
+
+        if (config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL))
+        {
+            factories.add(new CreateRisingWaveFactory(config));
+        }
+
+        if (config.registry.apicurio.url.equals(DEFAULT_APICURIO_URL))
+        {
+            factories.add(new CreateApicurioFactory(config));
+        }
+
+        if (config.keycloak.realm != null)
+        {
+            factories.add(new CreateKeycloakFactory(config));
+        }
+
+        if (config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL))
+        {
+            factories.add(new CreateKarapaceFactory(config));
+        }
+
         factories.add(new CreateAdminFactory(config));
         factories.add(new CreateUdfServerJavaFactory(config));
         factories.add(new CreateUdfServerPythonFactory(config));
@@ -287,7 +309,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             }
         }
 
-        System.out.println("Started containers successfully");
+        System.out.println("Started containers successfully, awaiting health checks");
 
         while (!containerIds.isEmpty())
         {
@@ -1242,14 +1264,31 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     writer.write(spec);
                 }
 
-                ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
-                command.helpOption = new HelpOption<>();
-                command.spec = tempFile.getPath();
-                command.id = id;
-                command.run();
+                HttpRequest httpRequest = HttpRequest
+                    .newBuilder(toURI("http://localhost:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
+                        "/v1/asyncapis"))
+                    .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
+                    .header("X-Registry-ArtifactId", id)
+                    .POST(HttpRequest.BodyPublishers.ofString(spec)).build();
+
+                HttpClient client = HttpClient.newHttpClient();
+                HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                String response = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
+
+                if (response != null)
+                {
+                    Jsonb jsonb = JsonbBuilder.newBuilder().build();
+                    AsyncapiSpecRegisterResponse register = jsonb.fromJson(response, AsyncapiSpecRegisterResponse.class);
+                    System.out.println("Registered AsyncAPI spec: %s".formatted(register.id));
+                }
+                else
+                {
+                    System.out.println("Error registering AsyncAPI spec");
+                }
+
                 tempFile.delete();
             }
-            catch (IOException ex)
+            catch (IOException | InterruptedException ex)
             {
                 ex.printStackTrace(System.err);
             }
@@ -2647,7 +2686,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
-                    .withRetries(5)
+                    .withRetries(60)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816")));
         }
     }

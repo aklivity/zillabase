@@ -81,7 +81,7 @@ def dynamic_import(file_path):
 CLASS_NAME_PATTERN = re.compile(r"([a-z])([A-Z])")
 
 if __name__ == "__main__":
-    server = UdfServer(location="0.0.0.0:8816")
+    functions = []
     matcher = CLASS_NAME_PATTERN
 
     try:
@@ -99,11 +99,14 @@ if __name__ == "__main__":
                     if (hasattr(function, '__module__') and
                             function.__module__ == 'arrow_udf' and
                             hasattr(function, '_name')):
-                        server.add_function(function)
+                        functions.append(function)
 
             except (ModuleNotFoundError, AttributeError, ImportError) as ex:
                 print(f"Error loading {class_file}: {ex}")
 
+        server = UdfServer(location="0.0.0.0:8816")
+        for function in functions:
+            server.add_function(function)
         server.serve()
 
     except Exception as ex:

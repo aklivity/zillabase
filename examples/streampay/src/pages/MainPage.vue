@@ -96,7 +96,7 @@ onMounted(async () => {
         } else if (activity.eventname === 'PaymentReceived') {
           from = activity.to_user_id;
           to = activity.from_user_id;
-          state = 'received';
+          state = 'received from';
         } else if (activity.eventname === 'PaymentRequested') {
           state = 'requested';
         }

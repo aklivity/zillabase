@@ -1,4 +1,4 @@
-openai==1.51.2
+openai==1.55.3
 pandas==2.2.3
 python-dotenv==1.0.1
 scipy==1.14.1
