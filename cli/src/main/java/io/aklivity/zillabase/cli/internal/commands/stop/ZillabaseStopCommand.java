@@ -14,16 +14,22 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.stop;
 
+import static io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand.PROJECT_NAME;
+import static io.aklivity.zillabase.cli.internal.commands.start.ZillabaseStartCommand.VOLUME_LABEL;
+
 import java.util.List;
 import java.util.Map;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectVolumeResponse;
 import com.github.dockerjava.api.command.RemoveContainerCmd;
 import com.github.dockerjava.api.command.RemoveNetworkCmd;
+import com.github.dockerjava.api.command.RemoveVolumeCmd;
 import com.github.dockerjava.api.command.StopContainerCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Network;
 import com.github.rvesse.airline.annotations.Command;
+import com.github.rvesse.airline.annotations.Option;
 
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 
@@ -32,6 +38,14 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
     description = "Stop containers for local development")
 public final class ZillabaseStopCommand extends ZillabaseDockerCommand
 {
+    private static final String RESET = "\u001B[0m";
+    private static final String GREEN = "\u001B[32m";
+
+    @Option(name = {"--no-backup"},
+        description = "Deletes all data volumes after stopping.",
+        hidden = true)
+    public boolean noBackup = true;
+
     @Override
     protected void invoke(
         DockerClient client)
@@ -59,6 +73,28 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
         networks.stream()
             .filter(n -> networkName.equals(n.getName()))
             .forEach(n -> removeNetwork(client, n.getId()));
+
+        if (noBackup)
+        {
+            List<InspectVolumeResponse> volumes = client.listVolumesCmd().exec().getVolumes();
+            if (volumes != null)
+            {
+                for (InspectVolumeResponse volume : volumes)
+                {
+                    Map<String, String> labels = volume.getLabels();
+                    if (labels != null && !labels.isEmpty() &&
+                        PROJECT_NAME.equals(labels.get(VOLUME_LABEL)))
+                    {
+                        removeVolume(client, volume.getName());
+                    }
+                }
+            }
+        }
+        else
+        {
+            System.out.println("Local data are backed up to docker volume. Use docker to show them: " +
+                GREEN + "docker volume ls --filter label=%s=%s".formatted(VOLUME_LABEL, PROJECT_NAME) + RESET);
+        }
     }
 
     private static void stopContainer(
@@ -91,4 +127,15 @@ public final class ZillabaseStopCommand extends ZillabaseDockerCommand
             command.exec();
         }
     }
+
+    private static void removeVolume(
+        DockerClient client,
+        String volume)
+    {
+        try (RemoveVolumeCmd command = client.removeVolumeCmd(volume))
+        {
+            command.exec();
+        }
+    }
+
 }
