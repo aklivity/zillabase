@@ -55,6 +55,7 @@
               dense
               outlined
               placeholder="View Name"
+              v-model="viewInfo.name"
               class="rounded-10 self-center text-weight-light rounded-input"
             />
           </div>
@@ -71,6 +72,7 @@
               type="textarea"
               placeholder="View Description..."
               rows="8"
+              v-model="viewInfo.description"
               autogrow
               class="rounded-10 self-center text-weight-light rounded-input"
             />
@@ -87,6 +89,7 @@
               outlined
               type="textarea"
               placeholder="Write Query..."
+              v-model="viewInfo.body"
               rows="8"
               autogrow
               class="rounded-10 self-center text-weight-light rounded-input"
@@ -113,7 +116,12 @@
             </div>
           </div>
           <div class="col-9">
-            <q-checkbox dense v-model="zTableVal" color="light-green" />
+            <q-radio
+              dense
+              v-model="viewInfo.selectionType"
+              val="view"
+              color="light-green"
+            />
           </div>
         </div>
         <div class="row items-center q-mt-md">
@@ -132,7 +140,12 @@
             </div>
           </div>
           <div class="col-9">
-            <q-checkbox dense v-model="materializedVal" color="light-green" />
+            <q-radio
+              dense
+              color="light-green"
+              v-model="viewInfo.selectionType"
+              val="material"
+            />
           </div>
         </div>
       </q-card-section>
@@ -142,6 +155,7 @@
           unelevated
           label="Cancel"
           :ripple="false"
+          @click="addNewView = false"
           color="dark"
           class="text-capitalize rounded-10 highlighted-border"
         />
@@ -149,6 +163,7 @@
           unelevated
           label="Add View"
           icon="add"
+          @click="createViews"
           :ripple="false"
           class="bg-light-green rounded-10 text-white text-capitalize self-center"
         />
@@ -179,8 +194,9 @@
       <q-separator />
       <q-card-section>
         <p class="text-custom-gray-dark text-weight-light q-pa-sm w-90">
-          Are you sure you want to delete this <span class="fw-600">View</span>?
-          This action is irreversible.
+          Are you sure you want to delete this
+          <span class="fw-600">{{ this.selectedRow.name }}</span
+          >? This action is irreversible.
         </p>
       </q-card-section>
       <q-separator />
@@ -216,8 +232,9 @@ export default defineComponent({
       isDeleteDialogOpen: false,
       selectedRow: null,
       addNewView: false,
-      zTableVal: true,
-      materializedVal: true,
+      viewInfo: {
+        selectionType: "view",
+      },
       tableColumns: [
         { name: "name", label: "View Name", align: "left", field: "name" },
         {
@@ -242,52 +259,87 @@ export default defineComponent({
         },
         { name: "actions", label: "Actions", align: "center" },
       ],
-      tableData: [
-        {
-          id: 1,
-          name: "Example Data Table",
-          description: "Lorem ipsum dolor sit amet.",
-          zview: true,
-          materialized: false,
-        },
-        {
-          id: 2,
-          name: "Example Data Table",
-          description: "Lorem ipsum dolor sit amet.",
-          zview: false,
-          materialized: true,
-        },
-        {
-          id: 3,
-          name: "Example Data Table",
-          description: "Lorem ipsum dolor sit amet.",
-          zview: true,
-          materialized: false,
-        },
-        {
-          id: 4,
-          name: "Example Data Table",
-          description: "Lorem ipsum dolor sit amet.",
-          zview: true,
-          materialized: false,
-        },
-        {
-          id: 5,
-          name: "Example Data Table",
-          description: "Lorem ipsum dolor sit amet.",
-          zview: false,
-          materialized: true,
-        },
-      ],
+      tableData: [],
     };
   },
+  mounted() {
+    this.$ws.connect(() => {
+      this.getZViews();
+    });
+    this.$ws.addMessageHandler((data) => {
+      if (data.type == "get_views") {
+        this.tableData = data.data.map((x, i) => ({
+          id: i + 1,
+          ...x,
+        }));
+      }
+      if (
+        data.type == "create_view" ||
+        data.type == "create_materialized_view" ||
+        data.type == "drop_view"
+      ) {
+        this.getZViews();
+      }
+    });
+  },
   methods: {
+    createViews() {
+      if (this.viewInfo.selectionType == "material") {
+        this.createMaterializedView();
+        this.addNewView = false;
+      }
+      if (this.viewInfo.selectionType == "view") {
+        this.createZView();
+        this.addNewView = false;
+      }
+    },
+    createMaterializedView() {
+      this.$ws.sendMessage(
+        `CREATE MATERIALIZED VIEW ${this.viewInfo.name} AS ${this.viewInfo.body}`,
+        "create_materialized_view"
+      );
+    },
+    createZView() {
+      this.$ws.sendMessage(
+        `CREATE VIEW ${this.viewInfo.name} AS ${this.viewInfo.body}`,
+        "create_view"
+      );
+    },
+    getZViews() {
+      this.$ws.sendMessage(
+        `SELECT
+            table_name AS "name",
+            'View' AS "type",
+            true AS "zview",        -- Flag for regular views
+            false AS "materialized" -- Flag for materialized views
+        FROM 
+            information_schema.views
+        WHERE
+            table_schema NOT IN ('pg_catalog', 'information_schema')
+        UNION ALL
+        SELECT
+            matviewname AS "name",
+            'Materialized View' AS "type",
+            false AS "zview",
+            true AS "materialized"
+        FROM 
+            pg_catalog.pg_matviews
+        WHERE
+            schemaname NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY "name";
+`,
+        "get_views"
+      );
+    },
     openDeleteDialog(row) {
       this.selectedRow = row;
       this.isDeleteDialogOpen = true;
     },
     confirmDelete() {
-      // Handle deletion logic here
+      this.$ws.sendMessage(
+        `DROP ${(this.selectedRow.zview ? '' : 'MATERIALIZED')} VIEW \"${this.selectedRow.name}\";`,
+        "drop_view"
+      );
       this.isDeleteDialogOpen = false;
       this.selectedRow = null;
     },

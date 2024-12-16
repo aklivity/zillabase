@@ -9,6 +9,16 @@
       </div>
       <div class="flex q-gutter-md">
         <q-btn
+         outline
+          unelevated
+          label="View All API Keys"
+          :ripple="false"
+          class=" rounded-10  text-capitalize self-center btn-add-new"
+          @click="handleClick"
+          v-if="additionButton"
+          color="secondary"
+        />
+        <q-btn
           unelevated
           :label="buttonLabel"
           icon="add"
@@ -17,6 +27,7 @@
           @click="handleClick"
           v-if="showAddButton"
         />
+        
 
         <q-btn
           unelevated
@@ -64,6 +75,7 @@
           dense
           :placeholder="`Search ${searchInputPlaceholder}..`"
           class="rounded-10 self-center search-input text-weight-light rounded-input"
+          v-if="showSearch"
         >
           <template v-slot:append>
             <q-icon
@@ -174,7 +186,7 @@
         </q-td>
       </template>
 
-      <template v-slot:header-cell-type="props">
+      <template v-slot:header-cell-type="props" v-if="showLabelBottom">
         <q-th :props="props">
           {{ props.col.label }}
           <q-icon
@@ -191,8 +203,8 @@
           <p
             class="function-type-cell inline-block text-white"
             :class="{
-              'bg-light-green': props.row.type === 'External',
-              'bg-custom-dark': props.row.type === 'Embedded',
+              'bg-light-green': props.row.type === 'External' || props.row.type ==='Active',
+              'bg-custom-dark': props.row.type === 'Embedded' || props.row.type ==='Real-time Synced',
             }"
           >
             {{ props.row.type }}
@@ -421,6 +433,19 @@ export default defineComponent({
       type: String,
       default: "No data available",
     },
+    showSearch: {
+      type: Boolean,
+      default: true,
+    },
+    additionButton:{
+      type:Boolean,
+      default:false
+    },
+    showLabelBottom:
+    {
+      type:Boolean,
+      default:true
+    }
   },
   data() {
     return {
