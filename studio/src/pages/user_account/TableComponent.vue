@@ -21,6 +21,7 @@
     class="add-new-dialog"
   >
     <q-card class="full-height">
+      <q-form @submit="addTable" @reset="resetTable" ref="addTableForm">
       <q-card-section class="flex justify-between items-center q-pa-lg">
         <div class="flex q-gutter-lg">
           <q-btn
@@ -43,7 +44,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section class="q-py-xl px-28">
-        <div class="row items-center">
+        <div class="row items-start">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Name</span
@@ -56,6 +57,7 @@
               v-model="tableInfo.name"
               placeholder="Table Name"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -74,6 +76,7 @@
               v-model="tableInfo.description"
               autogrow
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -93,13 +96,10 @@
               <q-tooltip anchor="bottom middle" self="top middle">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
               </q-tooltip>
-              <q-tooltip anchor="bottom middle" self="top middle">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </q-tooltip>
             </div>
           </div>
           <div class="col-9">
-            <q-checkbox dense v-model="zTableVal" color="light-green" />
+            <q-checkbox dense v-model="tableInfo.zTableVal" color="light-green" />
           </div>
         </div>
       </q-card-section>
@@ -175,12 +175,13 @@
         <q-btn
           unelevated
           label="Add Table"
-          @click="addTable"
           icon="add"
           :ripple="false"
+          type="submit"
           class="bg-light-green rounded-10 text-white text-capitalize self-center"
         />
       </q-card-section>
+    </q-form>
     </q-card>
   </q-dialog>
 
@@ -302,6 +303,7 @@ export default defineComponent({
       tableInfo: {
         name: "",
         description: "",
+        zTableVal: false,
       },
       tableColumns: [
         { name: "name", label: "Table Name", align: "left", field: "name" },
@@ -318,17 +320,17 @@ export default defineComponent({
       ],
       tableData: [],
       dataTypeRow: [
-        { name: "id", type: "int", defaultValue: "", primary: false, id: 1 },
+        { name: "", type: "", defaultValue: "", primary: false, id: 1 },
         {
-          name: "name",
-          type: "varchar",
+          name: "",
+          type: "",
           defaultValue: "",
           primary: false,
           id: 2,
         },
         {
-          name: "created_at",
-          type: "timestamp",
+          name: "",
+          type: "",
           defaultValue: "",
           primary: false,
           id: 3,
@@ -495,6 +497,19 @@ export default defineComponent({
       );
     },
     addTable() {
+      const hasValidData = this.dataTypeRow.some(
+        (row) => row.name.trim() && row.type.trim()
+      );
+
+      if (!hasValidData) {
+        this.$q.notify({
+          type: "negative",
+          message: "Please fill in at least one row.",
+          position: "top-right"
+        });
+        return;
+      }
+
       const columns = this.$refs.dataTypeTable.rows
         .filter((x) => x.name)
         .map((field) => {
@@ -534,6 +549,21 @@ export default defineComponent({
         this.$ws.sendMessage(zViewQuery, "create_view");
       }
       this.addNewTable = false;
+      this.$refs.addTableForm.reset();
+    },
+    resetTable() {
+      this.tableInfo = {
+        name: "",
+        description: "",
+        zTableVal: false,
+      };
+      
+      this.dataTypeRow = [
+        { name: "", type: "", defaultValue: "", primary: false, id: 1 },
+        { name: "", type: "",defaultValue: "", primary: false, id: 2, },
+        { name: "", type: "", defaultValue: "", primary: false, id: 3, },
+        { name: "", type: "", defaultValue: "", primary: false, id: 4 },
+      ]
     },
     openDeleteDialog(row) {
       this.selectedRow = row;

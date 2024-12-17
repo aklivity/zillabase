@@ -43,8 +43,9 @@
         />
       </q-card-section>
       <q-separator />
-      <q-card-section class="-py-xl px-28">
-        <div class="row items-center">
+      <q-form @submit="createViews" @reset="resetViews" ref="addViewsForm">
+        <q-card-section class="-py-xl px-28">
+        <div class="row items-start">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Name</span
@@ -57,6 +58,8 @@
               placeholder="View Name"
               v-model="viewInfo.name"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
+
             />
           </div>
         </div>
@@ -75,6 +78,7 @@
               v-model="viewInfo.description"
               autogrow
               class="rounded-10 self-center text-weight-light rounded-input"
+               :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -93,6 +97,7 @@
               rows="8"
               autogrow
               class="rounded-10 self-center text-weight-light rounded-input"
+               :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -163,11 +168,12 @@
           unelevated
           label="Add View"
           icon="add"
-          @click="createViews"
           :ripple="false"
+          type="submit"
           class="bg-light-green rounded-10 text-white text-capitalize self-center"
         />
       </q-card-section>
+      </q-form>
     </q-card>
   </q-dialog>
 
@@ -233,6 +239,9 @@ export default defineComponent({
       selectedRow: null,
       addNewView: false,
       viewInfo: {
+        name: "",
+        description: "",
+        body: "",
         selectionType: "view",
       },
       tableColumns: [
@@ -291,6 +300,15 @@ export default defineComponent({
       if (this.viewInfo.selectionType == "view") {
         this.createZView();
         this.addNewView = false;
+      }
+      this.$refs.addViewsForm.reset();
+    },
+    resetViews() {
+      this.viewInfo = {
+        name: "",
+        description: "",
+        body: "",
+        selectionType: "view",
       }
     },
     createMaterializedView() {

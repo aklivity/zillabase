@@ -43,8 +43,9 @@
         />
       </q-card-section>
       <q-separator />
-      <q-card-section class="q-py-xl px-28">
-        <div class="row items-center">
+      <q-form @submit="addStream" @reset="resetStream" ref="addStreamForm">
+        <q-card-section class="q-py-xl px-28">
+        <div class="row items-start">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Name</span
@@ -52,10 +53,12 @@
           </div>
           <div class="col-9">
             <q-input
+            v-model="streamInfo.name"
               dense
               outlined
               placeholder="Stream Name"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -67,13 +70,14 @@
           </div>
           <div class="col-9">
             <q-select
-              v-model="readWrite"
+              v-model="streamInfo.type"
               :options="readWriteOptions"
               outlined
               dense
               placeholder="Read-Write"
               dropdown-icon="keyboard_arrow_down"
               class="rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -85,17 +89,18 @@
           </div>
           <div class="col-9">
             <q-select
-              v-model="exampleFunction"
+              v-model="streamInfo.targetFunction"
               :options="exampleFunctionOptions"
               outlined
               dense
               placeholder="ExampleFunction"
               dropdown-icon="keyboard_arrow_down"
               class="rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
-        <div class="row items-center q-mt-lg q-pt-md">
+        <div class="row items-start q-mt-lg q-pt-md">
           <div class="col-3 flex items-center">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Messages</span
@@ -103,10 +108,12 @@
           </div>
           <div class="col-9">
             <q-input
+              v-model="streamInfo.messages"
               dense
               outlined
               placeholder="34"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -125,9 +132,11 @@
           label="Add Stream"
           icon="add"
           :ripple="false"
+          type="submit"
           class="bg-light-green rounded-10 text-white text-capitalize self-center"
         />
       </q-card-section>
+      </q-form>
     </q-card>
   </q-dialog>
 
@@ -197,6 +206,12 @@ export default defineComponent({
       readWriteOptions: ["1", "2"],
       exampleFunction: "",
       exampleFunctionOptions: ["1", "2"],
+      streamInfo: {
+        name: "",
+        type: "",
+        targetFunction: "",
+        messages: "",
+      },
       tableColumns: [
         { name: "name", label: "Name", align: "left", field: "name" },
         {
@@ -280,6 +295,18 @@ export default defineComponent({
     openTableDialog() {
       this.addNewStream = !this.addNewStream;
     },
+    addStream() {
+      this.addNewStream = !this.addNewStream;
+      this.$refs.addStreamForm.reset();
+    },
+    resetStream() {
+      this.streamInfo = {
+        name: "",
+        type: "",
+        targetFunction: "",
+        messages: "",
+      }
+    }
   },
 });
 </script>

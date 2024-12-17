@@ -12,6 +12,8 @@
           @add-new="openUserDialog"
           showPagination
           :hideBottom="false"
+          @edit-row="getUserById"
+          @delete-row="openDeleteDialog"
         />
       </div>
       <q-separator vertical />
@@ -26,6 +28,8 @@
           @add-new="openProviderDialog"
           showPagination
           :hideBottom="false"
+          @edit-row="getSSOProviderById"
+          @delete-row="openSSOProviderDeleteDialog"
         />
       </div>
     </div>
@@ -62,23 +66,60 @@
         />
       </q-card-section>
       <q-separator />
-      <q-card-section class="q-py-xl px-28">
-        <div class="row items-center">
+      <q-form @submit="addUser" @reset="resetUser" ref="addUserForm">
+        <q-card-section class="q-py-xl px-28">
+        <div class="row items-start q-mt-sm q-pt-md">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Name</span
+              >First Name</span
             >
           </div>
           <div class="col-9">
             <q-input
               dense
+              v-model="userInfo.firstName"
               outlined
-              placeholder="User Name"
+              placeholder="First Name"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
-        <div class="row items-center q-mt-lg q-pt-md">
+        <div class="row items-start q-mt-sm q-pt-md">
+          <div class="col-3">
+            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
+              >Last Name</span
+            >
+          </div>
+          <div class="col-9">
+            <q-input
+              dense
+              v-model="userInfo.lastName"
+              outlined
+              placeholder="Last Name"
+              class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
+            />
+          </div>
+        </div>
+        <div class="row items-start q-mt-sm q-pt-md">
+          <div class="col-3">
+            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
+              >Username</span
+            >
+          </div>
+          <div class="col-9">
+            <q-input
+              dense
+              v-model="userInfo.username"
+              outlined
+              placeholder="User Name"
+              class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
+            />
+          </div>
+        </div>
+        <div class="row items-start q-mt-sm q-pt-md">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Email</span
@@ -88,9 +129,29 @@
             <q-input
               dense
               outlined
+              v-model="userInfo.email"
               placeholder="User Email"
               type="email"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
+            />
+          </div>
+        </div>
+        <div class="row items-start q-mt-sm q-pt-md">
+          <div class="col-3">
+            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
+              >Password</span
+            >
+          </div>
+          <div class="col-9">
+            <q-input
+              dense
+              outlined
+              v-model="userInfo.password"
+              placeholder="Password"
+              type="password"
+              class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -102,6 +163,7 @@
           label="Cancel"
           :ripple="false"
           color="dark"
+          @click="addNewUser = !addNewUser"
           class="text-capitalize rounded-10 highlighted-border"
         />
         <q-btn
@@ -109,9 +171,11 @@
           label="Add User"
           icon="add"
           :ripple="false"
+          type="submit"
           class="bg-light-green rounded-10 text-white text-capitalize self-center"
         />
       </q-card-section>
+      </q-form>
     </q-card>
   </q-dialog>
   <!-- add provider Dialog -->
@@ -146,11 +210,12 @@
         />
       </q-card-section>
       <q-separator />
-      <q-card-section class="q-py-xl px-28">
-        <div class="row items-center">
+      <q-form @submit="addSSOProvider" @reset="resetSSOProvider" ref="addSSOProviderForm">
+        <q-card-section class="q-py-xl px-28">
+        <div class="row items-start">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Name</span
+              >Provider</span
             >
           </div>
           <div class="col-9">
@@ -158,11 +223,61 @@
               dense
               outlined
               placeholder="e.g Google"
+              v-model="providerInfo.providerId"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
-        <div class="row items-center q-mt-lg q-pt-md">
+        <div class="row items-start q-mt-sm q-pt-md">
+          <div class="col-3">
+            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
+              >Alias</span
+            >
+          </div>
+          <div class="col-9">
+            <q-input
+              dense
+              outlined
+              v-model="providerInfo.alias"
+              class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
+            />
+          </div>
+        </div>
+        <div class="row items-start q-mt-sm q-pt-md">
+          <div class="col-3">
+            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
+              >Client</span
+            >
+          </div>
+          <div class="col-9">
+            <q-input
+              dense
+              outlined
+              v-model="providerInfo.clientId"
+              class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
+            />
+          </div>
+        </div>
+        <div class="row items-start q-mt-sm q-pt-md">
+          <div class="col-3">
+            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
+              >Secret</span
+            >
+          </div>
+          <div class="col-9">
+            <q-input
+              dense
+              outlined
+              v-model="providerInfo.secret"
+              class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
+            />
+          </div>
+        </div>
+        <div class="row items-center q-mt-sm q-pt-md">
           <div class="col-3 flex items-center">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Enabled</span
@@ -176,7 +291,11 @@
             </q-tooltip>
           </div>
           <div class="col-9">
-            <q-checkbox dense v-model="isEnabled" color="light-green" />
+            <q-checkbox
+              dense
+              v-model="providerInfo.enabled"
+              color="light-green"
+            />
           </div>
         </div>
       </q-card-section>
@@ -187,6 +306,7 @@
           label="Cancel"
           :ripple="false"
           color="dark"
+          @click="addNewProvider = !addNewProvider"
           class="text-capitalize rounded-10 highlighted-border"
         />
         <q-btn
@@ -194,15 +314,121 @@
           label="Add Provider"
           icon="add"
           :ripple="false"
+          type="submit"
           class="bg-light-green rounded-10 text-white text-capitalize"
         />
       </q-card-section>
+      </q-form>
+    </q-card>
+  </q-dialog>
+  <!-- Delete Dialog -->
+  <q-dialog
+    v-model="isDeleteDialogOpen"
+    backdrop-filter="blur(4px)"
+    class="delete-dialog"
+  >
+    <q-card class="highlighted-border">
+      <q-card-section class="flex justify-between items-center q-pa-lg">
+        <div class="flex items-center">
+          <q-icon size="sm" name="img:/icons/trash.svg" />
+          <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
+            Delete User?
+          </p>
+        </div>
+        <q-icon
+          name="close"
+          class="cursor-pointer fs-20"
+          @click="isDeleteDialogOpen = false"
+        />
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <p class="text-custom-gray-dark text-weight-light q-pa-sm w-90">
+          Are you sure you want to delete this
+          <span class="fw-600">{{ this.userInfo.username }}</span
+          >? This action is irreversible.
+        </p>
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          label="Cancel"
+          unelevated
+          color="dark"
+          class="rounded-10 text-capitalize min-w-80 highlighted-border"
+          @click="isDeleteDialogOpen = false"
+        />
+        <q-btn
+          label="Delete"
+          unelevated
+          color="negative"
+          class="rounded-10 text-capitalize min-w-80"
+          @click="confirmDelete"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <q-dialog
+    v-model="isDeleteSSOProviderDialogOpen"
+    backdrop-filter="blur(4px)"
+    class="delete-dialog"
+  >
+    <q-card class="highlighted-border">
+      <q-card-section class="flex justify-between items-center q-pa-lg">
+        <div class="flex items-center">
+          <q-icon size="sm" name="img:/icons/trash.svg" />
+          <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
+            Delete SSO Provider?
+          </p>
+        </div>
+        <q-icon
+          name="close"
+          class="cursor-pointer fs-20"
+          @click="isDeleteSSOProviderDialogOpen = false"
+        />
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <p class="text-custom-gray-dark text-weight-light q-pa-sm w-90">
+          Are you sure you want to delete this
+          <span class="fw-600">{{ this.providerInfo.providerId }}</span
+          >? This action is irreversible.
+        </p>
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          label="Cancel"
+          unelevated
+          color="dark"
+          class="rounded-10 text-capitalize min-w-80 highlighted-border"
+          @click="isDeleteSSOProviderDialogOpen = false"
+        />
+        <q-btn
+          label="Delete"
+          unelevated
+          color="negative"
+          class="rounded-10 text-capitalize min-w-80"
+          @click="confirmSSOProviderDelete"
+        />
+      </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
 <script>
 import { defineComponent } from "vue";
 import CommonTable from "../shared/CommonTable.vue";
+import {
+  appAddSSOProviders,
+  appAddUsers,
+  appDeleteSSOProvidersById,
+  appDeleteUserById,
+  appGetSSOProviders,
+  appGetSSOProvidersById,
+  appGetUserById,
+  appGetUsers,
+} from "./../../services/api";
 
 export default defineComponent({
   name: "AuthComponent",
@@ -213,46 +439,57 @@ export default defineComponent({
     return {
       addNewUser: false,
       addNewProvider: false,
+      providerInfo: {
+        providerId: '',
+        alias: '',
+        clientId: '',
+        secret: '',
+        enabled: false,
+      },
+      userInfo: {
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        password: '',
+      },
       isEnabled: true,
       userTableColumns: [
         { name: "id", label: "ID", align: "left", field: "id", sortable: true },
-        { name: "name", label: "Name", align: "left", field: "name" },
+        {
+          name: "username",
+          label: "Username",
+          align: "left",
+          field: "username",
+        },
         { name: "email", label: "Email", align: "left", field: "email" },
         { name: "actions", label: "Actions", align: "center" },
       ],
-      userTableData: [
-        { id: 1, name: "John Doe", email: "johndoe@example.com" },
-        { id: 2, name: "John Doe", email: "johndoe@example.com" },
-        { id: 3, name: "John Doe", email: "johndoe@example.com" },
-        { id: 4, name: "John Doe", email: "johndoe@example.com" },
-        { id: 5, name: "John Doe", email: "johndoe@example.com" },
-        { id: 6, name: "John Doe", email: "johndoe@example.com" },
-      ],
+      isDeleteDialogOpen: false,
+      isDeleteSSOProviderDialogOpen: false,
+      userTableData: [],
       ssoTableColumns: [
         {
-          name: "providers",
+          name: "providerId",
           label: "Providers",
           align: "left",
-          field: "providers",
+          field: "providerId",
           sortable: true,
         },
         {
-          name: "enabled",
-          label: "Enabled",
+          name: "alias",
+          label: "Alias",
           align: "center",
-          field: "Enabled",
+          field: "alias",
         },
         { name: "actions", label: "Actions", align: "center" },
       ],
-      ssoTableData: [
-        { providers: "Google", enabled: true },
-        { providers: "Github", enabled: false },
-        { providers: "Yahoo", enabled: true },
-        { providers: "LinkedIn", enabled: false },
-        { providers: "Stackoverflow", enabled: true },
-        { providers: "Custom", enabled: false },
-      ],
+      ssoTableData: [],
     };
+  },
+  mounted() {
+    this.getUsers();
+    this.getSSOProvider();
   },
   methods: {
     openUserDialog() {
@@ -260,6 +497,102 @@ export default defineComponent({
     },
     openProviderDialog() {
       this.addNewProvider = !this.addNewProvider;
+    },
+    // Auth User
+    addUser() {
+      appAddUsers(this.userInfo)
+        .then(({ data }) => {
+          this.getUsers();
+        })
+        .catch((err) => {
+          this.addNewUser = false;
+        });
+        this.$refs.addUserForm.reset();
+    },
+    resetUser() {
+      this.userInfo = {
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        password: '',
+      }
+    },
+    getUsers() {
+      appGetUsers()
+        .then(({ data }) => {
+          this.userTableData = data;
+        })
+        .catch((err) => {});
+    },
+    getUserById(user) {
+      appGetUserById(user.id)
+        .then(({ data }) => {
+          this.userInfo = data;
+          this.addNewUser = true;
+        })
+        .catch((err) => {});
+    },
+    openDeleteDialog(row) {
+      this.userInfo = row;
+      this.isDeleteDialogOpen = true;
+    },
+    confirmDelete() {
+      this.isDeleteDialogOpen = false;
+      appDeleteUserById(user.id)
+        .then(({ data }) => {
+          this.getUsers();
+        })
+        .catch((err) => {});
+    },
+    // SSO Proovider
+    addSSOProvider() {
+      appAddSSOProviders(this.providerInfo)
+        .then(({ data }) => {
+          this.getSSOProvider();
+        })
+        .catch((err) => {
+          this.addNewProvider = false;
+        });
+        this.$refs.addSSOProviderForm.reset();
+    },
+    resetSSOProvider() {
+      this.providerInfo = {
+        providerId: '',
+        alias: '',
+        clientId: '',
+        secret: '',
+        enabled: false,
+      }
+    },
+    getSSOProvider() {
+      appGetSSOProviders()
+        .then(({ data }) => {
+          this.ssoTableData = data;
+        })
+        .catch((err) => {});
+    },
+    getSSOProviderById(user) {
+      appGetSSOProvidersById(user.id)
+        .then(({ data }) => {
+          this.providerInfo = data;
+          this.addNewProvider = true;
+        })
+        .catch((err) => {
+          this.addNewProvider = true;
+        });
+    },
+    openSSOProviderDeleteDialog(row) {
+      this.providerInfo = row;
+      this.isDeleteSSOProviderDialogOpen = true;
+    },
+    confirmSSOProviderDelete() {
+      this.isDeleteSSOProviderDialogOpen = false;
+      appDeleteSSOProvidersById(user.id)
+        .then(({ data }) => {
+          this.getSSOProvider();
+        })
+        .catch((err) => {});
     },
   },
 });

@@ -9,6 +9,7 @@
       searchInputPlaceholder="Functions"
       @delete-row="openDeleteDialog"
       @add-new="openFunctionDialog"
+      :tableName="'function-table'"
     />
   </div>
 
@@ -22,6 +23,7 @@
     class="add-new-dialog"
   >
     <q-card class="full-height">
+      <q-form @submit="addFunction" @reset="resetFunction" ref="addFunctionForm">
       <q-card-section class="flex justify-between items-center q-pa-lg">
         <div class="flex q-gutter-lg">
           <q-btn
@@ -44,7 +46,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section class="q-py-xl px-28">
-        <div class="row items-center">
+        <div class="row items-start">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Name</span
@@ -57,10 +59,11 @@
               v-model="functionInfo.name"
               placeholder="Function Name"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
-        <div class="row items-center q-mt-lg">
+        <div class="row items-start q-mt-lg">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Return Type</span
@@ -73,10 +76,11 @@
               v-model="functionInfo.returnType"
               placeholder="Function Return Type"
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
-        <div class="row items-center q-mt-lg">
+        <div class="row items-start q-mt-lg">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Language</span
@@ -91,6 +95,7 @@
               placeholder="Select Language"
               dropdown-icon="keyboard_arrow_down"
               class="rounded-input"
+              :rules="[ val => !!val || 'Field is required']"
             />
           </div>
         </div>
@@ -190,6 +195,9 @@
               rows="8"
               autogrow
               class="rounded-10 self-center text-weight-light rounded-input"
+              :rules="[
+                val => (functionInfo.functionType !== 'external' || !!val) || 'Body is required'
+              ]"
             />
           </div>
         </div>
@@ -207,12 +215,13 @@
         <q-btn
           unelevated
           label="Add Function"
-          @click="addFunction"
           icon="add"
           :ripple="false"
+          type="submit"
           class="bg-light-green rounded-10 text-white text-capitalize self-center"
         />
       </q-card-section>
+    </q-form>
     </q-card>
   </q-dialog>
   <!-- Delete Dialog -->
@@ -280,7 +289,11 @@ export default defineComponent({
       addNewFunction: false,
       selectedRow: null,
       functionInfo: {
+        name: "",
+        returnType: "",
+        language: "",
         functionType: "embedded",
+        body: "",
       },
       languageOptions: ["plpgsql"],
       tableColumns: [
@@ -312,13 +325,13 @@ export default defineComponent({
           field: "type",
           sortable: true,
         },
-        {
-          name: "bodyOrExternalName",
-          label: "Body/ External Name",
-          align: "center",
-          field: "bodyOrExternalName",
-          sortable: true,
-        },
+        // {
+        //   name: "bodyOrExternalName",
+        //   label: "Body/ External Name",
+        //   align: "center",
+        //   field: "bodyOrExternalName",
+        //   sortable: true,
+        // },
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [
@@ -372,8 +385,8 @@ export default defineComponent({
         },
       ],
       functionTypeRow: [
-        { name: "id", type: "integer", defaultValue: "" },
-        { name: "name", type: "varchar", defaultValue: "" },
+        { name: "", type: "", defaultValue: "" },
+        { name: "", type: "", defaultValue: "" },
         { name: "", type: "", defaultValue: "" },
       ],
       functionTypeColumns: [
@@ -473,12 +486,41 @@ export default defineComponent({
   },
   methods: {
     addFunction() {
+      const hasValidData = this.functionTypeRow.some(
+        (row) => row.name.trim() && row.type.trim()
+      );
+
+      if (!hasValidData) {
+        this.$q.notify({
+          type: "negative",
+          message: "Please fill in at least one row.",
+          position: "top-right"
+        });
+        return;
+      }
+
       const query =
         this.functionInfo.functionType == "external"
           ? this.generateExternalFunction()
           : this.generateEmbeddedFunction();
       this.$ws.sendMessage(query, "create_function");
       this.addNewFunction = false;
+      this.$refs.addFunctionForm.reset();
+    },
+    resetFunction() {
+      this.functionInfo = {
+        name: "",
+        returnType: "",
+        language: "",
+        functionType: "embedded",
+        body: "",
+      };
+
+      this.functionTypeRow = [
+        { name: "", type: "", defaultValue: "" },
+        { name: "", type: "", defaultValue: "" },
+        { name: "", type: "", defaultValue: "" },
+      ]
     },
     dropFunction() {
       this.$ws.sendMessage(

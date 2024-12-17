@@ -4,7 +4,7 @@
     :columns="columns"
     row-key="name"
     flat
-    :rows-per-page-options="[]"
+    :rows-per-page-options="[0]"
     hideBottom
     class="editable-table"
   >
@@ -54,7 +54,7 @@
 
           <template v-else-if="col.name === 'actions'">
             <!-- Show action buttons for all rows except the last one -->
-            <template v-if="props.row !== rows[rows.length - 1]">
+            <!-- <template v-if="props.row !== rows[rows.length - 1]"> -->
               <q-btn
                 icon="img:/icons/setting-2.svg"
                 flat
@@ -63,22 +63,15 @@
                 @click="onSettingsClick(props.row)"
               />
               <q-btn
+               v-if="props.row !== rows[rows.length - 1]"
                 icon="img:/icons/close-square.svg"
                 flat
                 dense
                 class="q-ml-sm"
                 @click="removeRow(props.row)"
               />
-            </template>
-            <template v-else>
               <q-btn
-                icon="img:/icons/setting-2.svg"
-                flat
-                dense
-                class="filter-custom-dark"
-                @click="onSettingsClick(props.row)"
-              />
-              <q-btn
+              v-if="props.row === rows[rows.length - 1]"
                 unelevated
                 icon="add"
                 color="light-green"
@@ -86,7 +79,17 @@
                 style="width: 28px; min-height: 28px"
                 class="rounded-10 q-pa-none text-custom-dark-color q-ml-sm"
               />
-            </template>
+            <!-- </template> -->
+            <!-- <template v-else>
+              <q-btn
+                icon="img:/icons/setting-2.svg"
+                flat
+                dense
+                class="filter-custom-dark"
+                @click="onSettingsClick(props.row)"
+              />
+             
+            </template> -->
           </template>
         </q-td>
       </q-tr>
