@@ -1,3 +1,3 @@
 export default {
-    apiEndpoint: 'http://localhost:7436'
+    apiEndpoint: 'http://localhost:7184'
 }
