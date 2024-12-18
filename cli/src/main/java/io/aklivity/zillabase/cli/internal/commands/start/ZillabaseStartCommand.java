@@ -1528,14 +1528,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             JsonObject channelsJson = jsonValue.asJsonObject().getJsonObject("channels");
             for (Map.Entry<String, JsonValue> channelJson : channelsJson.entrySet())
             {
-                String name = channelJson.getKey();
-                if (name.endsWith("_replies"))
+                String channelName = channelJson.getKey();
+                if (channelName.endsWith("_replies"))
                 {
                     continue;
                 }
 
-                String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
-                name = matcher.reset(name).replaceAll(match -> match.group(2));
+                String name = matcher.reset(channelName).replaceFirst(match -> match.group(2));
+                String label = name.toUpperCase();
+
                 if (secure)
                 {
                     String scope = label.toLowerCase();
