@@ -176,7 +176,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
     private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
     private static final int MAX_RETRIES = 5;
-    private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-|_)(.)");
+    private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
     private static final String DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL = "admin";
     private static final String ADMIN_REALMS_PATH = "/admin/realms";
     private static final String ADMIN_REALMS_CLIENTS_PATH = "/admin/realms/%s/clients";
@@ -1528,13 +1528,15 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             JsonObject channelsJson = jsonValue.asJsonObject().getJsonObject("channels");
             for (Map.Entry<String, JsonValue> channelJson : channelsJson.entrySet())
             {
-                String name = channelJson.getKey();
-                if (name.endsWith("_replies"))
+                String channelName = channelJson.getKey();
+                if (channelName.endsWith("_replies"))
                 {
                     continue;
                 }
 
-                String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
+                String name = matcher.reset(channelName).replaceFirst(match -> match.group(2));
+                String label = name.toUpperCase();
+
                 if (secure)
                 {
                     String scope = label.toLowerCase();

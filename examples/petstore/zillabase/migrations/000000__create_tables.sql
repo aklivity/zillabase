@@ -1,18 +1,18 @@
 -- create_tables
 
-CREATE TABLE petstore_pets(
+CREATE ZTABLE petstore_pets(
   id VARCHAR,
   breed VARCHAR,
   PRIMARY KEY (id)
 );
 
-CREATE TABLE petstore_customers(
+CREATE ZTABLE petstore_customers(
   name VARCHAR,
   status VARCHAR,
   PRIMARY KEY (name)
 );
 
-CREATE TABLE petstore_verified_customers(
+CREATE ZTABLE petstore_verified_customers(
   id VARCHAR,
   points VARCHAR,
   PRIMARY KEY (id)
