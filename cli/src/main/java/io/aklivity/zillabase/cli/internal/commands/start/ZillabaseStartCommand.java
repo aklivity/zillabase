@@ -176,7 +176,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
     private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
     private static final int MAX_RETRIES = 5;
-    private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-|_)(.)");
+    private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
     private static final String DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL = "admin";
     private static final String ADMIN_REALMS_PATH = "/admin/realms";
     private static final String ADMIN_REALMS_CLIENTS_PATH = "/admin/realms/%s/clients";
@@ -215,6 +215,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         startContainers(client, config);
 
         seedKafkaAndRegistry(config);
+
+        processInitSql(config);
 
         processSql(config);
 
@@ -338,10 +340,33 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         System.out.println("Verified containers are healthy");
     }
 
+    private void processInitSql(
+        ZillabaseConfig config)
+    {
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave, "postgres");
+
+        pgsql.connect();
+
+        if (pgsql.connected)
+        {
+            pgsql.process("<initdb>",
+                """
+                CREATE USER zillabase;
+                CREATE SCHEMA zb_catalog AUTHORIZATION postgres;
+                CREATE TABLE zb_catalog.zviews(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR);
+                CREATE TABLE zb_catalog.ztables(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR);
+                """);
+        }
+    }
+
     private void processSql(
         ZillabaseConfig config)
     {
-        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave);
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave, "zillabase");
 
         pgsql.connect();
 
@@ -1510,6 +1535,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 }
 
                 String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
+                name = matcher.reset(name).replaceAll(match -> match.group(2));
                 if (secure)
                 {
                     String scope = label.toLowerCase();
@@ -2292,7 +2318,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-
     private static final class CreateRisingWaveFactory extends CreateContainerFactory
     {
         CreateRisingWaveFactory(
@@ -2708,12 +2733,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
 
         PgsqlHelper(
-            ZillabaseRisingWaveConfig config)
+            ZillabaseRisingWaveConfig config,
+            String user)
         {
             this.config = config;
 
             Properties props = new Properties();
-            props.setProperty("user", "root");
+            props.setProperty("user", user);
             props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
 
             this.url = "jdbc:postgresql://localhost:4567/%s".formatted(config.db);
@@ -2757,11 +2783,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             String content = readSql(sql);
             if (content != null)
             {
-                execute(sql.getFileName().toString(), content);
+                process(sql.getFileName().toString(), content);
             }
         }
 
-        private void execute(
+        void process(
             String filename,
             String content)
         {

@@ -47,7 +47,8 @@ CREATE MATERIALIZED VIEW streampay_activities AS
       LEFT JOIN streampay_users fu ON encode(sc.zilla_identity, 'escape') = fu.id
       LEFT JOIN streampay_users tu ON sc.user_id = tu.id
   WHERE
-      sc.type = 'RequestPayment';
+      sc.type = 'RequestPayment'
+  UNION ALL
   SELECT
       generate_unique_id()::varchar AS id,
       'PaymentRejected' AS eventName,
