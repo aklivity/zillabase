@@ -1,0 +1,43 @@
+{
+  "name": "zillabase-portal-quasar",
+  "version": "0.0.1",
+  "description": "An event-driven backend for the next generation of web, mobile and AI applications.",
+  "productName": "Zillabase",
+  "author": "Tafseer Hussain <tafseerhussain88@gmail.com>",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --ext .js,.vue ./",
+    "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "concurrently \"quasar dev\" \"node connect-ws.js\"",
+    "build": "quasar build"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.4",
+    "axios": "^1.7.9",
+    "express": "^4.21.1",
+    "pg": "^8.13.1",
+    "quasar": "^2.16.0",
+    "swagger-ui": "^5.18.2",
+    "swagger-ui-dist": "^5.18.2",
+    "vue": "^3.4.18",
+    "vue-router": "^4.0.12",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^1.9.0",
+    "autoprefixer": "^10.4.2",
+    "concurrently": "^9.1.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "postcss": "^8.4.14",
+    "prettier": "^2.5.1",
+    "vite-plugin-checker": "^0.8.0"
+  },
+  "engines": {
+    "node": "^20 || ^18 || ^16",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}
