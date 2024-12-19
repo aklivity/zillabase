@@ -53,10 +53,8 @@
   </properties>
 
   <modules>
-    <module>service</module>
-    <module>udf-server-java</module>
-    <module>udf-server-python</module>
     <module>cli</module>
+    <module>services</module>
   </modules>
 
   <dependencyManagement>
@@ -360,6 +358,12 @@
           <value>!true</value>
         </property>
       </activation>
+
+      <properties>
+        <docker.skip.push>true</docker.skip.push>
+        <docker.skip.tag>true</docker.skip.tag>
+        <docker.latest.tag></docker.latest.tag>
+      </properties>
 
       <build>
         <plugins>

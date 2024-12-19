@@ -2585,7 +2585,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             List<String> envVars = new ArrayList<>();
-            envVars.add("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+            envVars.add("CLASSPATH=service-udf-java.jar:/opt/udf/lib/*");
 
             List<String> env = config.udf.java.env;
             if (env != null)
