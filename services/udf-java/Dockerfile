@@ -17,6 +17,8 @@ FROM eclipse-temurin:22-jdk AS build
 
 WORKDIR /app
 
-COPY target/service-shaded.jar ./service.jar
+COPY target/service-udf-java-shaded.jar ./service-udf-java.jar
 
-CMD ["java", "-jar", "service.jar"]
+ENV JAVA_OPTS="--add-opens=java.base/java.nio=ALL-UNNAMED"
+
+ENTRYPOINT java $JAVA_OPTS -cp "$CLASSPATH" io.aklivity.zillabase.udf.server.ZillabaseUdfServerMain
