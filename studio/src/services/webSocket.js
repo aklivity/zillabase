@@ -10,7 +10,7 @@ const WebSocketService = {
             return;
         };
 
-        this.ws = new WebSocket('ws://localhost:8080');
+        this.ws = new WebSocket('ws://localhost:7184/pgsql');
 
         this.ws.onopen = () => {
             console.log('WebSocket connection established.');

@@ -474,19 +474,7 @@ export default defineComponent({
     },
     getFunctionInformations() {
       this.$ws.sendMessage(
-        `SELECT 
-    p.proname as "name",
-    pg_catalog.pg_get_function_arguments(p.oid) as "parameters",
-    pg_catalog.pg_get_function_result(p.oid) as "returnType"
-FROM 
-    pg_catalog.pg_proc p
-    LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
-WHERE 
-    pg_catalog.pg_function_is_visible(p.oid)
-    AND n.nspname <> 'pg_catalog'
-    AND n.nspname <> 'information_schema'
-ORDER BY p.proname;
-`,
+        `SHOW FUNCTIONS;`,
         "get_function"
       );
     },
@@ -498,7 +486,7 @@ ORDER BY p.proname;
           return defaultValue
             ? `${name} ${type} DEFAULT ${defaultValue}`
             : `${name} ${type}`;
-        })
+        })  
         .join(", ");
 
       return `
