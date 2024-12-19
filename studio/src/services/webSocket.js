@@ -35,10 +35,7 @@ const WebSocketService = {
 
     sendMessage(message, type) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({
-                query: message,
-                type
-            }));
+            this.ws.send(message);
         } else {
             console.error('WebSocket is not open');
         }
