@@ -32,17 +32,17 @@
           unelevated
           icon="img:icons/trash-white.svg"
           :ripple="false"
-          v-if="showStorage"
+          v-if="showStorage && selectedRows.length > 0"
           color="negative"
           class="rounded-10 text-white text-capitalize self-center btn-add-new"
-          @click="handleClick"
+          @click="handleDelete"
         />
 
         <q-btn
           unelevated
           icon="img:/icons/login.svg"
           :ripple="false"
-          v-if="showStorage"
+          v-if="showStorage && selectedRows.length > 0"
           color="dark"
           class="rounded-10 text-white text-capitalize self-center btn-add-new highlighted-border"
           @click="handleClick"
@@ -52,7 +52,7 @@
           unelevated
           icon="img:/icons/export-bucket.svg"
           :ripple="false"
-          v-if="showStorage"
+          v-if="showStorage && selectedRows.length > 0"
           color="light-green"
           class="rounded-10 text-white text-capitalize self-center btn-add-new"
           @click="handleClick"
@@ -65,7 +65,7 @@
           v-if="showStorage"
           color="dark"
           class="rounded-10 text-white text-capitalize self-center btn-add-new highlighted-border"
-          @click="handleClick"
+          @click="handleAdd"
         />
 
         <q-input
@@ -502,6 +502,12 @@ export default defineComponent({
     },
     handleClick() {
       this.$emit("add-new");
+    },
+    handleDelete() {
+      this.$emit("delete-item", this.selectedRows);
+    },
+    handleAdd() {
+      this.$emit("add-item");
     },
     goToPage(page) {
       if (page >= 1 && page <= this.totalPages) {

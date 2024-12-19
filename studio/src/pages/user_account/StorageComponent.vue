@@ -40,7 +40,12 @@
               </q-input>
             </div>
           </q-card-section>
-          <q-tab v-for="(tab, index) in tabs" :key="tab.name" :name="tab.name">
+          <q-tab
+            @click="getStorageObjects"
+            v-for="(tab, index) in tabs"
+            :key="tab.name"
+            :name="tab.name"
+          >
             <!-- <div class="row q-pl-sm justify-between items-center"> -->
             <!-- Tab name on the left -->
             <span
@@ -62,7 +67,7 @@
                 dense
                 icon="img:/icons/trash.svg"
                 class="q-ml-md"
-                @click="deleteTab(index)"
+                @click="(e) => deleteBucket(e, tab?.name)"
                 size="14px"
               />
             </div>
@@ -124,41 +129,44 @@
               :showAddButton="false"
               :hideBottom="false"
               noDataLabel="No Data"
-              @add-new="openTableDialog"
+              @delete-item="deleteBucketItems"
               @move-row="openMoveDialog"
               @rename-row="openRenameDialog"
+              @delete-row="openBucketObjectDeleteDialog"
+              @add-item="addNewBucketObjectDialog"
               showStorage
               isMultipleChecked
             />
 
-            <template v-if="tab.tableData.length <= 0">
-              <div class="row justify-center q-pt-lg">
-                <div
-                  class="column q-pa-lg bg-custom-primary text-center bucket-file-upload"
-                >
-                  <div class="flex flex-center q-mb-md">
-                    <q-icon
-                      class="fs-60"
-                      name="img:/icons/folder-add-bucket.svg"
-                    />
-                  </div>
-                  <div class="fs-18 text-custom-text-secondary">
-                    Start dropping your files here
-                  </div>
-                  <div class="text-caption text-custom-text-secondary q-my-sm">
-                    OR
-                  </div>
-                  <q-btn
-                    unelevated
-                    label="Upload A File"
-                    icon="add"
-                    :ripple="false"
-                    class="bg-light-green rounded-10 text-white text-capitalize self-center btn-add-new q-mt-sm"
-                    @click="addNewBucketDialog"
+            <div
+              class="row justify-center q-pt-lg"
+              v-if="tab.tableData.length <= 0"
+            >
+              <div
+                class="column q-pa-lg bg-custom-primary text-center bucket-file-upload"
+              >
+                <div class="flex flex-center q-mb-md">
+                  <q-icon
+                    class="fs-60"
+                    name="img:/icons/folder-add-bucket.svg"
                   />
                 </div>
+                <div class="fs-18 text-custom-text-secondary">
+                  Start dropping your files here
+                </div>
+                <div class="text-caption text-custom-text-secondary q-my-sm">
+                  OR
+                </div>
+                <q-btn
+                  unelevated
+                  label="Upload A File"
+                  icon="add"
+                  :ripple="false"
+                  class="bg-light-green rounded-10 text-white text-capitalize self-center btn-add-new q-mt-sm"
+                  @click="addNewBucketObjectDialog"
+                />
               </div>
-            </template>
+            </div>
           </q-tab-panel>
         </q-tab-panels>
       </template>
@@ -272,12 +280,14 @@
           label="Rename"
           unelevated
           color="light-green"
+          @click="updateStorageObject"
           class="rounded-10 text-capitalize min-w-80"
         />
       </q-card-actions>
     </q-card>
   </q-dialog>
 
+  <!-- Add new bucket Dialog -->
   <q-dialog
     v-model="addNewBucket"
     backdrop-filter="blur(4px)"
@@ -305,6 +315,7 @@
         <q-input
           dense
           outlined
+          v-model="newBucketName"
           placeholder="e.g my-bucket"
           class="rounded-10 self-center text-weight-light rounded-input bg-custom-primary"
         />
@@ -322,7 +333,211 @@
           label="Add Now"
           unelevated
           color="light-green"
+          @click="addStorageBuckets"
           class="rounded-10 text-capitalize min-w-80"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- Add new bucket object Dialog -->
+  <q-dialog
+    v-model="addNewBucketObject"
+    backdrop-filter="blur(4px)"
+    class="snippet-dialog"
+  >
+    <q-card class="highlighted-border">
+      <q-card-section class="flex justify-between items-center q-pa-lg">
+        <div class="flex items-center">
+          <q-icon size="sm" name="add" class="filter-custom-dark" />
+          <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
+            Add New {{ selectedTab }}
+          </p>
+        </div>
+        <q-icon
+          name="close"
+          class="cursor-pointer fs-20"
+          @click="addNewBucketObject = false"
+        />
+      </q-card-section>
+      <q-separator />
+      <q-card-section class="q-pb-lg">
+        <p class="text-custom-gray-dark text-weight-light q-pb-sm">
+          Write Bucket Object Name
+        </p>
+        <q-input
+          dense
+          outlined
+          v-model="newObjectBucketName"
+          placeholder="e.g my-bucket"
+          class="rounded-10 self-center text-weight-light rounded-input bg-custom-primary"
+        />
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          label="Cancel"
+          unelevated
+          color="dark"
+          class="rounded-10 text-capitalize min-w-80 highlighted-border"
+          @click="addNewBucketObject = false"
+        />
+        <q-btn
+          label="Add Now"
+          unelevated
+          color="light-green"
+          class="rounded-10 text-capitalize min-w-80"
+          @click="addStorageObject"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- Delete Bucket Dialog -->
+  <q-dialog
+    v-model="deletedBucket.isDeleted"
+    backdrop-filter="blur(4px)"
+    class="delete-dialog"
+  >
+    <q-card class="highlighted-border">
+      <q-card-section class="flex justify-between items-center q-pa-lg">
+        <div class="flex items-center">
+          <q-icon size="sm" name="img:/icons/trash.svg" />
+          <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
+            Delete {{ deletedBucket.bucketName }}?
+          </p>
+        </div>
+        <q-icon
+          name="close"
+          class="cursor-pointer fs-20"
+          @click="deletedBucket.isDeleted = false"
+        />
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <p class="text-custom-gray-dark text-weight-light q-pa-sm w-90">
+          Are you sure you want to delete this
+          <span class="fw-600">{{ deletedBucket.bucketName }}</span
+          >? This action is irreversible.
+        </p>
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          label="Cancel"
+          unelevated
+          color="dark"
+          class="rounded-10 text-capitalize min-w-80 highlighted-border"
+          @click="deletedBucket.isDeleted = false"
+        />
+        <q-btn
+          label="Delete"
+          unelevated
+          color="negative"
+          class="rounded-10 text-capitalize min-w-80"
+          @click="deleteStorageBuckets"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- Delete Bucket object Dialog -->
+  <q-dialog
+    v-model="isOpenBucketObjectDeleteDialog.isDeleted"
+    backdrop-filter="blur(4px)"
+    class="delete-dialog"
+  >
+    <q-card class="highlighted-border">
+      <q-card-section class="flex justify-between items-center q-pa-lg">
+        <div class="flex items-center">
+          <q-icon size="sm" name="img:/icons/trash.svg" />
+          <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
+            Delete {{ isOpenBucketObjectDeleteDialog.selectedRow?.name }}?
+          </p>
+        </div>
+        <q-icon
+          name="close"
+          class="cursor-pointer fs-20"
+          @click="isOpenBucketObjectDeleteDialog.isDeleted = false"
+        />
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <p class="text-custom-gray-dark text-weight-light q-pa-sm w-90">
+          Are you sure you want to delete this
+          <span class="fw-600">{{
+            isOpenBucketObjectDeleteDialog.selectedRow?.name
+          }}</span
+          >? This action is irreversible.
+        </p>
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          label="Cancel"
+          unelevated
+          color="dark"
+          class="rounded-10 text-capitalize min-w-80 highlighted-border"
+          @click="isOpenBucketObjectDeleteDialog.isDeleted = false"
+        />
+        <q-btn
+          label="Delete"
+          unelevated
+          color="negative"
+          class="rounded-10 text-capitalize min-w-80"
+          @click="deleteStorageObject"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- Delete Bucket multiple object Dialog -->
+  <q-dialog
+    v-model="deleteMultipleSelectedRows.isDeleted"
+    backdrop-filter="blur(4px)"
+    class="delete-dialog"
+  >
+    <q-card class="highlighted-border">
+      <q-card-section class="flex justify-between items-center q-pa-lg">
+        <div class="flex items-center">
+          <q-icon size="sm" name="img:/icons/trash.svg" />
+          <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
+            Delete Objects?
+          </p>
+        </div>
+        <q-icon
+          name="close"
+          class="cursor-pointer fs-20"
+          @click="deleteMultipleSelectedRows.isDeleted = false"
+        />
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <p class="text-custom-gray-dark text-weight-light q-pa-sm w-90">
+          Are you sure you want to delete this
+          <span class="fw-600">{{
+            deleteMultipleSelectedRows.selectedRows
+              ?.map((row) => row?.name)
+              .join(", ")
+          }}</span
+          >? This action is irreversible.
+        </p>
+      </q-card-section>
+      <q-separator />
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          label="Cancel"
+          unelevated
+          color="dark"
+          class="rounded-10 text-capitalize min-w-80 highlighted-border"
+          @click="deleteMultipleSelectedRows.isDeleted = false"
+        />
+        <q-btn
+          label="Delete"
+          unelevated
+          color="negative"
+          class="rounded-10 text-capitalize min-w-80"
+          @click="deleteMultipleSelectedRows.isDeleted = false"
         />
       </q-card-actions>
     </q-card>
@@ -332,6 +547,15 @@
 import CommonTable from "../shared/CommonTable.vue";
 import { defineComponent } from "vue";
 import { ref } from "vue";
+import {
+  appAddStorageBuckets,
+  appAddStorageObject,
+  appDeleteStorageBuckets,
+  appDeleteStorageObject,
+  appGetStorageBuckets,
+  appGetStorageObjects,
+  appUpdateStorageObject,
+} from "src/services/api";
 
 export default defineComponent({
   name: "StorageComponent",
@@ -340,12 +564,27 @@ export default defineComponent({
   },
   data() {
     return {
+      newObjectBucketName: "",
+      newBucketName: "",
       selectedTab: "initialTab",
       searchLabel: "Bucket",
       isMovingRow: false,
       isRenameRow: false,
       selectedRow: null,
       addNewBucket: false,
+      addNewBucketObject: false,
+      deletedBucket: {
+        isDeleted: false,
+        bucketName: "",
+      },
+      isOpenBucketObjectDeleteDialog: {
+        isDeleted: false,
+        selectedRow: null,
+      },
+      deleteMultipleSelectedRows: {
+        isDeleted: false,
+        selectedRows: [],
+      },
       tableColumns: [
         { name: "name", label: "Name", align: "left", field: "name" },
         {
@@ -377,109 +616,73 @@ export default defineComponent({
         },
         { name: "tabActions", label: "Actions", align: "center" },
       ],
-      tabs: [
-        {
-          name: "Bucket 1",
-          tableData: [
-            {
-              id: 1,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 2,
-              name: "New Folder",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 3,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 4,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 5,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-          ],
-        },
-        {
-          name: "Bucket 2",
-          tableData: [
-            {
-              id: 1,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 2,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 3,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 4,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-            {
-              id: 5,
-              name: "Screenshot 2024-11-11",
-              size: "145.4 KB",
-              tabType: "img/png",
-              createdAt: "10/30/2024, 7:51:16 PM",
-              lastUpdated: "10/30/2024, 7:51:16 PM",
-            },
-          ],
-        },
-        {
-          name: "Bucket 3",
-          tableData: [],
-        },
-      ],
+      tabs: [],
     };
   },
+  mounted() {
+    this.getStorageBuckets();
+  },
   methods: {
-    handleClick() {},
-    openTableDialog() {
-      this.addNewView = !this.addNewView;
+    getStorageBuckets() {
+      appGetStorageBuckets()
+        .then(({ data }) => {
+          this.tabs = data.map((x) => ({
+            name: x,
+            tableData: [],
+          }));
+        });
     },
+    getStorageObjects() {
+      appGetStorageObjects(this.selectedTab)
+        .then(({ data }) => {
+          const tabs = this.tabs.find((x) => x.name == this.selectedTab);
+          if (tabs) {
+            tabs.tableData = data.map((x, i) => ({
+              name: x.name,
+              id: i + 1,
+              tabType: x.type,
+            }));
+          }
+        });
+    },
+    deleteStorageObject() {
+      this.isOpenBucketObjectDeleteDialog.isDeleted = false;
+      appDeleteStorageObject(
+        this.selectedTab,
+        this.isOpenBucketObjectDeleteDialog.selectedRow?.name
+      ).then(({ data }) => {
+        this.getStorageObjects();
+      });
+    },
+    updateStorageObject() {
+      this.isRenameRow = false;
+      appUpdateStorageObject(this.selectedTab, this.selectedRow?.name).then(
+        ({ data }) => {
+          this.getStorageObjects();
+        }
+      );
+    },
+    addStorageObject() {
+      this.addNewBucketObject = false;
+      appAddStorageObject(this.selectedTab, this.newObjectBucketName).then(
+        ({ data }) => {
+          this.getStorageObjects();
+        }
+      );
+    },
+    addStorageBuckets() {
+      this.addNewBucket = false;
+      appAddStorageBuckets(this.newBucketName).then(({ data }) => {
+        this.getStorageBuckets();
+      });
+    },
+    deleteStorageBuckets() {
+      this.deletedBucket.isDeleted = false;
+      appDeleteStorageBuckets(this.deletedBucket.bucketName).then(({ data }) => {
+        this.getStorageBuckets();
+      });
+    },
+    handleClick() {},
     openMoveDialog(row) {
       this.isMovingRow = !this.isMovingRow;
       this.selectedRow = row;
@@ -488,10 +691,25 @@ export default defineComponent({
       this.isRenameRow = !this.isRenameRow;
       this.selectedRow = row;
     },
+    deleteBucketItems(selectedRows) {
+      this.deleteMultipleSelectedRows.isDeleted = true;
+      this.deleteMultipleSelectedRows.selectedRows = selectedRows;
+    },
     editTab(index) {},
-    deleteTab(index) {},
+    deleteBucket(e, bucketName) {
+      e.stopPropagation();
+      this.deletedBucket.isDeleted = true;
+      this.deletedBucket.bucketName = bucketName;
+    },
+    openBucketObjectDeleteDialog(row) {
+      this.isOpenBucketObjectDeleteDialog.isDeleted = true;
+      this.isOpenBucketObjectDeleteDialog.selectedRow = row;
+    },
     addNewBucketDialog() {
       this.addNewBucket = !this.addNewBucket;
+    },
+    addNewBucketObjectDialog() {
+      this.addNewBucketObject = !this.addNewBucketObject;
     },
   },
   setup() {
