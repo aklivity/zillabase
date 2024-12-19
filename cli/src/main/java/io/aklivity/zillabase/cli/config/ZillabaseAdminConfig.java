@@ -103,6 +103,9 @@ public final class ZillabaseAdminConfig
           http_server:
             type: http
             kind: server
+            options:
+              access-control:
+                policy: cross-origin
             routes:
               - when:
                   - headers:
