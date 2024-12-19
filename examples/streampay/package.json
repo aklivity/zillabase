@@ -24,7 +24,7 @@
     "vue-sse": "^2.5.2"
   },
   "devDependencies": {
-    "@quasar/app-webpack": "^3.12.8",
+    "@quasar/app-webpack": "^3.15.1",
     "@types/jwt-decode": "^3.1.0",
     "@types/node": "^12.20.21",
     "@types/uuid": "^9.0.0",

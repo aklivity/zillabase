@@ -12,7 +12,7 @@ CREATE STREAM streampay_commands(
     zilla_timestamp TIMESTAMP
 );
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS streampay_replies AS
+CREATE ZVIEW IF NOT EXISTS streampay_replies AS
     SELECT '400' AS status, encode(zilla_correlation_id, 'escape') AS correlation_id from streampay_commands where type NOT IN ('SendPayment', 'RequestPayment', 'RejectRequest')
     UNION
     SELECT '200' AS status,  encode(zilla_correlation_id, 'escape') AS correlation_id from streampay_commands where type IN ('SendPayment', 'RequestPayment', 'RejectRequest');

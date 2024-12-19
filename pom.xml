@@ -53,10 +53,8 @@
   </properties>
 
   <modules>
-    <module>service</module>
-    <module>udf-server-java</module>
-    <module>udf-server-python</module>
     <module>cli</module>
+    <module>services</module>
   </modules>
 
   <dependencyManagement>
@@ -69,12 +67,12 @@
       <dependency>
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-core</artifactId>
-        <version>3.3.6</version>
+        <version>3.4.1</version>
       </dependency>
       <dependency>
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-transport-httpclient5</artifactId>
-        <version>3.3.6</version>
+        <version>3.4.1</version>
       </dependency>
       <dependency>
         <groupId>jakarta.json.bind</groupId>
@@ -119,7 +117,7 @@
       <dependency>
         <groupId>org.apache.kafka</groupId>
         <artifactId>kafka-clients</artifactId>
-        <version>2.6.3</version>
+        <version>3.7.1</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -360,6 +358,12 @@
           <value>!true</value>
         </property>
       </activation>
+
+      <properties>
+        <docker.skip.push>true</docker.skip.push>
+        <docker.skip.tag>true</docker.skip.tag>
+        <docker.latest.tag></docker.latest.tag>
+      </properties>
 
       <build>
         <plugins>

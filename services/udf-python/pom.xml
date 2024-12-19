@@ -5,13 +5,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.aklivity.zillabase</groupId>
-    <artifactId>zillabase</artifactId>
+    <artifactId>services</artifactId>
     <version>develop-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>udf-server-python</artifactId>
-  <name>zillabase::udf-server-python</name>
+  <artifactId>service-udf-python</artifactId>
+  <name>zillabase::services::udf-python</name>
 
   <properties>
     <jacoco.coverage.ratio>1.0</jacoco.coverage.ratio>

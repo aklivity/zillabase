@@ -4,7 +4,7 @@
 CREATE FUNCTION assess_fraud(varchar, varchar, double precision) RETURNS struct<summary varchar, risk varchar>
 LANGUAGE python AS 'assess_fraud';
 
-CREATE MATERIALIZED VIEW streampay_payment_risk_assessment AS
+CREATE ZVIEW streampay_payment_risk_assessment AS
   SELECT
       ar.id,
       ar.to_user_id_identity,
