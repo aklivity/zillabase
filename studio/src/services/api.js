@@ -89,7 +89,103 @@ const appDeleteSSOProvidersById = id => {
     })
 }
 
+const appGetStorageBuckets = () => {
+    return new Promise((resolve, reject) => {
+        axios.get(`${app.apiEndpoint}/storage/buckets`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appAddStorageBuckets = bucketName => {
+    return new Promise((resolve, reject) => {
+        axios.post(`${app.apiEndpoint}/storage/buckets/${bucketName}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appDeleteStorageBuckets = bucketName => {
+    return new Promise((resolve, reject) => {
+        axios.delete(`${app.apiEndpoint}/storage/buckets/${bucketName}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appGetStorageObjects = bucketName => {
+    return new Promise((resolve, reject) => {
+        axios.get(`${app.apiEndpoint}/storage/objects/${bucketName}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appGetStorageObjectDetail = (bucketName, fileName) => {
+    return new Promise((resolve, reject) => {
+        axios.get(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appAddStorageObject = (bucketName, fileName) => {
+    return new Promise((resolve, reject) => {
+        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appUpdateStorageObject = (bucketName, fileName) => {
+    return new Promise((resolve, reject) => {
+        axios.put(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appDeleteStorageObject = (bucketName, fileName) => {
+    return new Promise((resolve, reject) => {
+        axios.delete(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
 export {
+    appUpdateStorageObject,
+    appDeleteStorageObject,
+    appAddStorageObject,
+    appGetStorageObjects,
+    appGetStorageObjectDetail,
+    appAddStorageBuckets,
+    appDeleteStorageBuckets,
+    appGetStorageBuckets,
     appAddUsers,
     appGetUsers,
     appGetUserById,

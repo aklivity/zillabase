@@ -325,65 +325,9 @@ export default defineComponent({
           field: "type",
           sortable: true,
         },
-        // {
-        //   name: "bodyOrExternalName",
-        //   label: "Body/ External Name",
-        //   align: "center",
-        //   field: "bodyOrExternalName",
-        //   sortable: true,
-        // },
         { name: "actions", label: "Actions", align: "center" },
       ],
-      tableData: [
-        {
-          id: 1,
-          name: "Example Data Table",
-          parameters: "Lorem ipsum",
-          returnType: "Lorem ipsum",
-          language: "PHP",
-          type: "External",
-        },
-        {
-          id: 2,
-          name: "Example Data Table",
-          parameters: "Lorem ipsum",
-          returnType: "Lorem ipsum",
-          language: "JavaScript",
-          type: "Embedded",
-        },
-        {
-          id: 3,
-          name: "Example Data Table",
-          parameters: "Lorem ipsum",
-          returnType: "Lorem ipsum",
-          language: "R",
-          type: "External",
-        },
-        {
-          id: 4,
-          name: "Example Data Table",
-          parameters: "Lorem ipsum",
-          returnType: "Lorem ipsum",
-          language: "PHP",
-          type: "Embedded",
-        },
-        {
-          id: 5,
-          name: "Example Data Table",
-          parameters: "Lorem ipsum",
-          returnType: "Lorem ipsum",
-          language: "SQL",
-          type: "External",
-        },
-        {
-          id: 6,
-          name: "Example Data Table",
-          parameters: "Lorem ipsum",
-          returnType: "Lorem ipsum",
-          language: "Python",
-          type: "Embedded",
-        },
-      ],
+      tableData: [],
       functionTypeRow: [
         { name: "", type: "", defaultValue: "" },
         { name: "", type: "", defaultValue: "" },
@@ -530,19 +474,7 @@ export default defineComponent({
     },
     getFunctionInformations() {
       this.$ws.sendMessage(
-        `SELECT 
-    p.proname as "name",
-    pg_catalog.pg_get_function_arguments(p.oid) as "parameters",
-    pg_catalog.pg_get_function_result(p.oid) as "returnType"
-FROM 
-    pg_catalog.pg_proc p
-    LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
-WHERE 
-    pg_catalog.pg_function_is_visible(p.oid)
-    AND n.nspname <> 'pg_catalog'
-    AND n.nspname <> 'information_schema'
-ORDER BY p.proname;
-`,
+        `SHOW FUNCTIONS;`,
         "get_function"
       );
     },
@@ -554,7 +486,7 @@ ORDER BY p.proname;
           return defaultValue
             ? `${name} ${type} DEFAULT ${defaultValue}`
             : `${name} ${type}`;
-        })
+        })  
         .join(", ");
 
       return `

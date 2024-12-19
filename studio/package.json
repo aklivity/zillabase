@@ -9,7 +9,7 @@
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
-    "dev": "concurrently \"quasar dev\" \"node connect-ws.js\"",
+    "dev": "quasar dev",
     "build": "quasar build"
   },
   "dependencies": {
