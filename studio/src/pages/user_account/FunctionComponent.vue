@@ -303,6 +303,7 @@ export default defineComponent({
           label: "Parameters",
           align: "left",
           field: "parameters",
+          width: '200px'
         },
         {
           name: "returnType",
@@ -329,9 +330,7 @@ export default defineComponent({
       ],
       tableData: [],
       functionTypeRow: [
-        { name: "", type: "", defaultValue: "" },
-        { name: "", type: "", defaultValue: "" },
-        { name: "", type: "", defaultValue: "" },
+        { name: "", type: "", defaultValue: "" }  
       ],
       functionTypeColumns: [
         {
@@ -413,9 +412,10 @@ export default defineComponent({
       if (data.type == "get_function") {
         this.tableData = data.data.map((x, i) => ({
           id: i + 1,
-          name: x.name,
-          parameters: x.parameters,
-          returnType: x.returnType,
+          name: x.Name,
+          parameters: x.Arguments,
+          returnType: x["Return Type"],
+          language: x.Language,
           rows: x.total_rows,
           ztable: false,
         }));
