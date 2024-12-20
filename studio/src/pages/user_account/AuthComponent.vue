@@ -52,11 +52,11 @@
             color="light-green"
             :icon="addNewUser ? 'chevron_left' : 'chevron_right'"
             style="width: 30px; min-height: 30px"
-            @click="addNewUser = !addNewUser"
+            @click="closeUserDialog"
             class="rounded-10"
           />
           <p class="text-custom-text-secondary text-h6 fw-600">
-            Create New User
+            Create {{ hasUserInfoValues ? 'Edit' : 'New' }} User
           </p>
         </div>
         <q-icon
@@ -163,7 +163,7 @@
           label="Cancel"
           :ripple="false"
           color="dark"
-          @click="addNewUser = !addNewUser"
+          @click="closeUserDialog"
           class="text-capitalize rounded-10 highlighted-border"
         />
         <q-btn
@@ -196,11 +196,11 @@
             color="light-green"
             :icon="addNewProvider ? 'chevron_left' : 'chevron_right'"
             style="width: 30px; min-height: 30px"
-            @click="addNewProvider = !addNewProvider"
+            @click="closeProviderDialog"
             class="rounded-10"
           />
           <p class="text-custom-text-secondary text-h6 fw-600">
-            Add A Provider
+            {{ hasProviderInfoValues ? 'Edit' : 'Add'  }} A Provider
           </p>
         </div>
         <q-icon
@@ -261,7 +261,7 @@
             />
           </div>
         </div>
-        <div class="row items-start q-mt-sm q-pt-md">
+        <!-- <div class="row items-start q-mt-sm q-pt-md">
           <div class="col-3">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Secret</span
@@ -276,8 +276,8 @@
               :rules="[ val => !!val || 'Field is required']"
             />
           </div>
-        </div>
-        <div class="row items-center q-mt-sm q-pt-md">
+        </div> -->
+        <!-- <div class="row items-center q-mt-sm q-pt-md">
           <div class="col-3 flex items-center">
             <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
               >Enabled</span
@@ -297,7 +297,7 @@
               color="light-green"
             />
           </div>
-        </div>
+        </div> -->
       </q-card-section>
       <q-separator />
       <q-card-section class="flex justify-end q-gutter-x-lg q-pa-lg">
@@ -306,7 +306,7 @@
           label="Cancel"
           :ripple="false"
           color="dark"
-          @click="addNewProvider = !addNewProvider"
+          @click="closeProviderDialog"
           class="text-capitalize rounded-10 highlighted-border"
         />
         <q-btn
@@ -498,6 +498,14 @@ export default defineComponent({
     openProviderDialog() {
       this.addNewProvider = !this.addNewProvider;
     },
+    closeUserDialog() {
+      this.addNewUser = false;
+      this.$refs.addUserForm.reset();
+    },
+    closeProviderDialog() {
+      this.addNewProvider = false;
+      this.$refs.addSSOProviderForm.reset();
+    },
     // Auth User
     addUser() {
       appAddUsers(this.userInfo)
@@ -505,6 +513,7 @@ export default defineComponent({
           this.getUsers();
         })
         .catch((err) => {
+        }).finally(() => {
           this.addNewUser = false;
         });
         this.$refs.addUserForm.reset();
@@ -552,6 +561,7 @@ export default defineComponent({
           this.getSSOProvider();
         })
         .catch((err) => {
+        }).finally(() => {
           this.addNewProvider = false;
         });
         this.$refs.addSSOProviderForm.reset();
@@ -573,9 +583,10 @@ export default defineComponent({
         .catch((err) => {});
     },
     getSSOProviderById(user) {
-      appGetSSOProvidersById(user.id)
+      appGetSSOProvidersById(user.alias)
         .then(({ data }) => {
           this.providerInfo = data;
+          this.providerInfo.clientId = data.config?.clientId
           this.addNewProvider = true;
         })
         .catch((err) => {
@@ -588,12 +599,20 @@ export default defineComponent({
     },
     confirmSSOProviderDelete() {
       this.isDeleteSSOProviderDialogOpen = false;
-      appDeleteSSOProvidersById(user.id)
+      appDeleteSSOProvidersById(user.alias)
         .then(({ data }) => {
           this.getSSOProvider();
         })
         .catch((err) => {});
     },
   },
+  computed: {
+    hasUserInfoValues() {
+      return Object.values(this.userInfo).some(value => value);
+    },
+    hasProviderInfoValues() {
+      return Object.values(this.providerInfo).some(value => value);
+    },
+  }
 });
 </script>

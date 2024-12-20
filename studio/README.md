@@ -1,22 +1,26 @@
-# Quasar App (zillabase-portal-quasar)
+# Studio UI
 
-A Quasar Project
+A Quasar Project for managing the Admin Portal of Zillabase.
 
-## Install the dependencies
+## Install the Dependencies
+
+Before starting, navigate to the `studio` folder in the project directory. Then, install the required dependencies using the following command:
 
 ```bash
-yarn
-# or
 npm install
 ```
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
+## Start the App in Development Mode
+
+Run the following command to start the app with hot-code reloading, error reporting, and other development features:
 
 ```bash
-quasar dev
+npm run dev
 ```
 
-### Lint the files
+## Lint the Files
+
+To lint the project files, use:
 
 ```bash
 yarn lint
@@ -24,7 +28,9 @@ yarn lint
 npm run lint
 ```
 
-### Format the files
+## Format the Files
+
+To format the project files, use:
 
 ```bash
 yarn format
@@ -32,12 +38,15 @@ yarn format
 npm run format
 ```
 
-### Build the app for production
+## Build the App for Production
+
+To build the app for production, use:
 
 ```bash
 quasar build
 ```
 
-### Customize the configuration
+## Customize the Configuration
 
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+For customization, refer to [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+

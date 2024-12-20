@@ -45,134 +45,137 @@
       <q-separator />
       <q-form @submit="createViews" @reset="resetViews" ref="addViewsForm">
         <q-card-section class="-py-xl px-28">
-        <div class="row items-start">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Name</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              placeholder="View Name"
-              v-model="viewInfo.name"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-
-            />
-          </div>
-        </div>
-        <div class="row items-start q-mt-lg">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Description</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              outlined
-              type="textarea"
-              placeholder="View Description..."
-              rows="8"
-              v-model="viewInfo.description"
-              autogrow
-              class="rounded-10 self-center text-weight-light rounded-input"
-               :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-        <div class="row items-start q-mt-lg">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >SQL Query</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              outlined
-              type="textarea"
-              placeholder="Write Query..."
-              v-model="viewInfo.body"
-              rows="8"
-              autogrow
-              class="rounded-10 self-center text-weight-light rounded-input"
-               :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-      </q-card-section>
-
-      <q-separator />
-      <q-card-section class="q-py-lg px-28">
-        <div class="row items-center">
-          <div class="col-3 flex items-center">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >ZTable</span
-            >
-            <div>
-              <q-icon
-                name="img:icons/question-circle.svg"
-                class="fs-lg filter-gray-dark q-ml-sm"
+          <div class="row items-start">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Name</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                placeholder="View Name"
+                v-model="viewInfo.name"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
               />
-              <q-tooltip anchor="bottom middle" self="top middle">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </q-tooltip>
             </div>
           </div>
-          <div class="col-9">
-            <q-radio
-              dense
-              v-model="viewInfo.selectionType"
-              val="view"
-              color="light-green"
-            />
-          </div>
-        </div>
-        <div class="row items-center q-mt-md">
-          <div class="col-3 flex items-center">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Materialized</span
-            >
-            <div>
-              <q-icon
-                name="img:icons/question-circle.svg"
-                class="fs-lg filter-gray-dark q-ml-sm"
+          <div class="row items-start q-mt-lg">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Description</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                outlined
+                type="textarea"
+                placeholder="View Description..."
+                rows="8"
+                v-model="viewInfo.description"
+                autogrow
+                class="rounded-10 self-center text-weight-light rounded-input"
               />
-              <q-tooltip anchor="bottom middle" self="top middle">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </q-tooltip>
             </div>
           </div>
-          <div class="col-9">
-            <q-radio
-              dense
-              color="light-green"
-              v-model="viewInfo.selectionType"
-              val="material"
-            />
+          <div class="row items-start q-mt-lg">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >SQL Query</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                outlined
+                type="textarea"
+                placeholder="Write Query..."
+                v-model="viewInfo.body"
+                rows="8"
+                autogrow
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-        </div>
-      </q-card-section>
-      <q-separator />
-      <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
-        <q-btn
-          unelevated
-          label="Cancel"
-          :ripple="false"
-          @click="addNewView = false"
-          color="dark"
-          class="text-capitalize rounded-10 highlighted-border"
-        />
-        <q-btn
-          unelevated
-          label="Add View"
-          icon="add"
-          :ripple="false"
-          type="submit"
-          class="bg-light-green rounded-10 text-white text-capitalize self-center"
-        />
-      </q-card-section>
+        </q-card-section>
+
+        <q-separator />
+        <q-card-section class="q-py-lg px-28">
+          <div class="row items-center">
+            <div class="col-3 flex items-center">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >ZView</span
+              >
+              <div>
+                <q-icon
+                  name="img:icons/question-circle.svg"
+                  class="fs-lg filter-gray-dark q-ml-sm"
+                />
+                <q-tooltip anchor="bottom middle" self="top middle">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </q-tooltip>
+              </div>
+            </div>
+            <div class="col-9">
+              <q-radio
+                dense
+                v-model="viewInfo.selectionType"
+                val="view"
+                color="light-green"
+              />
+            </div>
+          </div>
+          <div class="row items-center q-mt-md">
+            <div class="col-3 flex items-center">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Materialized</span
+              >
+              <div>
+                <q-icon
+                  name="img:icons/question-circle.svg"
+                  class="fs-lg filter-gray-dark q-ml-sm"
+                />
+                <q-tooltip anchor="bottom middle" self="top middle">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </q-tooltip>
+              </div>
+            </div>
+            <div class="col-9">
+              <q-radio
+                dense
+                color="light-green"
+                v-model="viewInfo.selectionType"
+                val="material"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
+          <q-btn
+            unelevated
+            label="Cancel"
+            :ripple="false"
+            @click="addNewView = false"
+            color="dark"
+            class="text-capitalize rounded-10 highlighted-border"
+          />
+          <q-btn
+            unelevated
+            label="Add View"
+            icon="add"
+            :ripple="false"
+            type="submit"
+            class="bg-light-green rounded-10 text-white text-capitalize self-center"
+          />
+        </q-card-section>
       </q-form>
     </q-card>
   </q-dialog>
@@ -242,7 +245,7 @@ export default defineComponent({
         name: "",
         description: "",
         body: "",
-        selectionType: "view",
+        selectionType: "",
       },
       tableColumns: [
         { name: "name", label: "View Name", align: "left", field: "name" },
@@ -256,7 +259,7 @@ export default defineComponent({
           name: "zview",
           label: "ZView",
           align: "center",
-          field: "ztable",
+          field: "zview",
           sortable: true,
         },
         {
@@ -273,21 +276,42 @@ export default defineComponent({
   },
   mounted() {
     this.$ws.connect(() => {
-      this.getZViews();
+      this.getViews();
     });
     this.$ws.addMessageHandler((data) => {
       if (data.type == "get_views") {
-        this.tableData = data.data.map((x, i) => ({
-          id: i + 1,
-          ...x,
-        }));
+        data.data.forEach((item) => {
+          this.tableData.push({
+            ...item,
+            name: item.Name,
+          });
+        });
+      }
+      if (data.type == "get_materialized_views") {
+        data.data.forEach((item) => {
+          this.tableData.push({
+            ...item,
+            name: item.Name,
+            materialized: true,
+          });
+        });
+      }
+      if (data.type == "get_z_views") {
+        data.data.forEach((item) => {
+          this.tableData.push({
+            ...item,
+            name: item.Name,
+            zview: true,
+          });
+        });
       }
       if (
         data.type == "create_view" ||
+        data.type == "create_zview" ||
         data.type == "create_materialized_view" ||
         data.type == "drop_view"
       ) {
-        this.getZViews();
+        this.getViews();
       }
     });
   },
@@ -295,12 +319,12 @@ export default defineComponent({
     createViews() {
       if (this.viewInfo.selectionType == "material") {
         this.createMaterializedView();
-        this.addNewView = false;
-      }
-      if (this.viewInfo.selectionType == "view") {
+      } else if (this.viewInfo.selectionType == "view") {
         this.createZView();
-        this.addNewView = false;
+      } else {
+        this.createView();
       }
+      this.addNewView = false;
       this.$refs.addViewsForm.reset();
     },
     resetViews() {
@@ -308,56 +332,63 @@ export default defineComponent({
         name: "",
         description: "",
         body: "",
-        selectionType: "view",
-      }
+        selectionType: "",
+      };
     },
     createMaterializedView() {
       this.$ws.sendMessage(
-        `CREATE MATERIALIZED VIEW ${this.viewInfo.name} AS ${this.viewInfo.body}`,
+        `CREATE MATERIALIZED VIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`,
         "create_materialized_view"
       );
     },
     createZView() {
       this.$ws.sendMessage(
-        `CREATE VIEW ${this.viewInfo.name} AS ${this.viewInfo.body}`,
+        `CREATE ZVIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`,
+        "create_zview"
+      );
+    },
+    createView() {
+      this.$ws.sendMessage(
+        `CREATE VIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`,
         "create_view"
       );
     },
-    getZViews() {
+    getViews() {
+      this.tableData = []
+      this.$ws.sendMessage(`show views;`, "get_views");
+      this.getMaterializedViews();
+    },
+    getMaterializedViews() {
       this.$ws.sendMessage(
-        `SELECT
-            table_name AS "name",
-            'View' AS "type",
-            true AS "zview",        -- Flag for regular views
-            false AS "materialized" -- Flag for materialized views
-        FROM 
-            information_schema.views
-        WHERE
-            table_schema NOT IN ('pg_catalog', 'information_schema')
-        UNION ALL
-        SELECT
-            matviewname AS "name",
-            'Materialized View' AS "type",
-            false AS "zview",
-            true AS "materialized"
-        FROM 
-            pg_catalog.pg_matviews
-        WHERE
-            schemaname NOT IN ('pg_catalog', 'information_schema')
-        ORDER BY "name";
-`,
-        "get_views"
+        `show materialized views;`,
+        "get_materialized_views"
       );
+      this.getZViews();
+    },
+    getZViews() {
+      this.$ws.sendMessage(`show zviews;`, "get_z_views");
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
       this.isDeleteDialogOpen = true;
     },
     confirmDelete() {
-      this.$ws.sendMessage(
-        `DROP ${(this.selectedRow.zview ? '' : 'MATERIALIZED')} VIEW \"${this.selectedRow.name}\";`,
-        "drop_view"
-      );
+      if (this.selectedRow.zview) {
+        this.$ws.sendMessage(
+          `DROP ZVIEW ${this.selectedRow.name};`,
+          "drop_view"
+        );
+      } else if (this.selectedRow.materialized) {
+        this.$ws.sendMessage(
+          `DROP MATERIALIZED VIEW ${this.selectedRow.name};`,
+          "drop_view"
+        );
+      } else {
+        this.$ws.sendMessage(
+          `DROP VIEW ${this.selectedRow.name};`,
+          "drop_view"
+        );
+      }
       this.isDeleteDialogOpen = false;
       this.selectedRow = null;
     },

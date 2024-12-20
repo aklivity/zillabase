@@ -42,15 +42,15 @@
           </q-card-section>
           <q-tab
             @click="getStorageObjects"
-            v-for="(tab, index) in tabs"
-            :key="tab.name"
-            :name="tab.name"
+            v-for="(tab) in tabs"
+            :key="tab.name.path"
+            :name="tab.name.path"
           >
             <!-- <div class="row q-pl-sm justify-between items-center"> -->
             <!-- Tab name on the left -->
             <span
               class="text-custom-gray-dark text-capitalize text-weight-light"
-              >{{ tab.name }}</span
+              >{{ tab.name.path }}</span
             >
             <!-- Buttons on the right -->
             <div class="flex">
@@ -59,7 +59,7 @@
                 dense
                 icon="img:/icons/edit.svg"
                 class="filter-text-secondary"
-                @click="editTab(index)"
+                @click="(e) => editTab(e, tab?.name.path)"
                 size="14px"
               />
               <q-btn
@@ -67,7 +67,7 @@
                 dense
                 icon="img:/icons/trash.svg"
                 class="q-ml-md"
-                @click="(e) => deleteBucket(e, tab?.name)"
+                @click="(e) => deleteBucket(e, tab?.name.path)"
                 size="14px"
               />
             </div>
@@ -119,9 +119,9 @@
               </div>
             </div>
           </q-tab-panel>
-          <q-tab-panel v-for="tab in tabs" :key="tab.name" :name="tab.name">
+          <q-tab-panel v-for="tab in tabs" :key="tab.name.path" :name="tab.name.path">
             <common-table
-              :title="tab.name"
+              :title="tab.name.path"
               description=""
               :columns="tableColumns"
               :rows="tab.tableData"
@@ -289,7 +289,7 @@
 
   <!-- Add new bucket Dialog -->
   <q-dialog
-    v-model="addNewBucket"
+    v-model="addEditBucketDialog.isOpen"
     backdrop-filter="blur(4px)"
     class="snippet-dialog"
   >
@@ -298,13 +298,13 @@
         <div class="flex items-center">
           <q-icon size="sm" name="add" class="filter-custom-dark" />
           <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
-            Add New Bucket
+           {{  addEditBucketDialog.bucketName ? 'Edit' : 'Add New'  }}  Bucket
           </p>
         </div>
         <q-icon
           name="close"
           class="cursor-pointer fs-20"
-          @click="addNewBucket = false"
+          @click="closeAddEditBucketDialog"
         />
       </q-card-section>
       <q-separator />
@@ -327,7 +327,7 @@
           unelevated
           color="dark"
           class="rounded-10 text-capitalize min-w-80 highlighted-border"
-          @click="addNewBucket = false"
+          @click="closeAddEditBucketDialog"
         />
         <q-btn
           label="Add Now"
@@ -452,7 +452,7 @@
         <div class="flex items-center">
           <q-icon size="sm" name="img:/icons/trash.svg" />
           <p class="text-custom-text-secondary fw-600 q-ml-md text-subtitle1">
-            Delete {{ isOpenBucketObjectDeleteDialog.selectedRow?.name }}?
+            Delete {{ isOpenBucketObjectDeleteDialog.selectedRow?.name.path }}?
           </p>
         </div>
         <q-icon
@@ -466,7 +466,7 @@
         <p class="text-custom-gray-dark text-weight-light q-pa-sm w-90">
           Are you sure you want to delete this
           <span class="fw-600">{{
-            isOpenBucketObjectDeleteDialog.selectedRow?.name
+            isOpenBucketObjectDeleteDialog.selectedRow?.name.path
           }}</span
           >? This action is irreversible.
         </p>
@@ -571,8 +571,12 @@ export default defineComponent({
       isMovingRow: false,
       isRenameRow: false,
       selectedRow: null,
-      addNewBucket: false,
+      // addNewBucket: false,
       addNewBucketObject: false,
+      addEditBucketDialog: {
+        isOpen: false,
+        bucketName: ''
+      },
       deletedBucket: {
         isDeleted: false,
         bucketName: "",
@@ -635,7 +639,7 @@ export default defineComponent({
     getStorageObjects() {
       appGetStorageObjects(this.selectedTab)
         .then(({ data }) => {
-          const tabs = this.tabs.find((x) => x.name == this.selectedTab);
+          const tabs = this.tabs.find((x) => x.name?.path == this.selectedTab);
           if (tabs) {
             tabs.tableData = data.map((x, i) => ({
               name: x.name,
@@ -671,7 +675,7 @@ export default defineComponent({
       );
     },
     addStorageBuckets() {
-      this.addNewBucket = false;
+      this.addEditBucketDialog.isOpen = false;
       appAddStorageBuckets(this.newBucketName).then(({ data }) => {
         this.getStorageBuckets();
       });
@@ -695,7 +699,12 @@ export default defineComponent({
       this.deleteMultipleSelectedRows.isDeleted = true;
       this.deleteMultipleSelectedRows.selectedRows = selectedRows;
     },
-    editTab(index) {},
+    editTab(e, bucketName) {
+      e.stopPropagation();
+      this.addEditBucketDialog.isOpen = true;
+      this.addEditBucketDialog.bucketName = bucketName;
+      this.newBucketName = bucketName;
+    },
     deleteBucket(e, bucketName) {
       e.stopPropagation();
       this.deletedBucket.isDeleted = true;
@@ -706,11 +715,17 @@ export default defineComponent({
       this.isOpenBucketObjectDeleteDialog.selectedRow = row;
     },
     addNewBucketDialog() {
-      this.addNewBucket = !this.addNewBucket;
+      this.addEditBucketDialog.isOpen = true;
+      this.addEditBucketDialog.bucketName = '';
     },
     addNewBucketObjectDialog() {
       this.addNewBucketObject = !this.addNewBucketObject;
     },
+    closeAddEditBucketDialog() {
+      this.addEditBucketDialog.isOpen = false;
+      this.addEditBucketDialog.bucketName = '';
+      this.newBucketName = '';
+    }
   },
   setup() {
     return {
