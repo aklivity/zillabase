@@ -88,7 +88,7 @@
             <div class="col-3 flex items-center">
               <span
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >ZView</span
+                >ZTable</span
               >
               <div>
                 <q-icon
@@ -319,7 +319,7 @@ export default defineComponent({
           align: "left",
           field: "description",
         },
-        { name: "ztable", label: "ZView", align: "center", field: "ztable" },
+        { name: "ztable", label: "ZTable", align: "center", field: "ztable" },
         { name: "rows", label: "Rows", align: "right", field: "rows" },
         { name: "columns", label: "Columns", align: "right", field: "columns" },
         { name: "actions", label: "Actions", align: "center" },
@@ -448,23 +448,24 @@ export default defineComponent({
           rows: x.total_rows,
           ztable: false,
         }));
-        this.getZViews();
+        this.getZTables();
       }
-      if (data.type == "get_views") {
-        data.data.forEach((item) => {
-          const itemData = this.tableData.find(
-            (x) =>
-              `zview_${x.name.toLowerCase()}` == item.table_name.toLowerCase()
-          );
-          if (itemData) {
-            itemData.ztable = true;
-          }
-        });
+      if (data.type == "get_ztables") {
+        data.data
+          .filter((x) => x.Name)
+          .forEach((item) => {
+            const itemData = this.tableData.find(
+              (x) => `ztable_${x.name.toLowerCase()}` == item.Name.toLowerCase()
+            );
+            if (itemData) {
+              itemData.ztable = true;
+            }
+          });
       }
       if (
         data.type == "create_table" ||
-        data.type == "create_view" ||
-        data.type == "drop_table"
+        data.type == "create_ztable" ||
+        data.type == "drop_ztable"
       ) {
         this.getTableInformations();
       }
@@ -477,8 +478,8 @@ export default defineComponent({
     getTableInformations() {
       this.$ws.sendMessage(`show tables;`, "get_table");
     },
-    getZViews() {
-      this.$ws.sendMessage(`show zviews;`, "get_views");
+    getZTables() {
+      this.$ws.sendMessage(`show ztables;`, "get_ztables");
     },
     addTable() {
       const hasValidData = this.dataTypeRow.some(
@@ -525,12 +526,10 @@ export default defineComponent({
       )});`;
       this.$ws.sendMessage(query, "create_table");
       if (this.tableInfo.zTableVal) {
-        const zViewQuery = `CREATE ZVIEW zview_${this.tableInfo.name} AS
-        SELECT ${this.$refs.dataTypeTable.rows
-          .filter((x) => x.name)
-          .map((x) => x.name)
-          .join(",")} FROM \"${this.tableInfo.name}\";`;
-        this.$ws.sendMessage(zViewQuery, "create_view");
+        const zTableQuery = `CREATE ZTABLE \"ztable_${
+          this.tableInfo.name
+        }\" (${columns.join(",\n    ")});`;
+        this.$ws.sendMessage(zTableQuery, "create_ztable");
       }
       this.addNewTable = false;
       this.$refs.addTableForm.reset();
@@ -557,8 +556,8 @@ export default defineComponent({
       this.isDeleteDialogOpen = false;
       if (this.selectedRow.ztable) {
         this.$ws.sendMessage(
-          `DROP VIEW zview_${this.selectedRow.name};`,
-          "drop_view"
+          `DROP ZTABLE ztable_${this.selectedRow.name};`,
+          "drop_ztable"
         );
       }
       this.$ws.sendMessage(
