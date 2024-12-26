@@ -9,15 +9,7 @@
     <q-icon name="img:/icons/export.svg" class="filter-light-green" size="sm" />
   </div>
   <div class="q-py-md iframe">
-    <iframe
-      :src="iframeSrc"
-      width="100%"
-      height="400px"
-      frameborder="0"
-      allowfullscreen
-      style="display: block; border: none"
-    >
-    </iframe>
+    <async-api :schema="iframeSrc"></async-api>
   </div>
 </template>
 <script>
@@ -29,7 +21,7 @@ export default defineComponent({
   data() {
     return {
       iframeSrc:
-        "/asyncapi.html", // Change this URL as needed
+        "/asyncapi_REST_APIs.yaml",
     };
   },
 });

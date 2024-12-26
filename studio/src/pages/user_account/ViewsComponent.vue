@@ -7,6 +7,7 @@
       :rows="tableData"
       buttonLabel="Add View"
       searchInputPlaceholder="Views"
+      @edit-row="openEditDialog"
       @delete-row="openDeleteDialog"
       @add-new="openTableDialog"
     />
@@ -279,6 +280,9 @@ export default defineComponent({
       this.getViews();
     });
     this.$ws.addMessageHandler((data) => {
+      if (data.type == "get_view_name") {
+        console.log(data.data);
+      }
       if (data.type == "get_views") {
         data.data.forEach((item) => {
           this.tableData.push({
@@ -354,7 +358,7 @@ export default defineComponent({
       );
     },
     getViews() {
-      this.tableData = []
+      this.tableData = [];
       this.$ws.sendMessage(`show views;`, "get_views");
       this.getMaterializedViews();
     },
@@ -367,6 +371,9 @@ export default defineComponent({
     },
     getZViews() {
       this.$ws.sendMessage(`show zviews;`, "get_z_views");
+    },
+    openEditDialog(row) {
+      this.$ws.sendMessage(`describe ${row.name};`, "get_view_name");
     },
     openDeleteDialog(row) {
       this.selectedRow = row;

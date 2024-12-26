@@ -6,6 +6,7 @@
       :columns="tableColumns"
       :rows="tableData"
       buttonLabel="Add Table"
+      @edit-row="openEditDialog"
       @delete-row="openDeleteDialog"
       @add-new="openTableDialog"
     />
@@ -439,6 +440,9 @@ export default defineComponent({
       this.getTableInformations();
     });
     this.$ws.addMessageHandler((data) => {
+      if (data.type == "get_table_name") {
+        console.log(data.data);
+      }
       if (data.type == "get_table") {
         this.tableData = data.data.map((x, i) => ({
           id: i + 1,
@@ -547,6 +551,9 @@ export default defineComponent({
         { name: "", type: "", defaultValue: "", primary: false, id: 3 },
         { name: "", type: "", defaultValue: "", primary: false, id: 4 },
       ];
+    },
+    openEditDialog(row) {
+      this.$ws.sendMessage(`describe ${row.name};`, "get_table_name");
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
