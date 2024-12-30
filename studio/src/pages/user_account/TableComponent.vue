@@ -441,7 +441,7 @@ export default defineComponent({
     });
     this.$ws.addMessageHandler((data) => {
       if (data.type == "get_table_name") {
-        console.log(data.data);
+        this.setEditTableInfo(data.data);
       }
       if (data.type == "get_table") {
         this.tableData = data.data.map((x, i) => ({
@@ -459,7 +459,7 @@ export default defineComponent({
           .filter((x) => x.Name)
           .forEach((item) => {
             const itemData = this.tableData.find(
-              (x) => `ztable_${x.name.toLowerCase()}` == item.Name.toLowerCase()
+              (x) => x.name.toLowerCase() == item.Name.toLowerCase()
             );
             if (itemData) {
               itemData.ztable = true;
@@ -479,6 +479,32 @@ export default defineComponent({
     this.$ws.removeAll();
   },
   methods: {
+    setEditTableInfo(data) {
+      this.addNewTable = true;
+      this.tableInfo = {
+        name: data.find((x) => x.Name == "table description")?.Type,
+        description: data.find((x) => x.Name == "table description")
+          ?.Description,
+        zTableVal: this.selectedRow.ztable,
+      };
+      const excludeIds = [
+        "primary key",
+        "distribution key",
+        "table description",
+      ];
+      this.dataTypeRow = [];
+      data
+        .filter((x) => !excludeIds.includes(x.Name))
+        .forEach((item, index) => {
+          this.dataTypeRow.push({
+            name: item.Name,
+            type: item.Type,
+            defaultValue: "",
+            primary: data.some((x) => x.Type == item.Name),
+            id: index + 1,
+          });
+        });
+    },
     getTableInformations() {
       this.$ws.sendMessage(`show tables;`, "get_table");
     },
@@ -525,12 +551,12 @@ export default defineComponent({
       if (primaryKey.length > 0) {
         columns.push(`PRIMARY KEY (${primaryKey.join(", ")})`);
       }
-      const query = `CREATE TABLE \"${this.tableInfo.name}\" (${columns.join(
-        ",\n    "
-      )});`;
+      const query = `CREATE OR ALTER TABLE \"${
+        this.tableInfo.name
+      }\" (${columns.join(",\n    ")});`;
       this.$ws.sendMessage(query, "create_table");
       if (this.tableInfo.zTableVal) {
-        const zTableQuery = `CREATE ZTABLE \"ztable_${
+        const zTableQuery = `CREATE OR ZTABLE \"${
           this.tableInfo.name
         }\" (${columns.join(",\n    ")});`;
         this.$ws.sendMessage(zTableQuery, "create_ztable");
@@ -553,6 +579,7 @@ export default defineComponent({
       ];
     },
     openEditDialog(row) {
+      this.selectedRow = row;
       this.$ws.sendMessage(`describe ${row.name};`, "get_table_name");
     },
     openDeleteDialog(row) {

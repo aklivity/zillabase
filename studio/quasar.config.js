@@ -67,6 +67,11 @@ module.exports = configure(function (/* ctx */) {
 
       // extendViteConf (viteConf) {},
       // viteVuePluginOptions: {},
+      vueLoaderOptions: {
+        compilerOptions: {
+          isCustomElement: tag => tag === 'async-api',
+        },
+      },
 
       vitePlugins: [
         [

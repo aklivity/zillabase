@@ -13,6 +13,7 @@
   </div>
 </template>
 <script>
+import { appApiDocs } from "src/services/api";
 import { defineComponent } from "vue";
 
 export default defineComponent({
@@ -20,9 +21,13 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      iframeSrc:
-        "/asyncapi_REST_APIs.yaml",
+      iframeSrc: "",
     };
+  },
+  mounted() {
+    appApiDocs("http-asyncapi").then(({ data }) => {
+      this.iframeSrc = data;
+    });
   },
 });
 </script>

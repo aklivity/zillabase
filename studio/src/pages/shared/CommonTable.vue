@@ -237,11 +237,12 @@
       <template v-slot:body-cell-actions="props">
         <q-td :props="props">
           <q-btn
-          v-if="tableName === 'function-table'"
+            v-if="tableName === 'function-table'"
             flat
             dense
             icon="img:/icons/eye.svg"
             class="icon-outline text-default-light-green q-mr-md"
+            @click="viewRow(props.row)"
           />
           <q-btn
             flat
@@ -494,6 +495,9 @@ export default defineComponent({
     },
   },
   methods: {
+    viewRow(row) {
+      this.$emit("view-row", row);
+    },
     editRow(row) {
       this.$emit("edit-row", row);
     },

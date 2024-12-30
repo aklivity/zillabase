@@ -8,6 +8,7 @@
       buttonLabel="Add function"
       searchInputPlaceholder="Functions"
       @edit-row="openEditDialog"
+      @view-row="openEditDialog"
       @delete-row="openDeleteDialog"
       @add-new="openFunctionDialog"
       :tableName="'function-table'"
@@ -309,7 +310,7 @@ export default defineComponent({
         functionType: "embedded",
         body: "",
       },
-      languageOptions: ["plpgsql"],
+      languageOptions: ["php", "javaScript", "r", "sql", "python"],
       tableColumns: [
         { name: "name", label: "Name", align: "left", field: "name" },
         {
@@ -416,7 +417,6 @@ export default defineComponent({
     };
   },
   mounted() {
-    window.functionThat = this;
     this.$ws.connect(() => {
       this.getFunctionInformations();
     });
@@ -433,6 +433,7 @@ export default defineComponent({
           language: x.Language,
           rows: x.total_rows,
           ztable: false,
+          type: x.Link ? "Embedded" : "External",
         }));
       }
       if (data.type == "create_function" || data.type == "drop_function") {
@@ -502,12 +503,10 @@ export default defineComponent({
         .join(", ");
 
       return `
-      CREATE FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
+      CREATE OR ALTER FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
       LANGUAGE ${this.functionInfo.language} 
       AS $$
-      BEGIN
-          RETURN '${this.functionInfo.body}'
-      END;
+        return ${this.functionInfo.body}
       $$;`;
     },
     generateEmbeddedFunction() {
@@ -522,16 +521,29 @@ export default defineComponent({
         .join(", ");
 
       return `
-      CREATE FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
-      LANGUAGE ${this.functionInfo.language} 
-      AS $$
-      BEGIN
-          RETURN NULL;
-      END;
-      $$;`;
+      CREATE OR ALTER FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
+        LANGUAGE ${this.functionInfo.language} 
+      AS '${this.functionInfo.name}';`;
     },
     openEditDialog(row) {
-      this.$ws.sendMessage(`describe ${row.name};`, "get_function_name");
+      this.functionInfo = {
+        name: row.name,
+        returnType: row.returnType,
+        language: row.language,
+        functionType: row.link ? "embedded" : "external",
+        body: row.link,
+      };
+      this.functionTypeRow = [{ name: "", type: "", defaultValue: "" }];
+      const parameters = row.parameters?.split(",");
+      if (parameters?.length) {
+        this.functionTypeRow = parameters.map((x) => ({
+          name: "",
+          type: x.trim(),
+          defaultValue: "",
+        }));
+      }
+
+      this.addNewFunction = true;
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
