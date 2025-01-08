@@ -359,6 +359,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE TABLE zb_catalog.ztables(
                     name VARCHAR PRIMARY KEY,
                     sql VARCHAR);
+                CREATE TABLE zb_catalog.zfunctions(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR);
+                CREATE TABLE zb_catalog.zstreams(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR);
                 """);
         }
     }
