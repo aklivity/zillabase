@@ -60,8 +60,6 @@ LANGUAGE SQL AS $$
       args.notes;
   $$;
 
-FLUSH;
-
 CREATE ZSTREAM streampay_events(
     event VARCHAR,
     user_id VARCHAR,

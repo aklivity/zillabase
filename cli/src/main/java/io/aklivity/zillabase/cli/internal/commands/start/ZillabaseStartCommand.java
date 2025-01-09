@@ -941,7 +941,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         for (KafkaTopicSchemaRecord record : records)
         {
-            if (record.name.endsWith("_replies"))
+            if (record.name.endsWith("_replies_sink"))
             {
                 ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
                     new ZillaBindingOptionsConfig.KafkaTopicConfig();
@@ -1462,7 +1462,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setMessages(Collections.singletonList(reference));
                 if (name.endsWith("_commands"))
                 {
-                    String replyTopic = name.replace("_commands", "_replies");
+                    String replyTopic = name.replace("_commands", "_replies_sink");
                     OperationReply reply = new OperationReply();
                     reference = new Reference("#/channels/%s".formatted(replyTopic));
                     reply.setChannel(reference);
@@ -1535,7 +1535,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             for (Map.Entry<String, JsonValue> channelJson : channelsJson.entrySet())
             {
                 String channelName = channelJson.getKey();
-                if (channelName.endsWith("_replies"))
+                if (channelName.endsWith("_replies_sink"))
                 {
                     continue;
                 }

@@ -60,8 +60,8 @@ async function onPay() {
   if (balance.value - amount.value > 0) {
     const accessToken = keycloak.token;
     const authorization = { Authorization: `Bearer ${accessToken}` };
-    api.post('/streampay_commands', {
-      type: 'SendPayment',
+    api.post('/streampay_events_commands', {
+      command: 'SendPayment',
       user_id: userOption.value?.value,
       request_id: '',
       amount: +amount.value,
@@ -97,7 +97,7 @@ async function onRequest() {
   const accessToken = keycloak.token;
   const authorization = { Authorization: `Bearer ${accessToken}` };
   api.post('/streampay_commands', {
-    type: 'RequestPayment',
+    command: 'RequestPayment',
     user_id: userOption.value?.value,
     request_id: '',
     amount: +amount.value,
