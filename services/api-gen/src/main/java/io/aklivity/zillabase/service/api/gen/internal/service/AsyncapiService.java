@@ -1,6 +1,6 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
-import static io.aklivity.zillabase.service.api.gen.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -12,14 +12,20 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 
+import com.asyncapi.v3._0_0.model.AsyncAPI;
+import com.asyncapi.v3._0_0.model.component.Components;
+import com.asyncapi.v3._0_0.model.info.Info;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -34,14 +40,11 @@ public abstract class AsyncapiService
     @Value("${DEFAULT_KARAPACE_URL:http://karapace.zillabase.dev:8081}")
     private String defaultKarapaceUrl;
 
-
     protected static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-|_)(.)");
     protected static final Pattern EXPRESSION_PATTERN =
         Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
     protected static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
         Pattern.DOTALL);
-    protected static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
-    protected static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
 
     protected final Matcher matcher = TOPIC_PATTERN.matcher("");
     protected final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
@@ -51,10 +54,11 @@ public abstract class AsyncapiService
 
     final HttpClient client = HttpClient.newHttpClient();
 
-    protected int registerAsyncApiSpec(
+    protected String registerAsyncApiSpec(
         String id,
         String spec)
     {
+        String newVersion = null;
         try
         {
             File tempFile = File.createTempFile("zillabase-asyncapi-spec", ".tmp");
@@ -79,6 +83,7 @@ public abstract class AsyncapiService
             {
                 Jsonb jsonb = JsonbBuilder.newBuilder().build();
                 AsyncapiSpecRegisterResponse register = jsonb.fromJson(response, AsyncapiSpecRegisterResponse.class);
+                newVersion = register.id;
                 System.out.println("Registered AsyncAPI spec: %s".formatted(register.id));
             }
             else
@@ -92,6 +97,8 @@ public abstract class AsyncapiService
         {
             ex.printStackTrace(System.err);
         }
+
+        return newVersion;
     }
 
     protected String resolveType(
@@ -146,6 +153,28 @@ public abstract class AsyncapiService
             responseBody = null;
         }
         return responseBody;
+    }
+
+    protected String buildAsyncApiSpec(
+        Info info,
+        Components components,
+        Map<String, Object> channels,
+        Map<String, Object> operations,
+        Map<String, Object> servers) throws JsonProcessingException
+    {
+        final AsyncAPI asyncAPI = new AsyncAPI();
+
+        asyncAPI.setAsyncapi("3.0.0");
+        asyncAPI.setInfo(info);
+        asyncAPI.setServers(servers);
+        asyncAPI.setComponents(components);
+        asyncAPI.setChannels(channels);
+        asyncAPI.setOperations(operations);
+
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+                .setSerializationInclusion(NON_NULL);
+
+        return  mapper.writeValueAsString(asyncAPI);
     }
 
     private URI toURI(

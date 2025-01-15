@@ -39,7 +39,11 @@
       <groupId>com.asyncapi</groupId>
       <artifactId>asyncapi-core</artifactId>
     </dependency>
-      <dependency>
+    <dependency>
+      <groupId>org.eclipse</groupId>
+      <artifactId>yasson</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>

@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 import io.aklivity.zillabase.service.api.gen.internal.service.HttpAsyncApiService;
 import io.aklivity.zillabase.service.api.gen.internal.service.KafkaAsyncApiService;
 import io.aklivity.zillabase.service.api.gen.internal.service.PublishConfigService;
-import io.aklivity.zillabase.service.api.gen.internal.serde.Event;
+import io.aklivity.zillabase.service.api.gen.internal.serde.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.serde.EventSerde;
 
 @Component
 public class ApiGenTopology
 {
     private final Serde<String> stringSerde = Serdes.String();
-    private final Serde<Event> eventSerde = new EventSerde();
+    private final Serde<ApiGenEvent> eventSerde = new EventSerde();
 
     @Value("${zcatalogs.topic:public.ztatalogs}")
     String zcatalogsTopic;
@@ -47,12 +47,12 @@ public class ApiGenTopology
         StreamsBuilder streamsBuilder)
     {
         streamsBuilder.stream(zcatalogsTopic, Consumed.with(stringSerde, stringSerde))
-            .mapValues(e -> new Event("catalog_updated", 0, 0))
+            .mapValues(e -> new ApiGenEvent("catalog_updated", 0, 0))
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
 
-        KStream<String, Event> eventsStream = streamsBuilder.stream(eventsTopic,
+        KStream<String, ApiGenEvent> eventsStream = streamsBuilder.stream(eventsTopic,
             Consumed.with(stringSerde, eventSerde));
-        KStream<String, Event>[] branches = eventsStream.branch(
+        KStream<String, ApiGenEvent>[] branches = eventsStream.branch(
             (key, value) -> value.name().equals("catalog_updated"),
             (key, value) -> value.name().equals("kafka_asyncapi_generated"),
             (key, value) -> value.name().equals("http_asyncapi_generated"));

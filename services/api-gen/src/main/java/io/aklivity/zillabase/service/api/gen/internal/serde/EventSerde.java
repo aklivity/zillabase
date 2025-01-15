@@ -5,13 +5,13 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.Serde;
 
-public class EventSerde implements Serde<Event>
+public class EventSerde implements Serde<ApiGenEvent>
 {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public Serializer<Event> serializer()
+    public Serializer<ApiGenEvent> serializer()
     {
         return (topic, data) ->
         {
@@ -27,13 +27,13 @@ public class EventSerde implements Serde<Event>
     }
 
     @Override
-    public Deserializer<Event> deserializer()
+    public Deserializer<ApiGenEvent> deserializer()
     {
         return (topic, data) ->
         {
             try
             {
-                return objectMapper.readValue(data, Event.class);
+                return objectMapper.readValue(data, ApiGenEvent.class);
             }
             catch (Exception e)
             {
