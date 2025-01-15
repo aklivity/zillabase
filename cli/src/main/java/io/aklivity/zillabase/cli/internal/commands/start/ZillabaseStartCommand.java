@@ -359,6 +359,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE TABLE zb_catalog.ztables(
                     name VARCHAR PRIMARY KEY,
                     sql VARCHAR);
+                CREATE TABLE zb_catalog.zfunctions(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR);
+                CREATE TABLE zb_catalog.zstreams(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR);
                 """);
         }
     }
@@ -935,7 +941,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         for (KafkaTopicSchemaRecord record : records)
         {
-            if (record.name.endsWith("_replies"))
+            if (record.name.endsWith("_replies_sink"))
             {
                 ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
                     new ZillaBindingOptionsConfig.KafkaTopicConfig();
@@ -1456,7 +1462,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setMessages(Collections.singletonList(reference));
                 if (name.endsWith("_commands"))
                 {
-                    String replyTopic = name.replace("_commands", "_replies");
+                    String replyTopic = name.replace("_commands", "_replies_sink");
                     OperationReply reply = new OperationReply();
                     reference = new Reference("#/channels/%s".formatted(replyTopic));
                     reply.setChannel(reference);
@@ -1529,7 +1535,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             for (Map.Entry<String, JsonValue> channelJson : channelsJson.entrySet())
             {
                 String channelName = channelJson.getKey();
-                if (channelName.endsWith("_replies"))
+                if (channelName.endsWith("_replies_sink"))
                 {
                     continue;
                 }
@@ -2179,7 +2185,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
-                .withEnv("APICURIO_STORAGE_KIND=kafkasql",
+                .withEnv(
+                    "QUARKUS_HTTP_CORS_ORIGINS=*",
+                    "APICURIO_STORAGE_KIND=kafkasql",
                     "APICURIO_KAFKASQL_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl))
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
