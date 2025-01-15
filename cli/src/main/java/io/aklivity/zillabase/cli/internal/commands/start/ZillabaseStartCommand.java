@@ -2187,7 +2187,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withTty(true)
                 .withEnv(
                     "QUARKUS_HTTP_CORS_ORIGINS=*",
-                    "QUARKUS_HTTP_CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS",
                     "APICURIO_STORAGE_KIND=kafkasql",
                     "APICURIO_KAFKASQL_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl))
                 .withHealthcheck(new HealthCheck()
