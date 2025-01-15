@@ -50,6 +50,11 @@
     <checkstyle.config.location>io/aklivity/zilla/conf/checkstyle/configuration.xml</checkstyle.config.location>
     <checkstyle.suppressions.location>io/aklivity/zilla/conf/checkstyle/suppressions.xml</checkstyle.suppressions.location>
     <k3po.version>3.2.0</k3po.version>
+    <kafka.version>3.9.0</kafka.version>
+    <spingg.kafka.version>3.3.1</spingg.kafka.version>
+    <spring.version>3.4.1</spring.version>
+    <serializer.version>7.8.0</serializer.version>
+    <junit.version>4.13.2</junit.version>
   </properties>
 
   <modules>
@@ -133,6 +138,57 @@
         <groupId>io.aklivity.k3po</groupId>
         <artifactId>control-junit</artifactId>
         <version>${k3po.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+          <version>2.14.1</version>
+      </dependency>
+      <dependency>
+          <groupId>io.confluent</groupId>
+          <artifactId>kafka-json-serializer</artifactId>
+          <version>${serializer.version}</version>
+          <exclusions>
+              <exclusion>
+                  <groupId>com.fasterxml.jackson.core</groupId>
+                  <artifactId>jackson-databind</artifactId>
+              </exclusion>
+          </exclusions>
+      </dependency>
+      <dependency>
+          <groupId>org.apache.kafka</groupId>
+          <artifactId>kafka-streams</artifactId>
+          <version>${kafka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.kafka</groupId>
+        <artifactId>spring-kafka</artifactId>
+        <version>${spingg.kafka.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+          <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-test</artifactId>
+          <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework.kafka</groupId>
+          <artifactId>spring-kafka-test</artifactId>
+          <version>${spingg.kafka.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.apache.kafka</groupId>
+          <artifactId>kafka-streams-test-utils</artifactId>
+          <version>${kafka.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -362,7 +418,6 @@
       <properties>
         <docker.skip.push>true</docker.skip.push>
         <docker.skip.tag>true</docker.skip.tag>
-        <docker.latest.tag></docker.latest.tag>
       </properties>
 
       <build>

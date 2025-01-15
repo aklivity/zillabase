@@ -12,12 +12,10 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.asyncapi;
+package io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla;
 
-import java.util.Map;
-
-public class AsyncapiKafkaFilter
+public class ZillaCatalogConfig
 {
-    public String key;
-    public Map<String, String> headers;
+    public String type;
+    public Object options;
 }

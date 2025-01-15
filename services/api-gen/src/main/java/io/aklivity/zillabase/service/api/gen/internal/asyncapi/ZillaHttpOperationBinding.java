@@ -12,30 +12,34 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.asyncapi;
+package io.aklivity.zillabase.service.api.gen.internal.asyncapi;
+
+import java.util.List;
+import java.util.Map;
 
 import com.asyncapi.bindings.OperationBinding;
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class ZillaSseOperationBinding extends OperationBinding
+public final class ZillaHttpOperationBinding extends OperationBinding
 {
     @JsonProperty("method")
     private HTTPOperationMethod method;
 
+    @JsonProperty("overrides")
+    private Map<String, String> overrides;
 
-    @JsonProperty("bindingVersion")
-    private String bindingVersion;
+    @JsonProperty("filters")
+    private List<AsyncapiKafkaFilter> filters;
 
-    public ZillaSseOperationBinding(
+    public ZillaHttpOperationBinding(
         HTTPOperationMethod method,
-        String bindingVersion)
+        Map<String, String> overrides,
+        List<AsyncapiKafkaFilter> filters)
     {
         this.method = method;
-        this.bindingVersion = bindingVersion;
+        this.overrides = overrides;
+        this.filters = filters;
     }
 
-    public ZillaSseOperationBinding()
-    {
-    }
 }

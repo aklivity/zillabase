@@ -12,9 +12,11 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.asyncapi;
+package io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla;
 
-public class AsyncapiSpecRegisterResponse
+public class ZillaBindingRouteConfig
 {
-    public String id;
+    public Object when;
+    public Object with;
+    public String exit;
 }
