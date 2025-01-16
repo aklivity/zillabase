@@ -1,4 +1,4 @@
-package io.aklivity.zillabase.service.api.gen.internal.service;
+package io.aklivity.zillabase.service.api.gen.internal.model;
 
 public enum ApiGenEventName
 {

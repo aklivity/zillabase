@@ -5,6 +5,8 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.Serde;
 
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
+
 public class EventSerde implements Serde<ApiGenEvent>
 {
 

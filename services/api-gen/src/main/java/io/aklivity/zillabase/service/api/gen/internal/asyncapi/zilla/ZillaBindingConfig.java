@@ -16,8 +16,6 @@ package io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla;
 
 import java.util.List;
 
-import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingRouteConfig;
-
 public class ZillaBindingConfig
 {
     public String type;

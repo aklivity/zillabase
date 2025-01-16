@@ -1,9 +1,10 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static io.aklivity.zillabase.service.api.gen.internal.service.HttpAsyncApiService.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.service.KafkaAsyncApiService.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -15,10 +16,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.StreamSupport;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfig;
@@ -27,21 +33,21 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindin
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingRouteConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
-import io.aklivity.zillabase.service.api.gen.internal.serde.ApiGenEvent;
+import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 
 @Service
-public class PublishConfigService
+public class PublishConfigService extends AsyncapiService
 {
     public ApiGenEvent publish(
         ApiGenEvent event)
     {
-        publishZillaConfig(config);
+        publishZillaConfig();
 
         return new ApiGenEvent();
     }
 
-    private void publishZillaConfig(
-        ZillabaseConfig config)
+    private void publishZillaConfig() throws IOException, InterruptedException
     {
         String zillaConfig = null;
 
@@ -52,23 +58,23 @@ public class PublishConfigService
         ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
         apicurioCatalog.type = "apicurio";
         apicurioCatalog.options = Map.of(
-            "url", config.registry.apicurio.url,
-            "group-id", config.registry.apicurio.groupId);
+            "url",config.apicurioUrl(),
+            "group-id", config.apicurioGroupId());
 
         ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
         karapaceCatalog.type = "karapace";
-        karapaceCatalog.options = Map.of("url", config.registry.karapace.url);
+        karapaceCatalog.options = Map.of("url", config.karapaceUrl());
 
-        ZillabaseKeycloakConfig keycloak = config.keycloak;
-        String realm = keycloak.realm;
+        //TODO: add realms to keycloak
+        String realm = null;
         String authnJwt = "jwt0";
         if (realm != null)
         {
             ZillaGuardConfig guard = new ZillaGuardConfig();
             guard.type = "jwt";
-            guard.options.issuer = "%s/realms/%s".formatted(keycloak.url, realm);
-            guard.options.audience = keycloak.audience;
-            guard.options.keys = keycloak.jwks.formatted(realm);
+            guard.options.issuer = "%s/realms/%s".formatted(config.keycloakUrl(), realm);
+            guard.options.audience = config.keycloakAudience();
+            guard.options.keys = config.keycloakJwksUrl().formatted(realm);
             guard.options.identity = "preferred_username";
 
             zilla.guards = Map.of(authnJwt, guard);
@@ -161,12 +167,11 @@ public class PublishConfigService
         if (zillaConfig != null)
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI("http://localhost:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
+                .newBuilder(toURI("http://localhost:%d".formatted(config.adminHttpPort()),
                     "/v1/config/zilla.yaml"))
                 .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
                 .build();
 
-            HttpClient client = HttpClient.newHttpClient();
             HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
             if (httpResponse.statusCode() == 204)
@@ -187,7 +192,7 @@ public class PublishConfigService
                                 Path relativePath = zillaFilesPath.relativize(file);
                                 byte[] content = Files.readAllBytes(file);
                                 HttpRequest zillaFileRequest = HttpRequest
-                                    .newBuilder(toURI("http://localhost:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
+                                    .newBuilder(toURI("http://localhost:%d".formatted(""),
                                         "/v1/config/%s".formatted(relativePath)))
                                     .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
                                     .build();

@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.StreamSupport;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -34,7 +32,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiKafkaFilter;
@@ -42,15 +39,13 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
-import io.aklivity.zillabase.service.api.gen.internal.serde.ApiGenEvent;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventName;
 
 @Service
 public class HttpAsyncApiService extends AsyncapiService
 {
-    private static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
-
-    @Value("${DEFAULT_RISINGWAVE_DB:dev}")
-    private String risingwaveDb;
+    public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
 
     public ApiGenEvent generate(
         ApiGenEvent event)
@@ -231,8 +226,8 @@ public class HttpAsyncApiService extends AsyncapiService
 
             arraySchema.set("items", itemsNode);
             arraySchema.put("name",
-                arraySchemaKey.replace("%s.".formatted(risingwaveDb), ""));
-            arraySchema.put("namespace", risingwaveDb);
+                arraySchemaKey.replace("%s.".formatted(config.risingwaveDb()), ""));
+            arraySchema.put("namespace", config.risingwaveDb());
             schemas.put(arraySchemaKey, arraySchema);
         }
 
@@ -403,68 +398,5 @@ public class HttpAsyncApiService extends AsyncapiService
             operation.setSecurity(List.of(security));
         }
         operations.put("on%sRead".formatted(label), operation);
-    }
-
-        private String extractIdentityFieldFromProtobufSchema(
-        String schema)
-    {
-        String identity = null;
-        String[] parts = schema.split(";");
-        for (String part : parts)
-        {
-            part = part.trim();
-            if (part.contains("message") || part.contains("syntax"))
-            {
-                continue;
-            }
-            String[] tokens = part.split("\\s+");
-            if (tokens.length >= 2)
-            {
-                String fieldName = tokens[1];
-                if (fieldName.endsWith("_identity"))
-                {
-                    identity = fieldName;
-                    break;
-                }
-            }
-        }
-        return identity;
-    }
-
-    private String extractIdentityFieldFromSchema(
-        String schema) throws JsonProcessingException
-    {
-        AtomicReference<String> identity = new AtomicReference<>(null);
-
-        ObjectMapper schemaMapper = new ObjectMapper();
-        JsonNode schemaObject = schemaMapper.readTree(schema);
-        if (schemaObject.has("fields"))
-        {
-            JsonNode fieldsNode = schemaObject.get("fields");
-            StreamSupport.stream(fieldsNode.spliterator(), false)
-                .forEach(field ->
-                {
-                    String fieldName = field.has("name")
-                        ? field.get("name").asText()
-                        : fieldsNode.fieldNames().next();
-                    if (fieldName.endsWith("_identity"))
-                    {
-                        identity.set(fieldName);
-                    }
-                });
-        }
-        else if (schemaObject.has("properties"))
-        {
-            JsonNode fieldsNode = schemaObject.get("properties");
-            fieldsNode.fieldNames().forEachRemaining(fieldName ->
-            {
-                if (fieldName.endsWith("_identity"))
-                {
-                    identity.set(fieldName);
-                }
-            });
-        }
-
-        return identity.get();
     }
 }

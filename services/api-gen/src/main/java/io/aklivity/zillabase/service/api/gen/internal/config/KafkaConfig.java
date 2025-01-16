@@ -1,4 +1,4 @@
-package io.aklivity.zillabase.service.api.gen.internal;
+package io.aklivity.zillabase.service.api.gen.internal.config;
 
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG;

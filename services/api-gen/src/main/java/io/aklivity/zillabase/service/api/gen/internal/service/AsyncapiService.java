@@ -13,8 +13,10 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
@@ -27,19 +29,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecRegisterResponse;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
+import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
 public abstract class AsyncapiService
 {
-    @Value("${DEFAULT_ADMIN_HTTP_PORT:7184}")
-    private int defaultAdminHttpPort;
-
-    @Value("${DEFAULT_KARAPACE_URL:http://karapace.zillabase.dev:8081}")
-    private String defaultKarapaceUrl;
-
     protected static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-|_)(.)");
     protected static final Pattern EXPRESSION_PATTERN =
         Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
@@ -52,7 +50,10 @@ public abstract class AsyncapiService
     protected final List<String> operations = new ArrayList<>();
     protected final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
 
-    final HttpClient client = HttpClient.newHttpClient();
+    protected final HttpClient client = HttpClient.newHttpClient();
+
+    @Autowired
+    protected ApiGenConfig config;
 
     protected String registerAsyncApiSpec(
         String id,
@@ -69,7 +70,7 @@ public abstract class AsyncapiService
             }
 
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI("http://localhost:%d".formatted(defaultAdminHttpPort),
+                .newBuilder(toURI("http://localhost:%d".formatted(config.adminHttpPort()),
                     "/v1/asyncapis"))
                 .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
                 .header("X-Registry-ArtifactId", id)
@@ -140,7 +141,7 @@ public abstract class AsyncapiService
         try
         {
             HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(defaultKarapaceUrl,
+                .newBuilder(toURI(config.karapaceUrl(),
                     "/subjects/%s/versions/latest".formatted(subject)))
                 .GET()
                 .build();
@@ -177,10 +178,73 @@ public abstract class AsyncapiService
         return  mapper.writeValueAsString(asyncAPI);
     }
 
-    private URI toURI(
+    protected URI toURI(
         String baseUrl,
         String path)
     {
         return URI.create(baseUrl).resolve(path);
+    }
+
+    protected String extractIdentityFieldFromProtobufSchema(
+        String schema)
+    {
+        String identity = null;
+        String[] parts = schema.split(";");
+        for (String part : parts)
+        {
+            part = part.trim();
+            if (part.contains("message") || part.contains("syntax"))
+            {
+                continue;
+            }
+            String[] tokens = part.split("\\s+");
+            if (tokens.length >= 2)
+            {
+                String fieldName = tokens[1];
+                if (fieldName.endsWith("_identity"))
+                {
+                    identity = fieldName;
+                    break;
+                }
+            }
+        }
+        return identity;
+    }
+
+    protected String extractIdentityFieldFromSchema(
+        String schema) throws JsonProcessingException
+    {
+        AtomicReference<String> identity = new AtomicReference<>(null);
+        ObjectMapper schemaMapper = new ObjectMapper();
+        JsonNode schemaObject = schemaMapper.readTree(schema);
+
+        if (schemaObject.has("fields"))
+        {
+            JsonNode fieldsNode = schemaObject.get("fields");
+            StreamSupport.stream(fieldsNode.spliterator(), false)
+                .forEach(field ->
+                {
+                    String fieldName = field.has("name")
+                        ? field.get("name").asText()
+                        : fieldsNode.fieldNames().next();
+                    if (fieldName.endsWith("_identity"))
+                    {
+                        identity.set(fieldName);
+                    }
+                });
+        }
+        else if (schemaObject.has("properties"))
+        {
+            JsonNode fieldsNode = schemaObject.get("properties");
+            fieldsNode.fieldNames().forEachRemaining(fieldName ->
+            {
+                if (fieldName.endsWith("_identity"))
+                {
+                    identity.set(fieldName);
+                }
+            });
+        }
+
+        return identity.get();
     }
 }

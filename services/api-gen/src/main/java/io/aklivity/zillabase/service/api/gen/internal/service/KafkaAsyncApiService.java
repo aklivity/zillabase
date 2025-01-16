@@ -45,21 +45,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.serde.ApiGenEvent;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventName;
 
 @Service
 public class KafkaAsyncApiService extends AsyncapiService
 {
-    private static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
-
-    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
-    private String bootstrapServers;
-
-    @Value("${KARAPACE_URL:http://karapace.zillabase.dev:8081}")
-    private String karapaceUrl;
-
-    @Value("${DEFAULT_RISINGWAVE_DB:dev}")
-    private String risingwaveDb;
+    public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
 
     private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
 

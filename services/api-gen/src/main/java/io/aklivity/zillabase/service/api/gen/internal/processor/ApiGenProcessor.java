@@ -1,4 +1,4 @@
-package io.aklivity.zillabase.service.api.gen.internal;
+package io.aklivity.zillabase.service.api.gen.internal.processor;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
@@ -10,14 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventName;
 import io.aklivity.zillabase.service.api.gen.internal.service.HttpAsyncApiService;
 import io.aklivity.zillabase.service.api.gen.internal.service.KafkaAsyncApiService;
 import io.aklivity.zillabase.service.api.gen.internal.service.PublishConfigService;
-import io.aklivity.zillabase.service.api.gen.internal.serde.ApiGenEvent;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.serde.EventSerde;
 
 @Component
-public class ApiGenTopology
+public class ApiGenProcessor
 {
     private final Serde<String> stringSerde = Serdes.String();
     private final Serde<ApiGenEvent> eventSerde = new EventSerde();
@@ -32,7 +33,7 @@ public class ApiGenTopology
     private final HttpAsyncApiService httpAsyncApiHandler;
     private final PublishConfigService publishConfigHandler;
 
-    public ApiGenTopology(
+    public ApiGenProcessor(
         KafkaAsyncApiService kafkaAsyncApiService,
         HttpAsyncApiService httpAsyncApiHandler,
         PublishConfigService publishConfigService)
@@ -47,7 +48,7 @@ public class ApiGenTopology
         StreamsBuilder streamsBuilder)
     {
         streamsBuilder.stream(zcatalogsTopic, Consumed.with(stringSerde, stringSerde))
-            .mapValues(e -> new ApiGenEvent("catalog_updated", 0, 0))
+            .mapValues(e -> new ApiGenEvent(ApiGenEventName.CATALOG_UPDATED, "", "0"))
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
 
         KStream<String, ApiGenEvent> eventsStream = streamsBuilder.stream(eventsTopic,
