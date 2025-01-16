@@ -1,10 +1,14 @@
 package io.aklivity.zillabase.service.api.gen.internal.processor;
 
+import java.util.Map;
+
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,19 +57,24 @@ public class ApiGenProcessor
 
         KStream<String, ApiGenEvent> eventsStream = streamsBuilder.stream(eventsTopic,
             Consumed.with(stringSerde, eventSerde));
-        KStream<String, ApiGenEvent>[] branches = eventsStream.branch(
-            (key, value) -> value.type() == ApiGenEventType.CATALOG_UPDATED,
-            (key, value) -> value.type() == ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED,
-            (key, value) -> value.type() == ApiGenEventType.HTTP_ASYNC_API_PUBLISHED);
+        Map<String, KStream<String, ApiGenEvent>> branches = eventsStream.split(Named.as("branch-"))
+            .branch((key, value) ->
+                value.type() == ApiGenEventType.CATALOG_UPDATED, Branched.as("catalog-updated"))
+            .branch((key, value) ->
+                value.type() == ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, Branched.as("kafka-async-api-published"))
+            .branch((key, value) ->
+                value.type() == ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, Branched.as("http-async-api-published"))
+            .defaultBranch(Branched.as("branch-catalog-updated"));
 
-        branches[0]
+        branches.get("branch-catalog-updated")
             .mapValues(kafkaAsyncApiHandler::generate)
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
 
-        branches[1].mapValues(httpAsyncApiHandler::generate)
+        branches.get("branch-kafka-async-api-published")
+            .mapValues(httpAsyncApiHandler::generate)
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
-
-        branches[2].mapValues(publishConfigHandler::publish)
+        branches.get("branch-http-async-api-published")
+            .mapValues(publishConfigHandler::publish)
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
 
     }
