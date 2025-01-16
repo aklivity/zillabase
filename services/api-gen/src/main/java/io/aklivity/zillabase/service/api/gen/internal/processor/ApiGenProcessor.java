@@ -15,13 +15,13 @@ import io.aklivity.zillabase.service.api.gen.internal.service.HttpAsyncApiServic
 import io.aklivity.zillabase.service.api.gen.internal.service.KafkaAsyncApiService;
 import io.aklivity.zillabase.service.api.gen.internal.service.PublishConfigService;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
-import io.aklivity.zillabase.service.api.gen.internal.serde.EventSerde;
+import io.aklivity.zillabase.service.api.gen.internal.serde.ApiGenEventSerde;
 
 @Component
 public class ApiGenProcessor
 {
     private final Serde<String> stringSerde = Serdes.String();
-    private final Serde<ApiGenEvent> eventSerde = new EventSerde();
+    private final Serde<ApiGenEvent> eventSerde = new ApiGenEventSerde();
 
     @Value("${zcatalogs.topic:public.ztatalogs}")
     String zcatalogsTopic;

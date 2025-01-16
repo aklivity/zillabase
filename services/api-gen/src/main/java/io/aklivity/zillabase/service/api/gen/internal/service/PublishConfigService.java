@@ -27,6 +27,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
@@ -214,7 +215,7 @@ public class PublishConfigService extends AsyncapiService
     }
 
     private void extractedHeaders(
-        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig)
+        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig) throws JsonProcessingException
     {
         for (KafkaTopicSchemaRecord record : records)
         {

@@ -7,7 +7,7 @@ import org.apache.kafka.common.serialization.Serde;
 
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 
-public class EventSerde implements Serde<ApiGenEvent>
+public class ApiGenEventSerde implements Serde<ApiGenEvent>
 {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
