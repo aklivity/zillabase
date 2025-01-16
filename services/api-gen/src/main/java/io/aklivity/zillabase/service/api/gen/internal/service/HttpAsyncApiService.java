@@ -43,7 +43,7 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventName;
 
 @Service
-public class HttpAsyncApiService extends AsyncapiService
+public class HttpAsyncApiService
 {
     public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
 
@@ -257,7 +257,7 @@ public class HttpAsyncApiService extends AsyncapiService
         String label,
         String messageName,
         boolean compact) throws JsonProcessingException
-        {
+    {
         String identity = null;
         for (KafkaTopicSchemaRecord record : records)
         {

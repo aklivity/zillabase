@@ -1,19 +1,10 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
-import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
-
-import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
 
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolicy;
@@ -34,29 +25,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.Config;
-import org.apache.kafka.clients.admin.DescribeConfigsResult;
-import org.apache.kafka.clients.admin.TopicListing;
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.config.ConfigResource;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
+import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventName;
 
 @Service
-public class KafkaAsyncApiService extends AsyncapiService
+public class KafkaAsyncApiService
 {
     public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
 
-    private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
+    private final ApiGenConfig config;
+    private final KafkaTopicSchemaService kafkaService;
+    private final AsyncapiSpecService specService;
 
-    AdminClient adminClient = AdminClient.create(Map.of(
-        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
+    public KafkaAsyncApiService(
+        ApiGenConfig config,
+        KafkaTopicSchemaService kafkaService,
+        AsyncapiSpecService specService)
+    {
+        this.config = config;
+        this.kafkaService = kafkaService;
+        this.specService = specService;
+    }
 
     public ApiGenEvent generate(
         ApiGenEvent event)
@@ -65,19 +58,19 @@ public class KafkaAsyncApiService extends AsyncapiService
 
         try
         {
-            List<KafkaTopicSchemaRecord> schemaRecords = resolveKafkaTopicsAndSchemas();
+            List<KafkaTopicSchemaRecord> schemaRecords = kafkaService.resolve();
 
             String kafkaSpec = null;
             String specVersion = null;
 
             if (!schemaRecords.isEmpty())
             {
-                kafkaSpec = generateKafkaAsyncApiSpecs();
+                kafkaSpec = generateKafkaAsyncApiSpecs(schemaRecords);
             }
 
             if (kafkaSpec != null)
             {
-               specVersion = registerAsyncApiSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
+               specVersion = specService.register(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
             }
 
             newEvent = new ApiGenEvent(ApiGenEventName.KAFKA_ASYNC_API_PUBLISHED, specVersion, null);
@@ -93,48 +86,8 @@ public class KafkaAsyncApiService extends AsyncapiService
         return newEvent;
     }
 
-    private List<KafkaTopicSchemaRecord> resolveKafkaTopicsAndSchemas() throws ExecutionException, InterruptedException
-    {
-        records.clear();
-
-        KafkaFuture<Collection<TopicListing>> topics = adminClient.listTopics().listings();
-        for (TopicListing topic : topics.get())
-        {
-            if (!topic.isInternal())
-            {
-                String topicName = topic.name();
-
-                ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, topicName);
-                DescribeConfigsResult result = adminClient.describeConfigs(List.of(resource));
-                Map<ConfigResource, Config> configMap = result.all().get();
-
-                Config topicConfig = configMap.get(resource);
-                String[] policies = topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(",");
-
-                String subject = "%s-value".formatted(topicName);
-                String schema = resolveSchema(subject);
-                if (schema != null)
-                {
-                    JsonReader reader = Json.createReader(new StringReader(schema));
-                    JsonObject object = reader.readObject();
-
-                    if (object.containsKey("schema"))
-                    {
-                        String schemaStr = object.getString("schema");
-                        String type = resolveType(schemaStr);
-                        records.add(new KafkaTopicSchemaRecord(topicName, policies,
-                            matcher.reset(topicName.replace("%s.".formatted(risingwaveDb), ""))
-                                .replaceAll(match -> match.group(2).toUpperCase()),
-                            subject, type, schemaStr));
-                    }
-                }
-            }
-        }
-
-        return records;
-    }
-
-    private String generateKafkaAsyncApiSpecs() throws JsonProcessingException
+    private String generateKafkaAsyncApiSpecs(
+        List<KafkaTopicSchemaRecord> schemaRecords) throws JsonProcessingException
     {
         final Components components = new Components();
         final Map<String, Object> schemas = new HashMap<>();
@@ -155,15 +108,15 @@ public class KafkaAsyncApiService extends AsyncapiService
         info.setLicense(license);
 
         Server server = new Server();
-        server.setHost(bootstrapServers);
+        server.setHost(config.kafkaBootstrapServers());
         server.setProtocol("kafka");
 
         KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
-        kafkaServerBinding.setSchemaRegistryUrl(karapaceUrl);
+        kafkaServerBinding.setSchemaRegistryUrl(config.karapaceUrl());
         kafkaServerBinding.setSchemaRegistryVendor("karapace");
         server.setBindings(Map.of("kafka", kafkaServerBinding));
 
-        for (KafkaTopicSchemaRecord record : records)
+        for (KafkaTopicSchemaRecord record : schemaRecords)
         {
             String topicName = record.name;
             String label = record.label;
@@ -171,9 +124,9 @@ public class KafkaAsyncApiService extends AsyncapiService
             String messageName = "%sMessage".formatted(label);
 
             String name = topicName;
-            if (name.startsWith(risingwaveDb))
+            if (name.startsWith(config.risingwaveDb()))
             {
-                name = name.replace("%s.".formatted(risingwaveDb), "");
+                name = name.replace("%s.".formatted(config.risingwaveDb()), "");
             }
 
             channel = new Channel();
@@ -237,7 +190,6 @@ public class KafkaAsyncApiService extends AsyncapiService
         components.setSchemas(schemas);
         components.setMessages(messages);
 
-        return buildAsyncApiSpec(info, components, channels, operations, Map.of("plain", server));
+        return specService.build(info, components, channels, operations, Map.of("plain", server));
     }
-
 }

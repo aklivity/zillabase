@@ -38,7 +38,7 @@ import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 
 @Service
-public class PublishConfigService extends AsyncapiService
+public class PublishConfigService
 {
     public ApiGenEvent publish(
         ApiGenEvent event)

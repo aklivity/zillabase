@@ -2,6 +2,7 @@ package io.aklivity.zillabase.service.api.gen.internal.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
@@ -15,7 +16,7 @@ public class ApiGenConfig
     private String risingwaveDb;
 
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
-    private String bootstrapServers;
+    private String kafkaBootstrapServers;
 
     @Value("${KARAPACE_URL:http://karapace.zillabase.dev:8081}")
     private String karapaceUrl;
@@ -48,9 +49,9 @@ public class ApiGenConfig
         return risingwaveDb;
     }
 
-    public String bootstrapServers()
+    public String kafkaBootstrapServers()
     {
-        return bootstrapServers;
+        return kafkaBootstrapServers;
     }
 
     public String karapaceUrl()

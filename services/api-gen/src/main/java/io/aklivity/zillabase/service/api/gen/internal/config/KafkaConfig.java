@@ -44,6 +44,14 @@ public class KafkaConfig
     {
     }
 
+    @Bean
+    public AdminClient adminClient() {
+        Map<String, Object> config = new HashMap<>();
+        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+
+        return AdminClient.create(config);
+    }
+
     @Bean(name = API_GEN_STREAMS_BUILDER_BEAN_NAME)
     public StreamsBuilderFactoryBean apiGenKafkaStreamsBuilder()
     {
