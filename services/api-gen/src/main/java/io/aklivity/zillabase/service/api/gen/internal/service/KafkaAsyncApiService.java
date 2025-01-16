@@ -1,5 +1,7 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
+import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.KAFKA_ASYNCAPI_ARTIFACT_ID;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,12 +39,12 @@ public class KafkaAsyncApiService
 {
     private final ApiGenConfig config;
     private final KafkaTopicSchemaService kafkaService;
-    private final AsyncapiSpecService specService;
+    private final AsyncapiSpecConfigService specService;
 
     public KafkaAsyncApiService(
         ApiGenConfig config,
         KafkaTopicSchemaService kafkaService,
-        AsyncapiSpecService specService)
+        AsyncapiSpecConfigService specService)
     {
         this.config = config;
         this.kafkaService = kafkaService;

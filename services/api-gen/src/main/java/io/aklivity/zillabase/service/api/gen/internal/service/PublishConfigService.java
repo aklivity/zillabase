@@ -1,11 +1,10 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static io.aklivity.zillabase.service.api.gen.internal.service.HttpAsyncApiService.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.service.KafkaAsyncApiService.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,8 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfig;
@@ -35,19 +32,19 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 public class PublishConfigService
 {
     private final ApiGenConfig config;
-    private final WebClient webClient;
     private final KafkaTopicSchemaService kafkaService;
+    private final AsyncapiSpecConfigService specService;
 
     private final List<KafkaTopicSchemaRecord> records;
 
     public PublishConfigService(
         ApiGenConfig config,
-        WebClient webClient,
-        KafkaTopicSchemaService kafkaService)
+        KafkaTopicSchemaService kafkaService,
+        AsyncapiSpecConfigService specService)
     {
         this.config = config;
-        this.webClient = webClient;
         this.kafkaService = kafkaService;
+        this.specService = specService;
 
         this.records = new ArrayList<>();
     }
@@ -59,8 +56,8 @@ public class PublishConfigService
 
         try
         {
-            String zillaConfig = generateConfig();
-            boolean published = pusblish(zillaConfig);
+            String zillaConfig = generateConfig(event);
+            boolean published = specService.publishConfig(zillaConfig);
 
             newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILL_CONFIG_ERRORED;
         }
@@ -75,7 +72,8 @@ public class PublishConfigService
         return new ApiGenEvent(newState, event.kafkaVersion(), event.httpVersion());
     }
 
-    private String generateConfig() throws IOException
+    private String generateConfig(
+        ApiGenEvent event) throws IOException
     {
         List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
             "Get", "GetItem");
@@ -115,6 +113,8 @@ public class PublishConfigService
 
         List<ZillaBindingRouteConfig> routes = new ArrayList<>();
 
+        List<String> operations = specService.httpOperations(event.httpVersion());
+
         for (String operation : operations)
         {
             if (operation.endsWith("Replies"))
@@ -139,6 +139,7 @@ public class PublishConfigService
         northHttpServer.kind = "server";
         ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
         optionsConfig.specs = Map.of("http_api", httpApi);
+
         if (realm != null)
         {
             optionsConfig.http = new ZillaBindingOptionsConfig.HttpAuthorizationOptionsConfig();
@@ -237,19 +238,5 @@ public class PublishConfigService
                 }
             }
         }
-    }
-
-    private boolean pusblish(
-        String zillaConfig)
-    {
-        ClientResponse response = webClient
-            .post()
-            .uri(URI.create("http://localhost:%d".formatted(config.adminHttpPort()))
-                .resolve("/v1/config/zilla.yaml"))
-            .bodyValue(zillaConfig)
-            .exchange()
-            .block();
-
-        return response != null && response.statusCode().value() == 204;
     }
 }

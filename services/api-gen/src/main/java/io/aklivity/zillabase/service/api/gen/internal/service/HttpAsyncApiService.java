@@ -3,14 +3,17 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
-import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecService.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecService.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -41,18 +44,28 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
+import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
 @Service
 public class HttpAsyncApiService
 {
-    private final AsyncapiSpecService specService;
+    private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
+    private final Matcher matcher = TOPIC_PATTERN.matcher("");
+
+    private final ApiGenConfig config;
+    private final AsyncapiSpecConfigService specService;
+    private final KafkaTopicSchemaService kafkaService;
 
     public HttpAsyncApiService(
-        AsyncapiSpecService specService)
+        ApiGenConfig config,
+        AsyncapiSpecConfigService specService,
+        KafkaTopicSchemaService kafkaService)
     {
+        this.config = config;
         this.specService = specService;
+        this.kafkaService = kafkaService;
     }
 
     public ApiGenEvent generate(
@@ -82,7 +95,7 @@ public class HttpAsyncApiService
     }
 
     private String generateHttpAsyncApiSpecs(
-        String kafkaSpec) throws JsonProcessingException
+        String kafkaSpec) throws JsonProcessingException, ExecutionException, InterruptedException
     {
         final Components components = new Components();
         final Map<String, Object> schemas = new HashMap<>();
@@ -251,7 +264,7 @@ public class HttpAsyncApiService
         components.setSchemas(schemas);
         components.setMessages(messages);
 
-        return buildAsyncApiSpec(info, components, channels, operations, servers);
+        return specService.build(info, components, channels, operations, servers);
     }
 
     private void generateHttpOperations(
@@ -261,16 +274,19 @@ public class HttpAsyncApiService
         String name,
         String label,
         String messageName,
-        boolean compact) throws JsonProcessingException
+        boolean compact) throws JsonProcessingException, ExecutionException, InterruptedException
     {
         String identity = null;
+
+        List<KafkaTopicSchemaRecord> records = kafkaService.resolve();
+
         for (KafkaTopicSchemaRecord record : records)
         {
             if (label.equals(record.label))
             {
                 identity = record.type.equals("protobuf")
-                    ? extractIdentityFieldFromProtobufSchema(record.schema)
-                    : extractIdentityFieldFromSchema(record.schema);
+                    ? kafkaService.extractIdentityFieldFromProtobufSchema(record.schema)
+                    : kafkaService.extractIdentityFieldFromSchema(record.schema);
             }
         }
 

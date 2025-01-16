@@ -2,9 +2,15 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
+import java.io.StringReader;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 
@@ -17,13 +23,14 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecRegisterResponse;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
 @Service
-public class AsyncapiSpecService
+public class AsyncapiSpecConfigService
 {
     public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
     public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
@@ -32,15 +39,17 @@ public class AsyncapiSpecService
     private final WebClient webClient;
     private final URI asyncapiUrl;
 
-    public AsyncapiSpecService(
+    private final List<String> operations;
+
+    public AsyncapiSpecConfigService(
         ApiGenConfig config,
         WebClient webClient)
     {
         this.config = config;
         this.webClient = webClient;
-
         this.asyncapiUrl = URI.create("http://localhost:%d".formatted(config.adminHttpPort()))
             .resolve("/v1/asyncapis");
+        this.operations = new ArrayList<>();
     }
 
     public String register(
@@ -108,5 +117,36 @@ public class AsyncapiSpecService
                 .setSerializationInclusion(NON_NULL);
 
         return mapper.writeValueAsString(asyncAPI);
+    }
+
+     public List<String> httpOperations(
+        String httpSpecVersion)
+    {
+        String httpSpec = fetchSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpecVersion);
+
+        operations.clear();
+
+        JsonValue jsonValue = Json.createReader(new StringReader(httpSpec)).readValue();
+        JsonObject operationsMap = jsonValue.asJsonObject().getJsonObject("operations");
+        for (Map.Entry<String, JsonValue> operation : operationsMap.entrySet())
+        {
+            this.operations.add(operation.getKey());
+        }
+
+        return operations;
+    }
+
+    public boolean publishConfig(
+        String zillaConfig)
+    {
+        ClientResponse response = webClient
+            .post()
+            .uri(URI.create("http://localhost:%d".formatted(config.adminHttpPort()))
+                .resolve("/v1/config/zilla.yaml"))
+            .bodyValue(zillaConfig)
+            .exchange()
+            .block();
+
+        return response != null && response.statusCode().value() == 204;
     }
 }
