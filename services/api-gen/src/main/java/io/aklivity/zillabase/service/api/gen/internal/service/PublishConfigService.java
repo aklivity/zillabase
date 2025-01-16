@@ -60,12 +60,15 @@ public class PublishConfigService
         try
         {
             String zillaConfig = generateZillaConfig();
-            pusblishZillaConfig(zillaConfig);
+            boolean published = pusblishZillaConfig(zillaConfig);
 
-            newState = ApiGenEventState.ZILLABASE_CONFIG_PUBLISHED;
+            newState = published ? ApiGenEventState.ZILLABASE_CONFIG_PUBLISHED : ApiGenEventState.ZILLABASE_CONFIG_ERRORED;
         }
-        catch (IOException e)
+        catch (IOException ex)
         {
+            System.err.println("Error publishing zilla config");
+            ex.printStackTrace(System.err);
+
             newState = ApiGenEventState.ZILLABASE_CONFIG_ERRORED;
         }
 
