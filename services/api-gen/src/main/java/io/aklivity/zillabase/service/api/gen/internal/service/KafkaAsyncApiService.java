@@ -35,8 +35,6 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 @Service
 public class KafkaAsyncApiService
 {
-    public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
-
     private final ApiGenConfig config;
     private final KafkaTopicSchemaService kafkaService;
     private final AsyncapiSpecService specService;

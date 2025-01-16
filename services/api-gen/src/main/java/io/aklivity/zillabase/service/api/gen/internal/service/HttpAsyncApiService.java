@@ -3,6 +3,8 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
+import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecService.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecService.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.StringReader;
 import java.util.Collections;
@@ -45,14 +47,12 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 @Service
 public class HttpAsyncApiService
 {
-    public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
-
-    private final AsyncapiSpecService asyncapiSpecService;
+    private final AsyncapiSpecService specService;
 
     public HttpAsyncApiService(
-        AsyncapiSpecService asyncapiSpecService)
+        AsyncapiSpecService specService)
     {
-        this.asyncapiSpecService = asyncapiSpecService;
+        this.specService = specService;
     }
 
     public ApiGenEvent generate(
@@ -62,10 +62,10 @@ public class HttpAsyncApiService
 
         try
         {
-            //TODO: Fetch Kafka Spec
-            String httpSpec = generateHttpAsyncApiSpecs(null);
+            String kafkaSpec = specService.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
+            String httpSpec = generateHttpAsyncApiSpecs(kafkaSpec);
 
-            String specVersion = asyncapiSpecService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
+            String specVersion = specService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
             newEvent = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), specVersion);
         }
@@ -84,7 +84,6 @@ public class HttpAsyncApiService
     private String generateHttpAsyncApiSpecs(
         String kafkaSpec) throws JsonProcessingException
     {
-        String spec = null;
         final Components components = new Components();
         final Map<String, Object> schemas = new HashMap<>();
         final Map<String, Object> messages = new HashMap<>();
@@ -252,9 +251,7 @@ public class HttpAsyncApiService
         components.setSchemas(schemas);
         components.setMessages(messages);
 
-        spec = buildAsyncApiSpec(info, components, channels, operations, servers);
-
-        return spec;
+        return buildAsyncApiSpec(info, components, channels, operations, servers);
     }
 
     private void generateHttpOperations(

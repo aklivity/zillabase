@@ -2,7 +2,6 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
@@ -26,8 +25,12 @@ import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 @Service
 public class AsyncapiSpecService
 {
+    public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
+    public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
+
     private final ApiGenConfig config;
     private final WebClient webClient;
+    private final URI asyncapiUrl;
 
     public AsyncapiSpecService(
         ApiGenConfig config,
@@ -35,16 +38,19 @@ public class AsyncapiSpecService
     {
         this.config = config;
         this.webClient = webClient;
+
+        this.asyncapiUrl = URI.create("http://localhost:%d".formatted(config.adminHttpPort()))
+            .resolve("/v1/asyncapis");
     }
 
     public String register(
         String id,
-        String spec) throws IOException
+        String spec)
     {
         String newVersion = null;
 
         ResponseEntity<String> httpResponse = webClient.post()
-            .uri(URI.create("http://localhost:%d".formatted(config.adminHttpPort())).resolve("/v1/asyncapis"))
+            .uri(asyncapiUrl)
             .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
             .header("X-Registry-ArtifactId", id)
             .bodyValue(spec)
@@ -52,7 +58,9 @@ public class AsyncapiSpecService
             .toEntity(String.class)
             .block();
 
-        String response = httpResponse.getStatusCode().value() == 200 ? httpResponse.getBody() : null;
+        String response = httpResponse != null && httpResponse.getStatusCode().value() == 200
+            ? httpResponse.getBody()
+            : null;
 
         if (response != null)
         {
@@ -67,6 +75,17 @@ public class AsyncapiSpecService
         }
 
         return newVersion;
+    }
+
+    public String fetchSpec(
+        String artifactId,
+        String version)
+    {
+        return webClient.get()
+            .uri(asyncapiUrl.resolve("/%s/%s".formatted(artifactId, version)))
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
     }
 
      public String build(
