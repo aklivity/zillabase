@@ -40,12 +40,20 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperatio
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
-import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventName;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventState;
 
 @Service
 public class HttpAsyncApiService
 {
     public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
+
+    private final AsyncapiSpecService asyncapiSpecService;
+
+    public HttpAsyncApiService(
+        AsyncapiSpecService asyncapiSpecService)
+    {
+        this.asyncapiSpecService = asyncapiSpecService;
+    }
 
     public ApiGenEvent generate(
         ApiGenEvent event)
@@ -57,16 +65,16 @@ public class HttpAsyncApiService
             //TODO: Fetch Kafka Spec
             String httpSpec = generateHttpAsyncApiSpecs(null);
 
-            String specVersion = registerAsyncApiSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
+            String specVersion = asyncapiSpecService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
-            newEvent = new ApiGenEvent(ApiGenEventName.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), specVersion);
+            newEvent = new ApiGenEvent(ApiGenEventState.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), specVersion);
         }
         catch (Exception ex)
         {
             System.err.println("Error building AsyncApi Spec");
             ex.printStackTrace(System.err);
 
-            newEvent = new ApiGenEvent(ApiGenEventName.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), null);
+            newEvent = new ApiGenEvent(ApiGenEventState.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), null);
         }
 
         return newEvent;

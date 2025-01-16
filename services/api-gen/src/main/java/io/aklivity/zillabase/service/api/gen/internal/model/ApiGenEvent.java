@@ -1,7 +1,7 @@
 package io.aklivity.zillabase.service.api.gen.internal.model;
 
 public record ApiGenEvent(
-    ApiGenEventName name,
+    ApiGenEventState name,
     String kafkaVersion,
     String httpVersion)
 {

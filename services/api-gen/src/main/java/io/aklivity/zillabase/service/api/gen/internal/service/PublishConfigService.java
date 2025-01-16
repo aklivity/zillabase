@@ -5,27 +5,20 @@ import static io.aklivity.zillabase.service.api.gen.internal.service.HttpAsyncAp
 import static io.aklivity.zillabase.service.api.gen.internal.service.KafkaAsyncApiService.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfig;
@@ -36,22 +29,51 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalo
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventState;
 
 @Service
 public class PublishConfigService
 {
+    private final ApiGenConfig config;
+    private final WebClient webClient;
+    private final KafkaTopicSchemaService kafkaService;
+
+    private final List<KafkaTopicSchemaRecord> records;
+
+    public PublishConfigService(
+        ApiGenConfig config,
+        WebClient webClient,
+        KafkaTopicSchemaService kafkaService)
+    {
+        this.config = config;
+        this.webClient = webClient;
+        this.kafkaService = kafkaService;
+
+        this.records = new ArrayList<>();
+    }
+
     public ApiGenEvent publish(
         ApiGenEvent event)
     {
-        publishZillaConfig();
+        ApiGenEventState newState;
 
-        return new ApiGenEvent();
+        try
+        {
+            String zillaConfig = generateZillaConfig();
+            pusblishZillaConfig(zillaConfig);
+
+            newState = ApiGenEventState.ZILLABASE_CONFIG_PUBLISHED;
+        }
+        catch (IOException e)
+        {
+            newState = ApiGenEventState.ZILLABASE_CONFIG_ERRORED;
+        }
+
+        return new ApiGenEvent(newState, event.kafkaVersion(), event.httpVersion());
     }
 
-    private void publishZillaConfig() throws IOException, InterruptedException
+    private String generateZillaConfig() throws IOException
     {
-        String zillaConfig = null;
-
         List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
             "Get", "GetItem");
 
@@ -161,57 +183,10 @@ public class PublishConfigService
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
             .setSerializationInclusion(NON_NULL);
 
-        zillaConfig = mapper.writeValueAsString(zilla);
+        String zillaConfig = mapper.writeValueAsString(zilla);
         zillaConfig = zillaConfig.replaceAll("(:status|zilla:correlation-id)", "'$1'");
 
-
-        if (zillaConfig != null)
-        {
-            HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI("http://localhost:%d".formatted(config.adminHttpPort()),
-                    "/v1/config/zilla.yaml"))
-                .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
-                .build();
-
-            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
-            if (httpResponse.statusCode() == 204)
-            {
-                System.out.println("Config Server is populated with zilla.yaml");
-
-                Path zillaFilesPath = Paths.get("zillabase/zilla/");
-
-                if (Files.exists(zillaFilesPath))
-                {
-                    Files.walk(zillaFilesPath)
-                        .filter(Files::isRegularFile)
-                        .filter(file -> !(file.endsWith("zilla.yaml") || file.getFileName().toString().startsWith(".")))
-                        .forEach(file ->
-                        {
-                            try
-                            {
-                                Path relativePath = zillaFilesPath.relativize(file);
-                                byte[] content = Files.readAllBytes(file);
-                                HttpRequest zillaFileRequest = HttpRequest
-                                    .newBuilder(toURI("http://localhost:%d".formatted(""),
-                                        "/v1/config/%s".formatted(relativePath)))
-                                    .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
-                                    .build();
-
-                                if (client.send(zillaFileRequest, HttpResponse.BodyHandlers.ofString()).statusCode() == 204)
-                                {
-                                    System.out.println("Config Server is populated with %s".formatted(relativePath));
-                                }
-                            }
-                            catch (IOException | InterruptedException ex)
-                            {
-                                System.err.println("Failed to process file: %s : %s".formatted(file, ex.getMessage()));
-                                ex.printStackTrace();
-                            }
-                        });
-                }
-            }
-        }
+        return zillaConfig;
     }
 
     private void extractedHeaders(
@@ -239,8 +214,8 @@ public class PublishConfigService
             else
             {
                 String identity = record.type.equals("protobuf")
-                    ? extractIdentityFieldFromProtobufSchema(record.schema)
-                    : extractIdentityFieldFromSchema(record.schema);
+                    ? kafkaService.extractIdentityFieldFromProtobufSchema(record.schema)
+                    : kafkaService.extractIdentityFieldFromSchema(record.schema);
                 if (identity != null)
                 {
                     ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
@@ -259,5 +234,19 @@ public class PublishConfigService
                 }
             }
         }
+    }
+
+    private boolean pusblishZillaConfig(
+        String zillaConfig)
+    {
+        ClientResponse response = webClient
+            .post()
+            .uri(URI.create("http://localhost:%d".formatted(config.adminHttpPort()))
+                .resolve("/v1/config/zilla.yaml"))
+            .bodyValue(zillaConfig)
+            .exchange()
+            .block();
+
+        return response != null && response.statusCode().value() == 204;
     }
 }
