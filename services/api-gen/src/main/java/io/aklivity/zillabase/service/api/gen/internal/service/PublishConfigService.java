@@ -29,7 +29,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalo
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
-import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventState;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
 @Service
 public class PublishConfigService
@@ -55,27 +55,27 @@ public class PublishConfigService
     public ApiGenEvent publish(
         ApiGenEvent event)
     {
-        ApiGenEventState newState;
+        ApiGenEventType newState;
 
         try
         {
-            String zillaConfig = generateZillaConfig();
-            boolean published = pusblishZillaConfig(zillaConfig);
+            String zillaConfig = generateConfig();
+            boolean published = pusblish(zillaConfig);
 
-            newState = published ? ApiGenEventState.ZILLABASE_CONFIG_PUBLISHED : ApiGenEventState.ZILLABASE_CONFIG_ERRORED;
+            newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILL_CONFIG_ERRORED;
         }
         catch (IOException ex)
         {
             System.err.println("Error publishing zilla config");
             ex.printStackTrace(System.err);
 
-            newState = ApiGenEventState.ZILLABASE_CONFIG_ERRORED;
+            newState = ApiGenEventType.ZILL_CONFIG_ERRORED;
         }
 
         return new ApiGenEvent(newState, event.kafkaVersion(), event.httpVersion());
     }
 
-    private String generateZillaConfig() throws IOException
+    private String generateConfig() throws IOException
     {
         List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
             "Get", "GetItem");
@@ -239,7 +239,7 @@ public class PublishConfigService
         }
     }
 
-    private boolean pusblishZillaConfig(
+    private boolean pusblish(
         String zillaConfig)
     {
         ClientResponse response = webClient

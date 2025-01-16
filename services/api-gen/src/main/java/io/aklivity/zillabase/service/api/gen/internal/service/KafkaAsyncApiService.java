@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
-import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventState;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
 @Service
 public class KafkaAsyncApiService
@@ -60,27 +60,17 @@ public class KafkaAsyncApiService
         {
             List<KafkaTopicSchemaRecord> schemaRecords = kafkaService.resolve();
 
-            String kafkaSpec = null;
-            String specVersion = null;
+            String kafkaSpec = generateKafkaAsyncApiSpecs(schemaRecords);
+            String specVersion = specService.register(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
 
-            if (!schemaRecords.isEmpty())
-            {
-                kafkaSpec = generateKafkaAsyncApiSpecs(schemaRecords);
-            }
-
-            if (kafkaSpec != null)
-            {
-               specVersion = specService.register(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
-            }
-
-            newEvent = new ApiGenEvent(ApiGenEventState.KAFKA_ASYNC_API_PUBLISHED, specVersion, null);
+            newEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, specVersion, null);
         }
         catch (Exception ex)
         {
-            System.err.println("Error building AsyncApi Spec");
+            System.err.println("Error building Kafka AsyncApi Spec");
             ex.printStackTrace(System.err);
 
-            newEvent = new ApiGenEvent(ApiGenEventState.KAFKA_ASYNC_API_ERRORED, null, null);
+            newEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_ERRORED, null, null);
         }
 
         return newEvent;

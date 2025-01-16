@@ -141,8 +141,8 @@ public class KafkaTopicSchemaService
             StreamSupport.stream(fieldsNode.spliterator(), false)
                 .forEach(field ->
                 {
-                    String fieldName = field.has("name")
-                        ? field.get("name").asText()
+                    String fieldName = field.has("type")
+                        ? field.get("type").asText()
                         : fieldsNode.fieldNames().next();
                     if (fieldName.endsWith("_identity"))
                     {

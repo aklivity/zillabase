@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventState;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 import io.aklivity.zillabase.service.api.gen.internal.service.HttpAsyncApiService;
 import io.aklivity.zillabase.service.api.gen.internal.service.KafkaAsyncApiService;
 import io.aklivity.zillabase.service.api.gen.internal.service.PublishConfigService;
@@ -48,15 +48,15 @@ public class ApiGenProcessor
         StreamsBuilder streamsBuilder)
     {
         streamsBuilder.stream(zcatalogsTopic, Consumed.with(stringSerde, stringSerde))
-            .mapValues(e -> new ApiGenEvent(ApiGenEventState.CATALOG_UPDATED, "", "0"))
+            .mapValues(e -> new ApiGenEvent(ApiGenEventType.CATALOG_UPDATED, "", "0"))
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
 
         KStream<String, ApiGenEvent> eventsStream = streamsBuilder.stream(eventsTopic,
             Consumed.with(stringSerde, eventSerde));
         KStream<String, ApiGenEvent>[] branches = eventsStream.branch(
-            (key, value) -> value.name().equals("catalog_updated"),
-            (key, value) -> value.name().equals("kafka_asyncapi_generated"),
-            (key, value) -> value.name().equals("http_asyncapi_generated"));
+            (key, value) -> value.type() == ApiGenEventType.CATALOG_UPDATED,
+            (key, value) -> value.type() == ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED,
+            (key, value) -> value.type() == ApiGenEventType.HTTP_ASYNC_API_PUBLISHED);
 
         branches[0]
             .mapValues(kafkaAsyncApiHandler::generate)

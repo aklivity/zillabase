@@ -40,7 +40,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperatio
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
-import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventState;
+import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
 @Service
 public class HttpAsyncApiService
@@ -67,14 +67,14 @@ public class HttpAsyncApiService
 
             String specVersion = asyncapiSpecService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
-            newEvent = new ApiGenEvent(ApiGenEventState.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), specVersion);
+            newEvent = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), specVersion);
         }
         catch (Exception ex)
         {
             System.err.println("Error building AsyncApi Spec");
             ex.printStackTrace(System.err);
 
-            newEvent = new ApiGenEvent(ApiGenEventState.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), null);
+            newEvent = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), null);
         }
 
         return newEvent;
@@ -216,7 +216,7 @@ public class HttpAsyncApiService
 
             arrayMessage.set("payload", payloadNode);
             arrayMessage.put("contentType", contentType);
-            arrayMessage.put("name", arrayMessageKey);
+            arrayMessage.put("type", arrayMessageKey);
 
             messages.put(arrayMessageKey, arrayMessage);
         }
@@ -233,7 +233,7 @@ public class HttpAsyncApiService
             itemsNode.put("$ref", "#/components/schemas/" + schemaJson.getKey());
 
             arraySchema.set("items", itemsNode);
-            arraySchema.put("name",
+            arraySchema.put("type",
                 arraySchemaKey.replace("%s.".formatted(config.risingwaveDb()), ""));
             arraySchema.put("namespace", config.risingwaveDb());
             schemas.put(arraySchemaKey, arraySchema);
