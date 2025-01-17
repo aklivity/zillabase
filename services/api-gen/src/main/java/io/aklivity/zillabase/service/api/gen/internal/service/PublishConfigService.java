@@ -1,3 +1,17 @@
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
@@ -11,11 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
-import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfig;
@@ -82,7 +96,7 @@ public class PublishConfigService
         ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
         apicurioCatalog.type = "apicurio";
         apicurioCatalog.options = Map.of(
-            "url",config.apicurioUrl(),
+            "url", config.apicurioUrl(),
             "group-id", config.apicurioGroupId());
 
         ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();

@@ -56,11 +56,6 @@
       <artifactId>jakarta.json.bind-api</artifactId>
     </dependency>
     <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-test</artifactId>
         <scope>test</scope>
@@ -74,6 +69,12 @@
         <groupId>org.apache.kafka</groupId>
         <artifactId>kafka-streams-test-utils</artifactId>
         <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>4.0.0</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -161,40 +162,6 @@
           <execution>
             <goals>
               <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>io.fabric8</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
-        <version>0.43.2</version>
-        <configuration>
-          <filter>${*}</filter>
-          <images combine.children="append">
-            <image>
-              <alias>auth</alias>
-              <name>ghcr.io/aklivity/zillabase/auth:%v</name>
-              <build>
-                <contextDir>${project.basedir}</contextDir>
-                <tags>
-                  <tag>latest</tag>
-                </tags>
-                <buildx>
-                  <platforms>
-                    <platform>linux/amd64</platform>
-                    <platform>linux/arm64</platform>
-                  </platforms>
-                </buildx>
-              </build>
-            </image>
-          </images>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>push</goal>
             </goals>
           </execution>
         </executions>

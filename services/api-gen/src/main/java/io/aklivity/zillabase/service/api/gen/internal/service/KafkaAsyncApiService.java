@@ -1,3 +1,17 @@
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.KAFKA_ASYNCAPI_ARTIFACT_ID;
@@ -7,6 +21,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
 
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolicy;
@@ -26,8 +42,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;

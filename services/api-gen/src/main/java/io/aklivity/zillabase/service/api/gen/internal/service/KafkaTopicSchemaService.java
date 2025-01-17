@@ -1,3 +1,17 @@
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
@@ -18,10 +32,6 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
@@ -30,6 +40,10 @@ import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
@@ -180,11 +194,17 @@ public class KafkaTopicSchemaService
             if (schemaObject.has("type"))
             {
                 String schemaType = schemaObject.get("type").asText();
-                type = switch (schemaType)
+                switch (schemaType)
                 {
-                    case "record", "enum", "fixed" -> "avro";
-                    default -> "json";
-                };
+                case "record":
+                case "enum":
+                case "fixed":
+                    type = "avro";
+                    break;
+                default:
+                    type = "json";
+                    break;
+                }
             }
         }
 

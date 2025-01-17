@@ -12,11 +12,72 @@ specific language governing permissions and limitations
 under the License.
 
 This project includes:
+  Apache Kafka under The Apache License, Version 2.0
+  Apache Log4j API under Apache-2.0
+  asyncapi-core under Apache License, Version 2.0
+  Bean Validation API under Apache License 2.0
+  Core functionality for the Reactor Netty library under The Apache Software License, Version 2.0
+  HTTP functionality for the Reactor Netty library under The Apache Software License, Version 2.0
+  IntelliJ IDEA Annotations under The Apache Software License, Version 2.0
+  Jackson datatype: jdk8 under The Apache Software License, Version 2.0
+  Jackson datatype: JSR310 under The Apache Software License, Version 2.0
+  Jackson-annotations under The Apache Software License, Version 2.0
+  Jackson-core under The Apache Software License, Version 2.0
+  jackson-databind under The Apache Software License, Version 2.0
+  Jackson-dataformat-YAML under The Apache Software License, Version 2.0
+  Jackson-module-parameter-names under The Apache Software License, Version 2.0
+  Jakarta Annotations API under EPL 2.0 or GPL2 w/ CPE
   Jakarta JSON Processing API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   JSON-B API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   JSON-P Default Provider under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  JUL to SLF4J bridge under MIT License
+  Kotlin Stdlib under The Apache License, Version 2.0
+  Log4j API to SLF4J Adapter under Apache-2.0
+  Logback Classic Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
+  Logback Core Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
+  micrometer-commons under The Apache Software License, Version 2.0
+  micrometer-observation under The Apache Software License, Version 2.0
+  Netty/Buffer under Apache License, Version 2.0
+  Netty/Codec under Apache License, Version 2.0
+  Netty/Codec/DNS under Apache License, Version 2.0
+  Netty/Codec/HTTP under Apache License, Version 2.0
+  Netty/Codec/HTTP2 under Apache License, Version 2.0
+  Netty/Codec/Socks under Apache License, Version 2.0
+  Netty/Common under Apache License, Version 2.0
+  Netty/Handler under Apache License, Version 2.0
+  Netty/Handler/Proxy under Apache License, Version 2.0
+  Netty/Resolver under Apache License, Version 2.0
+  Netty/Resolver/DNS under Apache License, Version 2.0
+  Netty/Resolver/DNS/Classes/MacOS under Apache License, Version 2.0
+  Netty/Resolver/DNS/Native/MacOS under Apache License, Version 2.0
+  Netty/Transport under Apache License, Version 2.0
+  Netty/Transport/Classes/Epoll under Apache License, Version 2.0
+  Netty/Transport/Native/Epoll under Apache License, Version 2.0
+  Netty/Transport/Native/Unix/Common under Apache License, Version 2.0
+  Non-Blocking Reactive Foundation for the JVM under Apache License, Version 2.0
   org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
-  org.leadpony.joy.core under The Apache Software License, Version 2.0
-  org.leadpony.joy.yaml under The Apache Software License, Version 2.0
-  SnakeYAML Engine under Apache License, Version 2.0
+  Project Lombok under The MIT License
+  reactive-streams under MIT-0
+  RocksDB JNI under Apache License 2.0 or GNU General Public License, version 2
+  SLF4J API Module under MIT License
+  SnakeYAML under Apache License, Version 2.0
+  Spring AOP under Apache License, Version 2.0
+  Spring Beans under Apache License, Version 2.0
+  Spring Commons Logging Bridge under Apache License, Version 2.0
+  Spring Context under Apache License, Version 2.0
+  Spring Core under Apache License, Version 2.0
+  Spring Expression Language (SpEL) under Apache License, Version 2.0
+  Spring Kafka Support under Apache License, Version 2.0
+  Spring Messaging under Apache License, Version 2.0
+  Spring Retry under Apache 2.0
+  Spring Transaction under Apache License, Version 2.0
+  Spring Web under Apache License, Version 2.0
+  Spring WebFlux under Apache License, Version 2.0
+  spring-boot under Apache License, Version 2.0
+  spring-boot-autoconfigure under Apache License, Version 2.0
+  spring-boot-starter under Apache License, Version 2.0
+  spring-boot-starter-json under Apache License, Version 2.0
+  spring-boot-starter-logging under Apache License, Version 2.0
+  spring-boot-starter-reactor-netty under Apache License, Version 2.0
+  spring-boot-starter-webflux under Apache License, Version 2.0
 

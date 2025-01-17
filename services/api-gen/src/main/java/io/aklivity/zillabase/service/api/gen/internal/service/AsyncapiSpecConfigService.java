@@ -1,3 +1,17 @@
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
@@ -14,17 +28,17 @@ import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecRegisterResponse;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
@@ -97,7 +111,7 @@ public class AsyncapiSpecConfigService
             .block();
     }
 
-     public String build(
+    public String build(
         Info info,
         Components components,
         Map<String, Object> channels,
@@ -119,7 +133,7 @@ public class AsyncapiSpecConfigService
         return mapper.writeValueAsString(asyncAPI);
     }
 
-     public List<String> httpOperations(
+    public List<String> httpOperations(
         String httpSpecVersion)
     {
         String httpSpec = fetchSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpecVersion);
