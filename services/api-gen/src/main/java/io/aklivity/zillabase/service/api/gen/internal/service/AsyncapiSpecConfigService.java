@@ -30,7 +30,6 @@ import jakarta.json.bind.JsonbBuilder;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.asyncapi.v3._0_0.model.AsyncAPI;
@@ -51,8 +50,6 @@ public class AsyncapiSpecConfigService
 
     private final ApiGenConfig config;
     private final WebClient webClient;
-    private final URI asyncapiUrl;
-
     private final List<String> operations;
 
     public AsyncapiSpecConfigService(
@@ -61,8 +58,6 @@ public class AsyncapiSpecConfigService
     {
         this.config = config;
         this.webClient = webClient;
-        this.asyncapiUrl = URI.create("http://localhost:%d".formatted(config.adminHttpPort()))
-            .resolve("/v1/asyncapis");
         this.operations = new ArrayList<>();
     }
 
@@ -73,7 +68,8 @@ public class AsyncapiSpecConfigService
         String newVersion = null;
 
         ResponseEntity<String> httpResponse = webClient.post()
-            .uri(asyncapiUrl)
+            .uri(URI.create(config.adminHttpUrl())
+                .resolve("/v1/asyncapis"))
             .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
             .header("X-Registry-ArtifactId", id)
             .bodyValue(spec)
@@ -81,7 +77,7 @@ public class AsyncapiSpecConfigService
             .toEntity(String.class)
             .block();
 
-        String response = httpResponse != null && httpResponse.getStatusCode().value() == 200
+        final String response = httpResponse != null && httpResponse.getStatusCode().value() == 200
             ? httpResponse.getBody()
             : null;
 
@@ -105,7 +101,8 @@ public class AsyncapiSpecConfigService
         String version)
     {
         return webClient.get()
-            .uri(asyncapiUrl.resolve("/%s/%s".formatted(artifactId, version)))
+            .uri(URI.create(config.adminHttpUrl())
+                .resolve("/v1/asyncapis/%s/%s".formatted(artifactId, version)))
             .retrieve()
             .bodyToMono(String.class)
             .block();
@@ -153,14 +150,14 @@ public class AsyncapiSpecConfigService
     public boolean publishConfig(
         String zillaConfig)
     {
-        ClientResponse response = webClient
+        ResponseEntity<Void> response = webClient
             .post()
-            .uri(URI.create("http://localhost:%d".formatted(config.adminHttpPort()))
-                .resolve("/v1/config/zilla.yaml"))
+            .uri(URI.create(config.adminHttpUrl()).resolve("/v1/config/zilla.yaml"))
             .bodyValue(zillaConfig)
-            .exchange()
+            .retrieve()
+            .toBodilessEntity()
             .block();
 
-        return response != null && response.statusCode().value() == 204;
+        return response != null && response.getStatusCode().value() == 204;
     }
 }

@@ -22,6 +22,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>
+      <exclusions>
+        <exclusion>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </exclusion>
+    </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework.kafka</groupId>
@@ -56,6 +62,10 @@
       <artifactId>jakarta.json.bind-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.leadpony.joy</groupId>
+      <artifactId>joy-yaml</artifactId>
+    </dependency>
+    <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-test</artifactId>
         <scope>test</scope>
@@ -75,6 +85,26 @@
       <artifactId>mockito-core</artifactId>
       <version>4.0.0</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <scope>test</scope>
     </dependency>
   </dependencies>
 

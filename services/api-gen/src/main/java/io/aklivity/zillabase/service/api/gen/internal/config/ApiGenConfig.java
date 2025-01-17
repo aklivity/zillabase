@@ -22,8 +22,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app.gen")
 public class ApiGenConfig
 {
-    @Value("${admin.http.port:7184}")
-    private int adminHttpPort;
+    @Value("${admin.http.url:http://localhost:7184}")
+    private String adminHttpUrl;
 
     @Value("${risingwave.db:dev}")
     private String risingwaveDb;
@@ -52,9 +52,9 @@ public class ApiGenConfig
     @Value("${keycloak.jwks.url:http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs}")
     private String keycloakJwksUrl;
 
-    public int adminHttpPort()
+    public String adminHttpUrl()
     {
-        return adminHttpPort;
+        return adminHttpUrl;
     }
 
     public String risingwaveDb()

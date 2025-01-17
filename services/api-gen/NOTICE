@@ -56,11 +56,14 @@ This project includes:
   Netty/Transport/Native/Unix/Common under Apache License, Version 2.0
   Non-Blocking Reactive Foundation for the JVM under Apache License, Version 2.0
   org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
+  org.leadpony.joy.core under The Apache Software License, Version 2.0
+  org.leadpony.joy.yaml under The Apache Software License, Version 2.0
   Project Lombok under The MIT License
   reactive-streams under MIT-0
   RocksDB JNI under Apache License 2.0 or GNU General Public License, version 2
   SLF4J API Module under MIT License
   SnakeYAML under Apache License, Version 2.0
+  SnakeYAML Engine under Apache License, Version 2.0
   Spring AOP under Apache License, Version 2.0
   Spring Beans under Apache License, Version 2.0
   Spring Commons Logging Bridge under Apache License, Version 2.0
