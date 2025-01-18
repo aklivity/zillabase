@@ -29,7 +29,7 @@ import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.asyncapi.v3._0_0.model.AsyncAPI;
@@ -42,7 +42,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecRegisterResponse;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
-@Service
+@Component
 public class AsyncapiSpecConfigHelper
 {
     public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";

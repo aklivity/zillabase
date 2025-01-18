@@ -16,20 +16,30 @@ package io.aklivity.zillabase.service.api.gen.internal.component;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.ConfigEntry;
+import org.apache.kafka.clients.admin.DescribeConfigsResult;
+import org.apache.kafka.clients.admin.ListTopicsResult;
+import org.apache.kafka.clients.admin.TopicListing;
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.config.ConfigResource;
+import org.apache.kafka.common.config.TopicConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.kafka.test.context.EmbeddedKafka;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,9 +47,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
-@SpringBootTest
-@DirtiesContext
-@EmbeddedKafka(partitions = 1)
+import reactor.core.publisher.Mono;
+
 public class KafkaTopicSchemaHelperTest
 {
     @Mock
@@ -48,36 +57,75 @@ public class KafkaTopicSchemaHelperTest
     @Mock
     private WebClient webClient;
 
-    @Autowired
-    private KafkaTopicSchemaHelper kafkaTopicSchemaService;
-
-    @Autowired
+    @Mock
     private AdminClient adminClient;
+
+    @InjectMocks
+    private KafkaTopicSchemaHelper kafkaTopicSchemaHelper;
+
+    private final String karapaceUrl = "http://karapace.zillabase.dev:8081";
 
     @BeforeEach
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
+        when(config.karapaceUrl()).thenReturn(karapaceUrl);
     }
 
     @Test
-    public void shouldResolveTopicSchemas() throws Exception
+    public void shouldResolveTopicSchemas()
+        throws ExecutionException, InterruptedException, JsonProcessingException
     {
-        String topicName = "test-topic";
-        adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, 1, (short) 1)));
+        WebClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
+        WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        List<KafkaTopicSchemaRecord> records = kafkaTopicSchemaService.resolve();
+        String expectedResponse = """
+            {
+              "subject": "user",
+              "version": 3,
+              "id": 1,
+              "schema": "{\\"type\\":\\"record\\",\\"name\\":\\"User\\",\\"fields\\":[{\\"name\\":\\"id\\",\\"type\\":\\"string\\"}, {\\"name\\":\\"name\\",\\"type\\":\\"string\\"}]}"
+            }
+            """;
+
+        when(webClient.get())
+            .thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(any(URI.class)))
+            .thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve())
+            .thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(String.class))
+            .thenReturn(Mono.just(expectedResponse));
+
+        TopicListing topicListing = mock(TopicListing.class);
+        when(topicListing.name()).thenReturn("test-topic");
+        when(topicListing.isInternal()).thenReturn(false);
+
+        KafkaFuture<List<TopicListing>> future = KafkaFuture.completedFuture(Collections.singletonList(topicListing));
+        ListTopicsResult listTopicsResult = mock(ListTopicsResult.class);
+        when(adminClient.listTopics()).thenReturn(listTopicsResult);
+        when(listTopicsResult.listings()).thenReturn((KafkaFuture) future);
+
+        ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, "test-topic");
+        Config config = new Config(List.of(new ConfigEntry(TopicConfig.CLEANUP_POLICY_CONFIG, "delete")));
+
+        DescribeConfigsResult describeConfigsResult = mock(DescribeConfigsResult.class);
+        when(describeConfigsResult.all()).thenReturn(KafkaFuture.completedFuture(Map.of(resource, config)));
+        when(adminClient.describeConfigs(List.of(resource))).thenReturn(describeConfigsResult);
+
+        List<KafkaTopicSchemaRecord> records = kafkaTopicSchemaHelper.resolve();
 
         assertNotNull(records);
         assertEquals(1, records.size());
-        assertEquals(topicName, records.get(0).name);
+        assertEquals("test-topic", records.get(0).name);
     }
 
     @Test
     public void testExtractIdentityFieldFromProtobufSchema()
     {
         String schema = "syntax = \"proto3\"; message TestMessage { int32 id = 1; string name_identity = 2; }";
-        String identityField = kafkaTopicSchemaService.extractIdentityFieldFromProtobufSchema(schema);
+        String identityField = kafkaTopicSchemaHelper.extractIdentityFieldFromProtobufSchema(schema);
         assertEquals("name_identity", identityField);
     }
 
@@ -86,7 +134,7 @@ public class KafkaTopicSchemaHelperTest
     {
         String schema = "{\"fields\": [{\"name\": \"id\", \"type\": \"int\"}," +
             " {\"name\": \"name_identity\", \"type\": \"string\"}]}";
-        String identityField = kafkaTopicSchemaService.extractIdentityFieldFromSchema(schema);
+        String identityField = kafkaTopicSchemaHelper.extractIdentityFieldFromSchema(schema);
         assertEquals("name_identity", identityField);
     }
 }
