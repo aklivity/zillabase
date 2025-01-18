@@ -2,7 +2,14 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +38,17 @@ public class KafkaAsyncApiServiceTest
     @InjectMocks
     private KafkaAsyncApiService kafkaAsyncApiService;
 
+    private String kafkaSpec;
+
     @BeforeEach
-    public void setUp()
+    public void setUp() throws URISyntaxException, IOException
     {
         MockitoAnnotations.initMocks(this);
         when(config.kafkaBootstrapServers()).thenReturn("localhost:9092");
         when(config.risingwaveDb()).thenReturn("dev");
+
+        kafkaSpec = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(
+            getClass().getClassLoader().getResource("kafkaSpec.json")).toURI())), StandardCharsets.UTF_8);
     }
 
     @Test

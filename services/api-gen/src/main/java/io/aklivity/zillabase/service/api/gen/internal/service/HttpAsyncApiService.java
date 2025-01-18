@@ -87,25 +87,26 @@ public class HttpAsyncApiService
     public ApiGenEvent generate(
         ApiGenEvent event)
     {
-        ApiGenEvent newEvent;
+        ApiGenEventType eventType;
+        String httpSpecVersion = null;
 
         try
         {
             String kafkaSpec = specService.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
             String httpSpec = generateHttpAsyncApiSpecs(kafkaSpec);
-            String specVersion = specService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
+            httpSpecVersion = specService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
-            newEvent = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), specVersion);
+            eventType = ApiGenEventType.HTTP_ASYNC_API_PUBLISHED;
         }
         catch (Exception ex)
         {
             System.err.println("Error building AsyncApi Spec");
             ex.printStackTrace(System.err);
 
-            newEvent = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), null);
+            eventType = ApiGenEventType.HTTP_ASYNC_API_ERRORED;
         }
 
-        return newEvent;
+        return new ApiGenEvent(eventType, event.kafkaVersion(), httpSpecVersion);
 
     }
 
