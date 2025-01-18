@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.service;
+package io.aklivity.zillabase.service.api.gen.internal.component;
 
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
@@ -49,7 +49,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
 @Service
-public class KafkaTopicSchemaService
+public class KafkaTopicSchemaHelper
 {
     private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
         Pattern.DOTALL);
@@ -64,7 +64,7 @@ public class KafkaTopicSchemaService
     private final List<KafkaTopicSchemaRecord> records;
     private final WebClient webClient;
 
-    KafkaTopicSchemaService(
+    KafkaTopicSchemaHelper(
         ApiGenConfig config,
         AdminClient adminClient,
         WebClient webClient)

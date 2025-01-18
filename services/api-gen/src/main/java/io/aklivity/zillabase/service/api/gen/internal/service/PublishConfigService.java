@@ -15,8 +15,8 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +38,8 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindin
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingRouteConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
+import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
@@ -46,15 +48,15 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 public class PublishConfigService
 {
     private final ApiGenConfig config;
-    private final KafkaTopicSchemaService kafkaService;
-    private final AsyncapiSpecConfigService specService;
+    private final KafkaTopicSchemaHelper kafkaService;
+    private final AsyncapiSpecConfigHelper specService;
 
     private final List<KafkaTopicSchemaRecord> records;
 
     public PublishConfigService(
         ApiGenConfig config,
-        KafkaTopicSchemaService kafkaService,
-        AsyncapiSpecConfigService specService)
+        KafkaTopicSchemaHelper kafkaService,
+        AsyncapiSpecConfigHelper specService)
     {
         this.config = config;
         this.kafkaService = kafkaService;

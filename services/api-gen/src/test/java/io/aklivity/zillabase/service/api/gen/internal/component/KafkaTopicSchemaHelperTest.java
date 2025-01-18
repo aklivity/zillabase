@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.service;
+package io.aklivity.zillabase.service.api.gen.internal.component;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,7 +40,7 @@ import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 @SpringBootTest
 @DirtiesContext
 @EmbeddedKafka(partitions = 1)
-public class KafkaTopicSchemaServiceTest
+public class KafkaTopicSchemaHelperTest
 {
     @Mock
     private ApiGenConfig config;
@@ -49,7 +49,7 @@ public class KafkaTopicSchemaServiceTest
     private WebClient webClient;
 
     @Autowired
-    private KafkaTopicSchemaService kafkaTopicSchemaService;
+    private KafkaTopicSchemaHelper kafkaTopicSchemaService;
 
     @Autowired
     private AdminClient adminClient;

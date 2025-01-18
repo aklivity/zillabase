@@ -17,8 +17,8 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
-import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.StringReader;
 import java.util.Collections;
@@ -58,6 +58,8 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
+import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
@@ -69,13 +71,13 @@ public class HttpAsyncApiService
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
     private final ApiGenConfig config;
-    private final AsyncapiSpecConfigService specService;
-    private final KafkaTopicSchemaService kafkaService;
+    private final AsyncapiSpecConfigHelper specService;
+    private final KafkaTopicSchemaHelper kafkaService;
 
     public HttpAsyncApiService(
         ApiGenConfig config,
-        AsyncapiSpecConfigService specService,
-        KafkaTopicSchemaService kafkaService)
+        AsyncapiSpecConfigHelper specService,
+        KafkaTopicSchemaHelper kafkaService)
     {
         this.config = config;
         this.specService = specService;

@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.service;
+package io.aklivity.zillabase.service.api.gen.internal.component;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
@@ -43,7 +43,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecRegis
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
 @Service
-public class AsyncapiSpecConfigService
+public class AsyncapiSpecConfigHelper
 {
     public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
     public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
@@ -52,7 +52,7 @@ public class AsyncapiSpecConfigService
     private final WebClient webClient;
     private final List<String> operations;
 
-    public AsyncapiSpecConfigService(
+    public AsyncapiSpecConfigHelper(
         ApiGenConfig config,
         WebClient webClient)
     {

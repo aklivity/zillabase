@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.service;
+package io.aklivity.zillabase.service.api.gen.internal.component;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,7 +49,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import reactor.core.publisher.Mono;
 
-public class AsyncapiSpecConfigServiceTest
+public class AsyncapiSpecConfigHelperTest
 {
     @Mock
     private ApiGenConfig config;
@@ -58,7 +58,7 @@ public class AsyncapiSpecConfigServiceTest
     private WebClient webClient;
 
     @InjectMocks
-    private AsyncapiSpecConfigService specConfigService;
+    private AsyncapiSpecConfigHelper specConfigService;
 
     private final String asyncapiUrl = "http://localhost:8080/v1/asyncapis";
 

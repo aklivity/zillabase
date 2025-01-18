@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
-import static io.aklivity.zillabase.service.api.gen.internal.service.AsyncapiSpecConfigService.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +44,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
+import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
@@ -52,13 +54,13 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 public class KafkaAsyncApiService
 {
     private final ApiGenConfig config;
-    private final KafkaTopicSchemaService kafkaService;
-    private final AsyncapiSpecConfigService specService;
+    private final KafkaTopicSchemaHelper kafkaService;
+    private final AsyncapiSpecConfigHelper specService;
 
     public KafkaAsyncApiService(
         ApiGenConfig config,
-        KafkaTopicSchemaService kafkaService,
-        AsyncapiSpecConfigService specService)
+        KafkaTopicSchemaHelper kafkaService,
+        AsyncapiSpecConfigHelper specService)
     {
         this.config = config;
         this.kafkaService = kafkaService;
