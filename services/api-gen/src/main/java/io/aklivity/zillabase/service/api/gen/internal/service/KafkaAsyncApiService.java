@@ -54,42 +54,50 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 public class KafkaAsyncApiService
 {
     private final ApiGenConfig config;
-    private final KafkaTopicSchemaHelper kafkaService;
-    private final AsyncapiSpecConfigHelper specService;
+    private final KafkaTopicSchemaHelper kafkaHelper;
+    private final AsyncapiSpecConfigHelper specHelper;
 
     public KafkaAsyncApiService(
         ApiGenConfig config,
-        KafkaTopicSchemaHelper kafkaService,
-        AsyncapiSpecConfigHelper specService)
+        KafkaTopicSchemaHelper kafkaHelper,
+        AsyncapiSpecConfigHelper specHelper)
     {
         this.config = config;
-        this.kafkaService = kafkaService;
-        this.specService = specService;
+        this.kafkaHelper = kafkaHelper;
+        this.specHelper = specHelper;
     }
 
     public ApiGenEvent generate(
         ApiGenEvent event)
     {
-        ApiGenEvent newEvent;
+        ApiGenEventType eventType;
+        String specVersion = null;
 
         try
         {
-            List<KafkaTopicSchemaRecord> schemaRecords = kafkaService.resolve();
-
+            List<KafkaTopicSchemaRecord> schemaRecords = kafkaHelper.resolve();
             String kafkaSpec = generateKafkaAsyncApiSpecs(schemaRecords);
-            String specVersion = specService.register(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
 
-            newEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, specVersion, null);
+            if (kafkaSpec != null)
+            {
+                eventType = ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED;
+                specVersion = specHelper.register(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
+            }
+            else
+            {
+                eventType = ApiGenEventType.KAFKA_ASYNC_API_ERRORED;
+            }
+
         }
         catch (Exception ex)
         {
             System.err.println("Error building Kafka AsyncApi Spec");
             ex.printStackTrace(System.err);
 
-            newEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_ERRORED, null, null);
+            eventType = ApiGenEventType.KAFKA_ASYNC_API_ERRORED;
         }
 
-        return newEvent;
+        return new ApiGenEvent(eventType, specVersion, null);
     }
 
     private String generateKafkaAsyncApiSpecs(
@@ -196,6 +204,6 @@ public class KafkaAsyncApiService
         components.setSchemas(schemas);
         components.setMessages(messages);
 
-        return specService.build(info, components, channels, operations, Map.of("plain", server));
+        return specHelper.build(info, components, channels, operations, Map.of("plain", server));
     }
 }

@@ -93,7 +93,6 @@ public class HttpAsyncApiService
         {
             String kafkaSpec = specService.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
             String httpSpec = generateHttpAsyncApiSpecs(kafkaSpec);
-
             String specVersion = specService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
             newEvent = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, event.kafkaVersion(), specVersion);
@@ -306,7 +305,6 @@ public class HttpAsyncApiService
             }
         }
 
-        // HTTP Operations
         Operation operation = new Operation();
         operation.setAction(OperationAction.SEND);
         Reference reference = new Reference("#/channels/%s".formatted(name));

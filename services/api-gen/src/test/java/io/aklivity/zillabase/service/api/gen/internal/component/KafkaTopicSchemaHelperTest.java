@@ -63,13 +63,11 @@ public class KafkaTopicSchemaHelperTest
     @InjectMocks
     private KafkaTopicSchemaHelper kafkaTopicSchemaHelper;
 
-    private final String karapaceUrl = "http://karapace.zillabase.dev:8081";
-
     @BeforeEach
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
-        when(config.karapaceUrl()).thenReturn(karapaceUrl);
+        when(config.karapaceUrl()).thenReturn("http://localhost:8081");
     }
 
     @Test
