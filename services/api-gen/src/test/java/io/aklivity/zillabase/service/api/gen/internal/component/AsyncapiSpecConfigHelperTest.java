@@ -99,42 +99,6 @@ public class AsyncapiSpecConfigHelperTest
     }
 
     @Test
-    public void shouldBuildSpec() throws JsonProcessingException
-    {
-        Info info = new Info();
-        info.setTitle("Test API");
-        info.setVersion("1.0.0");
-
-        Components components = new Components();
-        Map<String, Object> channels = new HashMap<>();
-        channels.put("channel1", new Channel());
-
-        Map<String, Object> operations = new HashMap<>();
-        operations.put("operation1", new Operation());
-
-        Map<String, Object> servers = new HashMap<>();
-        servers.put("server1", new Server());
-
-        String yamlResult = specConfigService.build(info, components, channels, operations, servers);
-
-        assertNotNull(yamlResult);
-
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        AsyncAPI result = mapper.readValue(yamlResult, AsyncAPI.class);
-
-        assertNotNull(result);
-        assertNotNull(result.getInfo());
-        assertNotNull(result.getServers());
-        assertNotNull(result.getChannels());
-        assertNotNull(result.getOperations());
-        assertEquals("3.0.0", result.getAsyncapi());
-        assertEquals("Test API", result.getInfo().getTitle());
-        assertEquals("1.0.0", result.getInfo().getVersion());
-    }
-
-    @Test
     public void shouldFetchSpec()
     {
         String artifactId = "test-artifact";

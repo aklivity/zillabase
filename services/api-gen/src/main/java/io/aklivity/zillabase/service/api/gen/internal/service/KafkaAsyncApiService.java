@@ -14,6 +14,7 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguratio
 import com.asyncapi.bindings.kafka.v0._4_0.server.KafkaServerBinding;
 import com.asyncapi.schemas.asyncapi.Reference;
 import com.asyncapi.v2._6_0.model.channel.message.Message;
+import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
@@ -42,6 +44,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
@@ -204,6 +207,28 @@ public class KafkaAsyncApiService
         components.setSchemas(schemas);
         components.setMessages(messages);
 
-        return specHelper.build(info, components, channels, operations, Map.of("plain", server));
+        return build(info, components, channels, operations, Map.of("plain", server));
+    }
+
+    private String build(
+        Info info,
+        Components components,
+        Map<String, Object> channels,
+        Map<String, Object> operations,
+        Map<String, Object> servers) throws JsonProcessingException
+    {
+        final AsyncAPI asyncAPI = new AsyncAPI();
+
+        asyncAPI.setAsyncapi("3.0.0");
+        asyncAPI.setInfo(info);
+        asyncAPI.setServers(servers);
+        asyncAPI.setComponents(components);
+        asyncAPI.setChannels(channels);
+        asyncAPI.setOperations(operations);
+
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+                .setSerializationInclusion(NON_NULL);
+
+        return mapper.writeValueAsString(asyncAPI);
     }
 }

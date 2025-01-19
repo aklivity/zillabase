@@ -14,12 +14,19 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,16 +54,20 @@ public class HttpAsyncApiServiceTest
     @InjectMocks
     private HttpAsyncApiService httpAsyncApiService;
 
+    private String kafkaSpec;
+
     @BeforeEach
-    public void setUp()
+    public void setUp() throws URISyntaxException, IOException
     {
         MockitoAnnotations.openMocks(this);
+
+        kafkaSpec = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(
+            getClass().getClassLoader().getResource("specs/kafka-asyncapi.json")).toURI())), UTF_8);
     }
 
     @Test
     public void shouldGenerateHttpAsyncApiEvent()
     {
-        String kafkaSpec = "{}";
         String httpSpecVersion = "1";
         ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, "kafkaVersion", null);
 

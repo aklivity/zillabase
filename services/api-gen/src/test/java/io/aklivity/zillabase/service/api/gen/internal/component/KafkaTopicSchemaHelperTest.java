@@ -14,16 +14,23 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.component;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -62,11 +69,16 @@ public class KafkaTopicSchemaHelperTest
     @InjectMocks
     private KafkaTopicSchemaHelper kafkaTopicSchemaHelper;
 
+    private String schema;
+
     @BeforeEach
-    public void setUp()
+    public void setUp() throws URISyntaxException, IOException
     {
         MockitoAnnotations.initMocks(this);
         when(config.karapaceUrl()).thenReturn("http://localhost:8081");
+
+        schema = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(
+            getClass().getClassLoader().getResource("schemas/pet.json")).toURI())), UTF_8);
     }
 
     @Test
@@ -77,14 +89,7 @@ public class KafkaTopicSchemaHelperTest
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        String expectedResponse = """
-            {
-              "subject": "user",
-              "version": 3,
-              "id": 1,
-              "schema": ""
-            }
-            """;
+        String expectedResponse = schema;
 
         when(webClient.get())
             .thenReturn(requestHeadersUriSpec);

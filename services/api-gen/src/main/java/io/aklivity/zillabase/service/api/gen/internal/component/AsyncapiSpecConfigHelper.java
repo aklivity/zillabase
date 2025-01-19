@@ -108,28 +108,6 @@ public class AsyncapiSpecConfigHelper
             .block();
     }
 
-    public String build(
-        Info info,
-        Components components,
-        Map<String, Object> channels,
-        Map<String, Object> operations,
-        Map<String, Object> servers) throws JsonProcessingException
-    {
-        final AsyncAPI asyncAPI = new AsyncAPI();
-
-        asyncAPI.setAsyncapi("3.0.0");
-        asyncAPI.setInfo(info);
-        asyncAPI.setServers(servers);
-        asyncAPI.setComponents(components);
-        asyncAPI.setChannels(channels);
-        asyncAPI.setOperations(operations);
-
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
-                .setSerializationInclusion(NON_NULL);
-
-        return mapper.writeValueAsString(asyncAPI);
-    }
-
     public List<String> httpOperations(
         String httpSpecVersion)
     {

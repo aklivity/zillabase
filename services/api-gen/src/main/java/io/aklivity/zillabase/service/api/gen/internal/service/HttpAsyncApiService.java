@@ -17,6 +17,7 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
 import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
@@ -40,6 +41,7 @@ import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
 import com.asyncapi.schemas.asyncapi.Reference;
 import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuth2SecurityScheme;
 import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuthFlows;
+import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.channel.Parameter;
 import com.asyncapi.v3._0_0.model.component.Components;
@@ -52,6 +54,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiKafkaFilter;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
@@ -71,17 +74,17 @@ public class HttpAsyncApiService
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
     private final ApiGenConfig config;
-    private final AsyncapiSpecConfigHelper specService;
-    private final KafkaTopicSchemaHelper kafkaService;
+    private final KafkaTopicSchemaHelper kafkaHelper;
+    private final AsyncapiSpecConfigHelper specHelper;
 
     public HttpAsyncApiService(
         ApiGenConfig config,
-        AsyncapiSpecConfigHelper specService,
-        KafkaTopicSchemaHelper kafkaService)
+        AsyncapiSpecConfigHelper specHelper,
+        KafkaTopicSchemaHelper kafkaHelper)
     {
         this.config = config;
-        this.specService = specService;
-        this.kafkaService = kafkaService;
+        this.kafkaHelper = kafkaHelper;
+        this.specHelper = specHelper;
     }
 
     public ApiGenEvent generate(
@@ -92,9 +95,9 @@ public class HttpAsyncApiService
 
         try
         {
-            String kafkaSpec = specService.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
+            String kafkaSpec = specHelper.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
             String httpSpec = generateHttpAsyncApiSpecs(kafkaSpec);
-            httpSpecVersion = specService.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
+            httpSpecVersion = specHelper.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
             eventType = ApiGenEventType.HTTP_ASYNC_API_PUBLISHED;
         }
@@ -280,7 +283,7 @@ public class HttpAsyncApiService
         components.setSchemas(schemas);
         components.setMessages(messages);
 
-        return specService.build(info, components, channels, operations, servers);
+        return build(info, components, channels, operations, servers);
     }
 
     private void generateHttpOperations(
@@ -294,15 +297,15 @@ public class HttpAsyncApiService
     {
         String identity = null;
 
-        List<KafkaTopicSchemaRecord> records = kafkaService.resolve();
+        List<KafkaTopicSchemaRecord> records = kafkaHelper.resolve();
 
         for (KafkaTopicSchemaRecord record : records)
         {
             if (label.equals(record.label))
             {
                 identity = record.type.equals("protobuf")
-                    ? kafkaService.extractIdentityFieldFromProtobufSchema(record.schema)
-                    : kafkaService.extractIdentityFieldFromSchema(record.schema);
+                    ? kafkaHelper.extractIdentityFieldFromProtobufSchema(record.schema)
+                    : kafkaHelper.extractIdentityFieldFromSchema(record.schema);
             }
         }
 
@@ -412,7 +415,6 @@ public class HttpAsyncApiService
         }
         operations.put("on%sReadItem".formatted(label), operation);
 
-
         operation = new Operation();
         operation.setAction(OperationAction.RECEIVE);
         reference = new Reference("#/channels/%s-stream".formatted(name));
@@ -434,5 +436,27 @@ public class HttpAsyncApiService
             operation.setSecurity(List.of(security));
         }
         operations.put("on%sRead".formatted(label), operation);
+    }
+
+    private String build(
+        Info info,
+        Components components,
+        Map<String, Object> channels,
+        Map<String, Object> operations,
+        Map<String, Object> servers) throws JsonProcessingException
+    {
+        final AsyncAPI asyncAPI = new AsyncAPI();
+
+        asyncAPI.setAsyncapi("3.0.0");
+        asyncAPI.setInfo(info);
+        asyncAPI.setServers(servers);
+        asyncAPI.setComponents(components);
+        asyncAPI.setChannels(channels);
+        asyncAPI.setOperations(operations);
+
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+                .setSerializationInclusion(NON_NULL);
+
+        return mapper.writeValueAsString(asyncAPI);
     }
 }

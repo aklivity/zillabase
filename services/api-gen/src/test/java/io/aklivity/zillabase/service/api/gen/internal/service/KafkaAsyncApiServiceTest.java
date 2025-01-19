@@ -14,20 +14,14 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,17 +50,12 @@ public class KafkaAsyncApiServiceTest
     @InjectMocks
     private KafkaAsyncApiService kafkaAsyncApiService;
 
-    private String kafkaSpec;
-
     @BeforeEach
-    public void setUp() throws URISyntaxException, IOException
+    public void setUp()
     {
         MockitoAnnotations.initMocks(this);
         when(config.kafkaBootstrapServers()).thenReturn("localhost:9092");
         when(config.risingwaveDb()).thenReturn("dev");
-
-        kafkaSpec = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(
-            getClass().getClassLoader().getResource("kafka-asyncapi.yaml")).toURI())), StandardCharsets.UTF_8);
     }
 
     @Test
@@ -86,7 +75,6 @@ public class KafkaAsyncApiServiceTest
         String specVersion = "1";
 
         when(kafkaHelper.resolve()).thenReturn(schemaRecords);
-        when(specHelper.build(any(), any(), any(), any(), any())).thenReturn(kafkaSpec);
         when(specHelper.register(anyString(), anyString())).thenReturn(specVersion);
 
         ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, null, null);
