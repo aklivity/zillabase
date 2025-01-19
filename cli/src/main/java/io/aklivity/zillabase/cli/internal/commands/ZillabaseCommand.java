@@ -18,7 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import jakarta.inject.Inject;
+import javax.inject.Inject;
 
 import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.annotations.Option;
