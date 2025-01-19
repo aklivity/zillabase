@@ -46,7 +46,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
-
 import reactor.core.publisher.Mono;
 
 public class KafkaTopicSchemaHelperTest
@@ -83,7 +82,7 @@ public class KafkaTopicSchemaHelperTest
               "subject": "user",
               "version": 3,
               "id": 1,
-              "schema": "{\\"type\\":\\"record\\",\\"name\\":\\"User\\",\\"fields\\":[{\\"name\\":\\"id\\",\\"type\\":\\"string\\"}, {\\"name\\":\\"name\\",\\"type\\":\\"string\\"}]}"
+              "schema": ""
             }
             """;
 
