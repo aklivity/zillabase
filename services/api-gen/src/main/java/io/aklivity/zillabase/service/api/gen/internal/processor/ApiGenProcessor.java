@@ -41,7 +41,7 @@ public class ApiGenProcessor
     private final Serde<String> stringSerde = Serdes.String();
     private final Serde<ApiGenEvent> eventSerde = new ApiGenEventSerde();
 
-    @Value("${zcatalogs.topic:public.ztatalogs}")
+    @Value("${zcatalogs.topic:zb_catalog.ztatalogs}")
     String zcatalogsTopic;
 
     @Value("${api.gen.events.topic:public.api-gen-events}")

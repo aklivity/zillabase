@@ -16,6 +16,7 @@ package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
+import static io.aklivity.zillabase.cli.config.ZillabaseApiGenConfig.DEFAULT_API_GEN_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_APICURIO_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
@@ -176,6 +177,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
+        //factories.add(new CreateApiGenFactory(config));
         factories.add(new CreateAuthFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
@@ -305,6 +307,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE TABLE zb_catalog.zstreams(
                     name VARCHAR PRIMARY KEY,
                     sql VARCHAR);
+                CREATE ZVIEW zb_catalog.ztatalogs AS
+                    SELECT name FROM zb_catalog.zviews
+                    UNION ALL
+                    SELECT name FROM zb_catalog.ztables
+                    UNION ALL
+                    SELECT name FROM zb_catalog.zstreams;
                 """);
         }
     }
@@ -1393,6 +1401,42 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withTimeout(SECONDS.toNanos(3L))
                     .withRetries(5)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8180")));
+        }
+    }
+
+    private static final class CreateApiGenFactory extends CreateContainerFactory
+    {
+        CreateApiGenFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "api-gen", "ghcr.io/aklivity/zillabase/api-gen:%s".formatted(config.apiGen.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<String> envVars = Arrays.asList(
+                "AUTH_SERVER_PORT=%d".formatted(DEFAULT_API_GEN_PORT),
+                "KEYCLOAK_REALM=%s".formatted(config.keycloak.realm),
+                "DEBUG=%s".formatted(true));
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withEnv(envVars)
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s"
+                        .formatted(DEFAULT_API_GEN_PORT))));
         }
     }
 

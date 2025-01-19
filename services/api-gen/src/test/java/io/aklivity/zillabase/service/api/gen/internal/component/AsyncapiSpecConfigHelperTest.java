@@ -21,9 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,18 +31,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.asyncapi.v3._0_0.model.AsyncAPI;
-import com.asyncapi.v3._0_0.model.channel.Channel;
-import com.asyncapi.v3._0_0.model.component.Components;
-import com.asyncapi.v3._0_0.model.info.Info;
-import com.asyncapi.v3._0_0.model.operation.Operation;
-import com.asyncapi.v3._0_0.model.server.Server;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import reactor.core.publisher.Mono;

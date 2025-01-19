@@ -194,6 +194,40 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>0.43.2</version>
+        <configuration>
+          <filter>${*}</filter>
+          <images combine.children="append">
+            <image>
+              <alias>api-gen</alias>
+              <name>ghcr.io/aklivity/zillabase/api-gen:%v</name>
+              <build>
+                <contextDir>${project.basedir}</contextDir>
+                <tags>
+                  <tag>latest</tag>
+                </tags>
+                <buildx>
+                  <platforms>
+                    <platform>linux/amd64</platform>
+                    <platform>linux/arm64</platform>
+                  </platforms>
+                </buildx>
+              </build>
+            </image>
+          </images>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+              <goal>push</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
