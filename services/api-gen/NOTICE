@@ -43,7 +43,7 @@ This project includes:
   Logback Core Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
   micrometer-commons under The Apache Software License, Version 2.0
   micrometer-observation under The Apache Software License, Version 2.0
-  mockito-core under The MIT License
+  mockito-core under MIT
   Netty/Buffer under Apache License, Version 2.0
   Netty/Codec under Apache License, Version 2.0
   Netty/Codec/DNS under Apache License, Version 2.0

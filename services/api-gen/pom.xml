@@ -16,25 +16,20 @@
   <properties>
     <jacoco.coverage.ratio>1.0</jacoco.coverage.ratio>
     <jacoco.missed.count>0</jacoco.missed.count>
-    <spring.version>3.4.1</spring.version>
-    <spring.kafka.version>3.3.1</spring.kafka.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>
-      <version>${spring.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webflux</artifactId>
-      <version>${spring.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.kafka</groupId>
       <artifactId>spring-kafka</artifactId>
-      <version>${spring.kafka.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
@@ -75,13 +70,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
-      <version>${spring.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.kafka</groupId>
       <artifactId>spring-kafka-test</artifactId>
-      <version>${spring.kafka.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -92,12 +85,10 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>4.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-streams-test-utils</artifactId>
-      <version>3.8.1</version>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
