@@ -103,9 +103,6 @@ public class HttpAsyncApiService
         }
         catch (Exception ex)
         {
-            System.err.println("Error building AsyncApi Spec");
-            ex.printStackTrace(System.err);
-
             eventType = ApiGenEventType.HTTP_ASYNC_API_ERRORED;
         }
 

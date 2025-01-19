@@ -94,9 +94,6 @@ public class KafkaAsyncApiService
         }
         catch (Exception ex)
         {
-            System.err.println("Error building Kafka AsyncApi Spec");
-            ex.printStackTrace(System.err);
-
             eventType = ApiGenEventType.KAFKA_ASYNC_API_ERRORED;
         }
 

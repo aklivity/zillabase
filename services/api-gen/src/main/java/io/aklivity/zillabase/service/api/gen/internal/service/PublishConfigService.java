@@ -79,9 +79,6 @@ public class PublishConfigService
         }
         catch (IOException ex)
         {
-            System.err.println("Error publishing zilla config");
-            ex.printStackTrace(System.err);
-
             newState = ApiGenEventType.ZILL_CONFIG_ERRORED;
         }
 

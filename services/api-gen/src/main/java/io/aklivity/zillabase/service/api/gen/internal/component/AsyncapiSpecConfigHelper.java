@@ -86,11 +86,6 @@ public class AsyncapiSpecConfigHelper
             Jsonb jsonb = JsonbBuilder.newBuilder().build();
             AsyncapiSpecRegisterResponse register = jsonb.fromJson(response, AsyncapiSpecRegisterResponse.class);
             newVersion = register.id;
-            System.out.println("Registered AsyncAPI spec: %s".formatted(register.id));
-        }
-        else
-        {
-            System.out.println("Error registering AsyncAPI spec");
         }
 
         return newVersion;
