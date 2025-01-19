@@ -51,8 +51,6 @@
     <checkstyle.suppressions.location>io/aklivity/zilla/conf/checkstyle/suppressions.xml</checkstyle.suppressions.location>
     <k3po.version>3.2.0</k3po.version>
     <kafka.version>3.9.0</kafka.version>
-    <spingg.kafka.version>3.3.1</spingg.kafka.version>
-    <spring.version>3.4.1</spring.version>
     <serializer.version>7.8.0</serializer.version>
     <junit.version>4.13.2</junit.version>
   </properties>
@@ -121,6 +119,11 @@
       </dependency>
       <dependency>
         <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-streams</artifactId>
+        <version>3.8.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
         <artifactId>kafka-clients</artifactId>
         <version>3.8.1</version>
       </dependency>
@@ -154,28 +157,6 @@
                   <artifactId>jackson-databind</artifactId>
               </exclusion>
           </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>3.4.1</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-          <groupId>org.apache.kafka</groupId>
-          <artifactId>kafka-streams</artifactId>
-          <version>${kafka.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>org.springframework.kafka</groupId>
-          <artifactId>spring-kafka-test</artifactId>
-          <version>${spingg.kafka.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>org.apache.kafka</groupId>
-          <artifactId>kafka-streams-test-utils</artifactId>
-          <version>${kafka.version}</version>
       </dependency>
       <dependency>
         <groupId>org.junit</groupId>
