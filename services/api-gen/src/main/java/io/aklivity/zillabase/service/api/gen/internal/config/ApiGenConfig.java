@@ -43,7 +43,7 @@ public class ApiGenConfig
     @Value("${keycloak.url:http://localhost:8180}")
     private String keycloakUrl;
 
-    @Value("${keycloak.realm}")
+    @Value("${keycloak.realm:zillabase}")
     private String keycloakRealm;
 
     @Value("${keycloak.audience:account}")
