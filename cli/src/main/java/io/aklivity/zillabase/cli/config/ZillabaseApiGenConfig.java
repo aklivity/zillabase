@@ -19,7 +19,7 @@ import io.aklivity.zillabase.cli.internal.Zillabase;
 public final class ZillabaseApiGenConfig
 {
     private static final String DEFAULT_API_GEN_TAG = Zillabase.version();
-    public static final int DEFAULT_API_GEN_PORT = 7185;
+    public static final int DEFAULT_API_GEN_PORT = 8085;
     public static final String DEFAULT_API_GEN_HOST = "api.gen.zillabase.dev";
 
     public String tag = DEFAULT_API_GEN_TAG;

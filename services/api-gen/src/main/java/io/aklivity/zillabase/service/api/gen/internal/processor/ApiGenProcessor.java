@@ -25,9 +25,9 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 import io.aklivity.zillabase.service.api.gen.internal.serde.ApiGenEventSerde;
@@ -41,21 +41,18 @@ public class ApiGenProcessor
     private final Serde<String> stringSerde = Serdes.String();
     private final Serde<ApiGenEvent> eventSerde = new ApiGenEventSerde();
 
-    @Value("${zcatalogs.topic:public.zcatalogs}")
-    String zcatalogsTopic;
-
-    @Value("${api.gen.events.topic:_zillabase.api-gen-events}")
-    String eventsTopic;
-
+    private final ApiGenConfig config;
     private final KafkaAsyncApiService kafkaAsyncApiHandler;
     private final HttpAsyncApiService httpAsyncApiHandler;
     private final PublishConfigService publishConfigHandler;
 
     public ApiGenProcessor(
+        ApiGenConfig config,
         KafkaAsyncApiService kafkaAsyncApiService,
         HttpAsyncApiService httpAsyncApiHandler,
         PublishConfigService publishConfigService)
     {
+        this.config = config;
         this.kafkaAsyncApiHandler = kafkaAsyncApiService;
         this.httpAsyncApiHandler = httpAsyncApiHandler;
         this.publishConfigHandler = publishConfigService;
@@ -65,6 +62,9 @@ public class ApiGenProcessor
     public void buildPipeline(
         StreamsBuilder streamsBuilder)
     {
+        String zcatalogsTopic = config.zcatalogsTopic();
+        String eventsTopic = config.eventsTopic();
+
         streamsBuilder.stream(zcatalogsTopic, Consumed.with(stringSerde, stringSerde))
             .mapValues(e -> new ApiGenEvent(ApiGenEventType.CATALOG_UPDATED, "", ""))
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
@@ -90,6 +90,5 @@ public class ApiGenProcessor
         branches.get("branch-http-async-api-published")
             .mapValues(publishConfigHandler::publish)
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
-
     }
 }

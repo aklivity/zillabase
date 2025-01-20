@@ -15,8 +15,8 @@
 package io.aklivity.zillabase.cli.internal.commands.start;
 
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
+import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
-import static io.aklivity.zillabase.cli.config.ZillabaseApiGenConfig.DEFAULT_API_GEN_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_APICURIO_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
@@ -160,13 +160,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         startContainers(client, config);
 
+        createConfigServerKafkaTopic(config);
+
         seedKafkaAndRegistry(config);
 
         processInitSql(config);
 
         processSql(config);
-
-        createConfigServerKafkaTopic(config);
 
         initializeKeycloakService(config);
     }
@@ -178,12 +178,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
-        //factories.add(new CreateApiGenFactory(config));
         factories.add(new CreateAuthFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
         factories.add(new CreateMinioFactory(config));
         factories.add(new CreatePostgresFactory(config));
+        factories.add(new CreateApiGenFactory(config));
 
         if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
         {
@@ -1420,8 +1420,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             List<String> envVars = Arrays.asList(
-                "AUTH_SERVER_PORT=%d".formatted(DEFAULT_API_GEN_PORT),
-                "KEYCLOAK_REALM=%s".formatted(config.keycloak.realm),
+                "ADMIN_HTTP_URL=http://admin.zillabase.dev:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
+                "KAFKA_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl),
+                "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
+                "APICURIO_REGISTRY_URL=%s".formatted(config.registry.apicurio.url),
+                "KEYCLOAK_URL=%s".formatted(config.keycloak.url),
+                "KEYLOAK_JWT_SECRET=%s".formatted(config.keycloak.jwks),
                 "DEBUG=%s".formatted(true));
 
             return client
@@ -1433,13 +1437,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withEnv(envVars)
-                .withTty(true)
-                .withHealthcheck(new HealthCheck()
-                    .withInterval(SECONDS.toNanos(5L))
-                    .withTimeout(SECONDS.toNanos(3L))
-                    .withRetries(5)
-                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s"
-                        .formatted(DEFAULT_API_GEN_PORT))));
+                .withTty(true);
         }
     }
 
@@ -1537,7 +1535,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withTimeout(SECONDS.toNanos(3L))
                     .withRetries(5)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184")));
-
 
             try
             {

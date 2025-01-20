@@ -28,13 +28,13 @@ public class ApiGenConfig
     @Value("${risingwave.db:dev}")
     private String risingwaveDb;
 
-    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
+    @Value("${kafka.bootstrap.servers:localhost:9092}")
     private String kafkaBootstrapServers;
 
     @Value("${karapace.url:http://localhost:8081}")
     private String karapaceUrl;
 
-    @Value("${apicurio.registry.ur:http://localhost:8080/}")
+    @Value("${apicurio.registry.url:http://localhost:8080/}")
     private String apicurioUrl;
 
     @Value("${apicurio.group.id:default}")
@@ -51,6 +51,12 @@ public class ApiGenConfig
 
     @Value("${keycloak.jwks.url:http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs}")
     private String keycloakJwksUrl;
+
+    @Value("${zcatalogs.topic:public.zcatalogs}")
+    private String zcatalogsTopic;
+
+    @Value("${api.gen.events.topic:_zillabase.api-gen-events}")
+    private String eventsTopic;
 
     public String adminHttpUrl()
     {
@@ -100,5 +106,15 @@ public class ApiGenConfig
     public String keycloakJwksUrl()
     {
         return keycloakJwksUrl;
+    }
+
+    public String zcatalogsTopic()
+    {
+        return zcatalogsTopic;
+    }
+
+    public String eventsTopic()
+    {
+        return eventsTopic;
     }
 }
