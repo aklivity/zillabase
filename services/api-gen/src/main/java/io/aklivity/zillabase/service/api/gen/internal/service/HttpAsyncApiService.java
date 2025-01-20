@@ -103,6 +103,7 @@ public class HttpAsyncApiService
         }
         catch (Exception ex)
         {
+            ex.printStackTrace();
             eventType = ApiGenEventType.HTTP_ASYNC_API_ERRORED;
         }
 

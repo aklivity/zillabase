@@ -93,6 +93,7 @@ public class KafkaAsyncApiService
         }
         catch (Exception ex)
         {
+            ex.printStackTrace();
             eventType = ApiGenEventType.KAFKA_ASYNC_API_ERRORED;
         }
 

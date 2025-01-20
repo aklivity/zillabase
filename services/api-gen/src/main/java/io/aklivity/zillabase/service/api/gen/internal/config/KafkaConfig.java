@@ -19,6 +19,7 @@ import static org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_C
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
@@ -95,9 +96,16 @@ public class KafkaConfig
         return props;
     }
 
+    private AdminClient createAdminClient()
+    {
+        Properties properties = new Properties();
+        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapServers());
+        return AdminClient.create(properties);
+    }
+
     private void waitForTopics()
     {
-        try (AdminClient adminClient = adminClient())
+        try (AdminClient adminClient = createAdminClient())
         {
             while (!areTopicsAvailable(adminClient))
             {

@@ -79,6 +79,7 @@ public class PublishConfigService
         }
         catch (Exception ex)
         {
+            ex.printStackTrace();
             newState = ApiGenEventType.ZILL_CONFIG_ERRORED;
         }
 
@@ -89,7 +90,7 @@ public class PublishConfigService
         ApiGenEvent event) throws IOException
     {
         List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
-            "Get", "GetItem");
+                    "Get", "GetItem");
 
         ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
         ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
@@ -102,8 +103,8 @@ public class PublishConfigService
         karapaceCatalog.type = "karapace";
         karapaceCatalog.options = Map.of("url", config.karapaceUrl());
 
-        //TODO: add realms to keycloak
-        String realm = null;
+        ZillabaseKeycloakConfig keycloak = config.keycloak;
+        String realm = keycloak.realm;
         String authnJwt = "jwt0";
         if (realm != null)
         {
@@ -152,7 +153,6 @@ public class PublishConfigService
         northHttpServer.kind = "server";
         ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
         optionsConfig.specs = Map.of("http_api", httpApi);
-
         if (realm != null)
         {
             optionsConfig.http = new ZillaBindingOptionsConfig.HttpAuthorizationOptionsConfig();
