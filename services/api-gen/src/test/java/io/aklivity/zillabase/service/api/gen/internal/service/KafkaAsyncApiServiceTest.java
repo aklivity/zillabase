@@ -74,7 +74,7 @@ public class KafkaAsyncApiServiceTest
         String specVersion = "1";
 
         when(kafkaHelper.resolve()).thenReturn(schemaRecords);
-        when(specHelper.register(anyString(), anyString())).thenReturn(specVersion);
+        when(specHelper.publishSpec(anyString(), anyString())).thenReturn(specVersion);
 
         ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, null, null);
 
