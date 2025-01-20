@@ -220,7 +220,7 @@
               <build>
                 <contextDir>${project.basedir}</contextDir>
                 <tags>
-                  <tag>latest</tag>
+                  <tag>${docker.latest.tag}</tag>
                 </tags>
                 <buildx>
                   <platforms>
