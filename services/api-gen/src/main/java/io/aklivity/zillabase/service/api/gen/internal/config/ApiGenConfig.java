@@ -31,13 +31,13 @@ public class ApiGenConfig
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String kafkaBootstrapServers;
 
-    @Value("${karapace.url:http://karapace.zillabase.dev:8081}")
+    @Value("${karapace.url:http://localhost:8081}")
     private String karapaceUrl;
 
     @Value("${apicurio.registry.ur:http://localhost:8080/}")
     private String apicurioUrl;
 
-    @Value("${apicurio.group.id:public}")
+    @Value("${apicurio.group.id:default}")
     private String apicurioGroupId;
 
     @Value("${keycloak.url:http://localhost:8180}")

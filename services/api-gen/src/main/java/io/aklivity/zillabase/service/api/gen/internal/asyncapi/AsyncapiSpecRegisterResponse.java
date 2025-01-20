@@ -17,4 +17,5 @@ package io.aklivity.zillabase.service.api.gen.internal.asyncapi;
 public class AsyncapiSpecRegisterResponse
 {
     public String id;
+    public String version;
 }

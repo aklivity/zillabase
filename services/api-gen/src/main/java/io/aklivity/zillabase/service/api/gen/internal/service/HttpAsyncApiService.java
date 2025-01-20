@@ -18,8 +18,8 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.G
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.StringReader;
 import java.util.Collections;
@@ -61,7 +61,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
-import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -75,11 +75,11 @@ public class HttpAsyncApiService
 
     private final ApiGenConfig config;
     private final KafkaTopicSchemaHelper kafkaHelper;
-    private final AsyncapiSpecConfigHelper specHelper;
+    private final ApicurioHelper specHelper;
 
     public HttpAsyncApiService(
         ApiGenConfig config,
-        AsyncapiSpecConfigHelper specHelper,
+        ApicurioHelper specHelper,
         KafkaTopicSchemaHelper kafkaHelper)
     {
         this.config = config;
@@ -97,7 +97,7 @@ public class HttpAsyncApiService
         {
             String kafkaSpec = specHelper.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
             String httpSpec = generateHttpAsyncApiSpecs(kafkaSpec);
-            httpSpecVersion = specHelper.register(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
+            httpSpecVersion = specHelper.publishSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
             eventType = ApiGenEventType.HTTP_ASYNC_API_PUBLISHED;
         }
@@ -141,7 +141,13 @@ public class HttpAsyncApiService
         }
         servers.put("http", server);
 
-        JsonValue jsonValue = Json.createReader(new StringReader(kafkaSpec)).readValue();
+        ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+        JsonNode yamlRoot = yamlMapper.readTree(kafkaSpec);
+
+        ObjectMapper jsonMapper = new ObjectMapper();
+        String asJsonString = jsonMapper.writeValueAsString(yamlRoot);
+
+        JsonValue jsonValue = Json.createReader(new StringReader(asJsonString)).readValue();
         ObjectMapper schemaMapper = new ObjectMapper();
 
         JsonObject channelsJson = jsonValue.asJsonObject().getJsonObject("channels");

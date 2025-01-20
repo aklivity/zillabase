@@ -136,6 +136,18 @@ public final class ZillabaseAdminConfig
                 exit: apicurio_http_client
               - when:
                   - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/asyncapis/artifacts/{id}
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.APICURIO_HOST}}:${{env.APICURIO_PORT}}
+                      :path: /apis/registry/v2/groups/${{env.REGISTRY_GROUP_ID}}/artifacts/${params.id}/versions
+                      x-registry-artifacttype: ASYNCAPI
+                exit: apicurio_http_client
+              - when:
+                  - headers:
                       :method: GET
                       :scheme: http
                       :authority: localhost:7184

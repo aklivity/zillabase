@@ -32,10 +32,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import reactor.core.publisher.Mono;
 
-public class AsyncapiSpecConfigHelperTest
+public class ApicurioHelperTest
 {
     @Mock
     private ApiGenConfig config;
@@ -44,7 +46,7 @@ public class AsyncapiSpecConfigHelperTest
     private WebClient webClient;
 
     @InjectMocks
-    private AsyncapiSpecConfigHelper specConfigService;
+    private ApicurioHelper specConfigService;
 
     private final String asyncapiUrl = "http://localhost:8080/v1/asyncapis";
 
@@ -111,7 +113,7 @@ public class AsyncapiSpecConfigHelperTest
     }
 
     @Test
-    public void shouldReturnHttpOperations()
+    public void shouldReturnHttpOperations() throws JsonProcessingException
     {
         String httpSpec = """
                 {

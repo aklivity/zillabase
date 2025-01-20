@@ -214,11 +214,21 @@ public class KafkaTopicSchemaHelper
     private String resolveSchema(
         String subject)
     {
-        return webClient.get()
-            .uri(URI.create(config.karapaceUrl()).resolve("/subjects/%s/versions/latest".formatted(subject)))
-            .retrieve()
-            .bodyToMono(String.class)
-            .block();
+        String schema = null;
+        try
+        {
+            schema = webClient.get()
+                .uri(URI.create(config.karapaceUrl()).resolve("/subjects/%s/versions/latest".formatted(subject)))
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        }
+        catch (Exception e)
+        {
+            // ignore
+        }
+
+        return schema;
     }
 
 }

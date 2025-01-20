@@ -15,7 +15,7 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,7 +47,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -58,12 +58,12 @@ public class KafkaAsyncApiService
 {
     private final ApiGenConfig config;
     private final KafkaTopicSchemaHelper kafkaHelper;
-    private final AsyncapiSpecConfigHelper specHelper;
+    private final ApicurioHelper specHelper;
 
     public KafkaAsyncApiService(
         ApiGenConfig config,
         KafkaTopicSchemaHelper kafkaHelper,
-        AsyncapiSpecConfigHelper specHelper)
+        ApicurioHelper specHelper)
     {
         this.config = config;
         this.kafkaHelper = kafkaHelper;
@@ -84,13 +84,12 @@ public class KafkaAsyncApiService
             if (kafkaSpec != null)
             {
                 eventType = ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED;
-                specVersion = specHelper.register(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
+                specVersion = specHelper.publishSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
             }
             else
             {
                 eventType = ApiGenEventType.KAFKA_ASYNC_API_ERRORED;
             }
-
         }
         catch (Exception ex)
         {

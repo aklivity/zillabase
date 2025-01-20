@@ -15,8 +15,8 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindin
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingRouteConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
-import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -49,14 +49,14 @@ public class PublishConfigService
 {
     private final ApiGenConfig config;
     private final KafkaTopicSchemaHelper kafkaService;
-    private final AsyncapiSpecConfigHelper specService;
+    private final ApicurioHelper specService;
 
     private final List<KafkaTopicSchemaRecord> records;
 
     public PublishConfigService(
         ApiGenConfig config,
         KafkaTopicSchemaHelper kafkaService,
-        AsyncapiSpecConfigHelper specService)
+        ApicurioHelper specService)
     {
         this.config = config;
         this.kafkaService = kafkaService;
@@ -77,7 +77,7 @@ public class PublishConfigService
 
             newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILL_CONFIG_ERRORED;
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             newState = ApiGenEventType.ZILL_CONFIG_ERRORED;
         }

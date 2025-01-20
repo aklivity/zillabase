@@ -25,7 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -40,7 +40,7 @@ public class PublishConfigServiceTest
     private KafkaTopicSchemaHelper kafkaService;
 
     @Mock
-    private AsyncapiSpecConfigHelper specService;
+    private ApicurioHelper specService;
 
     @InjectMocks
     private PublishConfigService publishConfigService;

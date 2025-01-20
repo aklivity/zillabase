@@ -14,6 +14,7 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
+import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -34,7 +35,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import io.aklivity.zillabase.service.api.gen.internal.component.AsyncapiSpecConfigHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -46,7 +47,7 @@ public class HttpAsyncApiServiceTest
     private ApiGenConfig config;
 
     @Mock
-    private AsyncapiSpecConfigHelper specHelper;
+    private ApicurioHelper specHelper;
 
     @Mock
     private KafkaTopicSchemaHelper kafkaHelper;
@@ -62,26 +63,27 @@ public class HttpAsyncApiServiceTest
         MockitoAnnotations.openMocks(this);
 
         kafkaSpec = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(
-            getClass().getClassLoader().getResource("specs/kafka-asyncapi.json")).toURI())), UTF_8);
+            getClass().getClassLoader().getResource("specs/kafka-asyncapi.yaml")).toURI())), UTF_8);
     }
 
     @Test
     public void shouldGenerateHttpAsyncApiEvent()
     {
+        String kafkaSpecVersion = "1";
         String httpSpecVersion = "1";
-        ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, "kafkaVersion", null);
+        ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, kafkaSpecVersion, null);
 
-        when(specHelper.fetchSpec(anyString(), anyString())).thenReturn(kafkaSpec);
-        when(specHelper.register(anyString(), anyString())).thenReturn(httpSpecVersion);
+        when(specHelper.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpecVersion)).thenReturn(kafkaSpec);
+        when(specHelper.publishSpec(anyString(), anyString())).thenReturn(httpSpecVersion);
 
         ApiGenEvent resultEvent = httpAsyncApiService.generate(inputEvent);
 
         assertEquals(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, resultEvent.type());
-        assertEquals("kafkaVersion", resultEvent.kafkaVersion());
+        assertEquals("1", resultEvent.kafkaVersion());
         assertEquals(httpSpecVersion, resultEvent.httpVersion());
 
-        verify(specHelper, times(1)).fetchSpec(anyString(), anyString());
-        verify(specHelper, times(1)).register(anyString(), anyString());
+        verify(specHelper, times(1)).fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpecVersion);
+        verify(specHelper, times(1)).publishSpec(anyString(), anyString());
     }
 
     @Test

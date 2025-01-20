@@ -20,6 +20,7 @@ import static io.aklivity.zillabase.cli.config.ZillabaseApiGenConfig.DEFAULT_API
 import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_APICURIO_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
 import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_API_GEN_EVENTS_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
@@ -718,7 +719,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 {
                     NewTopic configTopic = new NewTopic(ZILLABASE_CONFIG_KAFKA_TOPIC, 1, (short) 1);
                     configTopic.configs(Map.of("cleanup.policy", "compact"));
-                    adminClient.createTopics(List.of(configTopic)).all().get();
+                    NewTopic eventTopic = new NewTopic(ZILLABASE_API_GEN_EVENTS_KAFKA_TOPIC, 1, (short) 1);
+                    eventTopic.configs(Map.of("cleanup.policy", "delete"));
+                    adminClient.createTopics(List.of(configTopic, eventTopic)).all().get();
                     break;
                 }
             }

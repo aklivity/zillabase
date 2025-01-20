@@ -41,10 +41,10 @@ public class ApiGenProcessor
     private final Serde<String> stringSerde = Serdes.String();
     private final Serde<ApiGenEvent> eventSerde = new ApiGenEventSerde();
 
-    @Value("${zcatalogs.topic:zb_catalog.ztatalogs}")
+    @Value("${zcatalogs.topic:public.zcatalogs}")
     String zcatalogsTopic;
 
-    @Value("${api.gen.events.topic:public.api-gen-events}")
+    @Value("${api.gen.events.topic:_zillabase.api-gen-events}")
     String eventsTopic;
 
     private final KafkaAsyncApiService kafkaAsyncApiHandler;
@@ -66,7 +66,7 @@ public class ApiGenProcessor
         StreamsBuilder streamsBuilder)
     {
         streamsBuilder.stream(zcatalogsTopic, Consumed.with(stringSerde, stringSerde))
-            .mapValues(e -> new ApiGenEvent(ApiGenEventType.CATALOG_UPDATED, "", "0"))
+            .mapValues(e -> new ApiGenEvent(ApiGenEventType.CATALOG_UPDATED, "", ""))
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
 
         KStream<String, ApiGenEvent> eventsStream = streamsBuilder.stream(eventsTopic,
