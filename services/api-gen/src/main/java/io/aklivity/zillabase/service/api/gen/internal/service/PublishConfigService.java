@@ -103,8 +103,8 @@ public class PublishConfigService
         karapaceCatalog.type = "karapace";
         karapaceCatalog.options = Map.of("url", config.karapaceUrl());
 
-        ZillabaseKeycloakConfig keycloak = config.keycloak;
-        String realm = keycloak.realm;
+        // TODO: Support env variable
+        String realm = "";
         String authnJwt = "jwt0";
         if (realm != null)
         {
