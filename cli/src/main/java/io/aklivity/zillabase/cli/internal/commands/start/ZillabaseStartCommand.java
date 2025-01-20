@@ -183,7 +183,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateZillaFactory(config));
         factories.add(new CreateMinioFactory(config));
         factories.add(new CreatePostgresFactory(config));
-        factories.add(new CreateApiGenFactory(config));
+        //factories.add(new CreateApiGenFactory(config));
 
         if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
         {

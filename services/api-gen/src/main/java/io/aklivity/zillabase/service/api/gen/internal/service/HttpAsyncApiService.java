@@ -22,6 +22,7 @@ import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioH
 import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -77,6 +78,8 @@ public class HttpAsyncApiService
     private final KafkaTopicSchemaHelper kafkaHelper;
     private final ApicurioHelper specHelper;
 
+    private final List<String> scopes;
+
     public HttpAsyncApiService(
         ApiGenConfig config,
         ApicurioHelper specHelper,
@@ -85,6 +88,8 @@ public class HttpAsyncApiService
         this.config = config;
         this.kafkaHelper = kafkaHelper;
         this.specHelper = specHelper;
+
+        this.scopes = new ArrayList<>();
     }
 
     public ApiGenEvent generate(
@@ -114,6 +119,8 @@ public class HttpAsyncApiService
     private String generateHttpAsyncApiSpecs(
         String kafkaSpec) throws JsonProcessingException, ExecutionException, InterruptedException
     {
+        scopes.clear();
+
         final Components components = new Components();
         final Map<String, Object> schemas = new HashMap<>();
         final Map<String, Object> messages = new HashMap<>();
@@ -165,11 +172,11 @@ public class HttpAsyncApiService
 
             if (secure)
             {
-                //TODO: add support for keycloak
-                //String scope = label.toLowerCase();
-                //config.keycloak.scopes.add("%s:read".formatted(scope));
-                //config.keycloak.scopes.add("%s:write".formatted(scope));
+                String scope = label.toLowerCase();
+                scopes.add("%s:read".formatted(scope));
+                scopes.add("%s:write".formatted(scope));
             }
+
             String messageName = "%sMessage".formatted(label);
             JsonValue channelValue = channelJson.getValue();
             Channel channel = new Channel();
@@ -251,7 +258,7 @@ public class HttpAsyncApiService
 
             arrayMessage.set("payload", payloadNode);
             arrayMessage.put("contentType", contentType);
-            arrayMessage.put("type", arrayMessageKey);
+            arrayMessage.put("name", arrayMessageKey);
 
             messages.put(arrayMessageKey, arrayMessage);
         }
@@ -268,7 +275,7 @@ public class HttpAsyncApiService
             itemsNode.put("$ref", "#/components/schemas/" + schemaJson.getKey());
 
             arraySchema.set("items", itemsNode);
-            arraySchema.put("type",
+            arraySchema.put("name",
                 arraySchemaKey.replace("%s.".formatted(config.risingwaveDb()), ""));
             arraySchema.put("namespace", config.risingwaveDb());
             schemas.put(arraySchemaKey, arraySchema);
@@ -276,10 +283,9 @@ public class HttpAsyncApiService
 
         if (secure)
         {
-            //TODO: add support for keycloak
             OAuth2SecurityScheme securityScheme = OAuth2SecurityScheme.oauth2Builder()
                 .flows(new OAuthFlows())
-                .scopes(Collections.emptyList())
+                .scopes(scopes)
                 .build();
             components.setSecuritySchemes(Map.of(securitySchemaName, securityScheme));
         }

@@ -20,7 +20,7 @@ import java.util.List;
 public final class ZillabaseKeycloakConfig
 {
     private static final String DEFAULT_KEYCLOAK_TAG = "26";
-    private static final String DEFAULT_KEYCLOAK_URL = "http://keycloak.zillabase.dev:8180";
+    private static final String DEFAULT_KEYCLOAK_URL = "http://localhost:8180";
     private static final String DEFAULT_KEYCLOAK_JWKS_URL =
         "http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs";
     private static final String DEFAULT_KEYCLOAK_AUDIENCE = "account";
