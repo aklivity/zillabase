@@ -393,6 +393,7 @@
       <properties>
         <docker.skip.push>true</docker.skip.push>
         <docker.skip.tag>true</docker.skip.tag>
+        <docker.latest.tag></docker.latest.tag>
       </properties>
 
       <build>
