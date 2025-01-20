@@ -84,6 +84,6 @@ public class KafkaAsyncApiServiceTest
         assertEquals(specVersion, resultEvent.kafkaVersion());
 
         verify(kafkaHelper, times(1)).resolve();
-        verify(specHelper, times(1)).register(anyString(), anyString());
+        verify(specHelper, times(1)).publishSpec(anyString(), anyString());
     }
 }
