@@ -53,7 +53,7 @@ public class KafkaTopicSchemaHelper
 {
     private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
         Pattern.DOTALL);
-    private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-|_)(.)");
+    private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
 
     private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
     private final Matcher matcher = TOPIC_PATTERN.matcher("");

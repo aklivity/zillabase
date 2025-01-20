@@ -88,7 +88,7 @@ public class ApicurioHelper
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            // ignore
         }
 
         return newVersion;
