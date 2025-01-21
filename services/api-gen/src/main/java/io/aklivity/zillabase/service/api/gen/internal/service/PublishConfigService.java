@@ -69,21 +69,22 @@ public class PublishConfigService
         ApiGenEvent event)
     {
         ApiGenEventType newState;
+        String message = null;
 
         try
         {
             String zillaConfig = generateConfig(event);
             boolean published = specService.publishConfig(zillaConfig);
 
-            newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILL_CONFIG_ERRORED;
+            newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILLA_CONFIG_ERRORED;
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
-            newState = ApiGenEventType.ZILL_CONFIG_ERRORED;
+            newState = ApiGenEventType.ZILLA_CONFIG_ERRORED;
+            message = ex.getMessage();
         }
 
-        return new ApiGenEvent(newState, event.kafkaVersion(), event.httpVersion());
+        return new ApiGenEvent(newState, event.kafkaVersion(), event.httpVersion(), message);
     }
 
     private String generateConfig(

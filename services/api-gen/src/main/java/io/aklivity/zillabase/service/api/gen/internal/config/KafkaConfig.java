@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
+import org.springframework.kafka.core.CleanupConfig;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 @Configuration
@@ -75,9 +76,13 @@ public class KafkaConfig
     {
         waitForTopics();
 
-        Map<String, Object> paymentStreamsConfigProperties = commonStreamsConfigProperties();
-        paymentStreamsConfigProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, API_GEN_STREAMS_BUILDER_BEAN_NAME);
-        return new StreamsBuilderFactoryBean(new KafkaStreamsConfiguration(paymentStreamsConfigProperties));
+        Map<String, Object> streamsConfig = commonStreamsConfigProperties();
+        streamsConfig.put(StreamsConfig.APPLICATION_ID_CONFIG, API_GEN_STREAMS_BUILDER_BEAN_NAME);
+        StreamsBuilderFactoryBean factoryBean =
+            new StreamsBuilderFactoryBean(new KafkaStreamsConfiguration(streamsConfig));
+        factoryBean.setCleanupConfig(new CleanupConfig(false, false));
+
+        return factoryBean;
     }
 
     private Map<String, Object> commonStreamsConfigProperties()

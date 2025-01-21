@@ -75,6 +75,7 @@ public class KafkaAsyncApiService
     {
         ApiGenEventType eventType;
         String specVersion = null;
+        String message = null;
 
         try
         {
@@ -93,11 +94,11 @@ public class KafkaAsyncApiService
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
             eventType = ApiGenEventType.KAFKA_ASYNC_API_ERRORED;
+            message = ex.getMessage();
         }
 
-        return new ApiGenEvent(eventType, specVersion, null);
+        return new ApiGenEvent(eventType, specVersion, null, message);
     }
 
     private String generateKafkaAsyncApiSpecs(

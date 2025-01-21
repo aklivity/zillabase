@@ -58,7 +58,7 @@ public class PublishConfigServiceTest
     @Test
     public void shouldPublishConfigSuccessfully()
     {
-        ApiGenEvent event = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, "2.8.0", "1.1");
+        ApiGenEvent event = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, "2.8.0", "1.1", null);
 
         when(specService.publishConfig(anyString())).thenReturn(true);
 

@@ -71,7 +71,7 @@ public class HttpAsyncApiServiceTest
     {
         String kafkaSpecVersion = "1";
         String httpSpecVersion = "1";
-        ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, kafkaSpecVersion, null);
+        ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, kafkaSpecVersion, null, null);
 
         when(specHelper.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpecVersion)).thenReturn(kafkaSpec);
         when(specHelper.publishSpec(anyString(), anyString())).thenReturn(httpSpecVersion);
@@ -89,7 +89,7 @@ public class HttpAsyncApiServiceTest
     @Test
     public void shouldHandleExceptionDuringGeneration()
     {
-        ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, "kafkaVersion", null);
+        ApiGenEvent inputEvent = new ApiGenEvent(ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED, "kafkaVersion", null, null);
 
         when(specHelper.fetchSpec(anyString(), anyString())).thenThrow(new RuntimeException("Error"));
 

@@ -97,6 +97,7 @@ public class HttpAsyncApiService
     {
         ApiGenEventType eventType;
         String httpSpecVersion = null;
+        String message = null;
 
         try
         {
@@ -108,11 +109,11 @@ public class HttpAsyncApiService
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
             eventType = ApiGenEventType.HTTP_ASYNC_API_ERRORED;
+            message = ex.getMessage();
         }
 
-        return new ApiGenEvent(eventType, event.kafkaVersion(), httpSpecVersion);
+        return new ApiGenEvent(eventType, event.kafkaVersion(), httpSpecVersion, message);
 
     }
 
