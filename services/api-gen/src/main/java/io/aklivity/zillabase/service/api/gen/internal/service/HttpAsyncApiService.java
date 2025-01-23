@@ -101,19 +101,10 @@ public class HttpAsyncApiService
 
         try
         {
-            System.out.println("Generating Kafka Async API with version: " + event.kafkaVersion());
-
-            System.out.println("Generating Http Async API #1 -START");
             String kafkaSpec = specHelper.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
-            System.out.println("Generating Http Async API #1 -END");
-            System.out.println("Generating Http Async API #2 -START");
             String httpSpec = generateHttpAsyncApiSpecs(kafkaSpec);
-            System.out.println("Generating Http Async API #2 -END");
-            System.out.println("Generating Http Async API #3 -START");
             httpSpecVersion = specHelper.publishSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
-            System.out.println("Generating Http Async API #3 -END");
 
-            System.out.println("Generating Http Async API with version: " + httpSpecVersion);
             eventType = ApiGenEventType.HTTP_ASYNC_API_PUBLISHED;
         }
         catch (Exception ex)
