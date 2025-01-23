@@ -79,13 +79,20 @@ public class KafkaAsyncApiService
 
         try
         {
+            System.out.println("Generating Kafka Async API");
+            System.out.println("Generating Kafka Async API #1 -START");
             List<KafkaTopicSchemaRecord> schemaRecords = kafkaHelper.resolve();
+            System.out.println("Generating Kafka Async API #1 -END");
+            System.out.println("Generating Kafka Async API #2 -START");
             String kafkaSpec = generateKafkaAsyncApiSpecs(schemaRecords);
+            System.out.println("Generating Kafka Async API #2 -END");
 
             if (kafkaSpec != null)
             {
-                eventType = ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED;
+                System.out.println("Generating Kafka Async API #3 -START");
                 specVersion = specHelper.publishSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
+                System.out.println("Generating Kafka Async API #3 -END");
+                eventType = ApiGenEventType.KAFKA_ASYNC_API_PUBLISHED;
             }
             else
             {

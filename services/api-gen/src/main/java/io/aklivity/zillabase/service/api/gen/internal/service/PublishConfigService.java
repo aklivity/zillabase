@@ -39,6 +39,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindin
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ConfigHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -49,18 +50,21 @@ public class PublishConfigService
 {
     private final ApiGenConfig config;
     private final KafkaTopicSchemaHelper kafkaService;
-    private final ApicurioHelper specService;
+    private final ApicurioHelper specHelper;
+    private final ConfigHelper configHelper;
 
     private final List<KafkaTopicSchemaRecord> records;
 
     public PublishConfigService(
         ApiGenConfig config,
         KafkaTopicSchemaHelper kafkaService,
-        ApicurioHelper specService)
+        ApicurioHelper specHelper,
+        ConfigHelper configHelper)
     {
         this.config = config;
         this.kafkaService = kafkaService;
-        this.specService = specService;
+        this.specHelper = specHelper;
+        this.configHelper = configHelper;
 
         this.records = new ArrayList<>();
     }
@@ -74,7 +78,7 @@ public class PublishConfigService
         try
         {
             String zillaConfig = generateConfig(event);
-            boolean published = specService.publishConfig(zillaConfig);
+            boolean published = configHelper.publishConfig(zillaConfig);
 
             newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILLA_CONFIG_ERRORED;
         }
@@ -127,7 +131,7 @@ public class PublishConfigService
 
         List<ZillaBindingRouteConfig> routes = new ArrayList<>();
 
-        List<String> operations = specService.httpOperations(event.httpVersion());
+        List<String> operations = specHelper.httpOperations(event.httpVersion());
 
         for (String operation : operations)
         {

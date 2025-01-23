@@ -66,8 +66,8 @@ public class ApicurioHelper
         try
         {
             ResponseEntity<String> httpResponse = webClient.post()
-                .uri(URI.create(config.adminHttpUrl())
-                    .resolve("/v1/asyncapis"))
+                .uri(URI.create(config.apicurioUrl())
+                    .resolve("/apis/registry/v2/groups/default/artifacts"))
                 .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
                 .header("X-Registry-ArtifactId", id)
                 .bodyValue(spec)
@@ -101,8 +101,8 @@ public class ApicurioHelper
         String newVersion = null;
 
         ResponseEntity<String> httpResponse = webClient.post()
-            .uri(URI.create(config.adminHttpUrl())
-                .resolve("/v1/asyncapis/artifacts/%s".formatted(id)))
+            .uri(URI.create(config.apicurioUrl())
+                .resolve("/apis/registry/v2/groups/%s/artifacts/%s/versions".formatted(config.apicurioGroupId(), id)))
             .header("Content-Type", "application/vnd.aai.asyncapi+yaml")
             .header("X-Registry-ArtifactId", id)
             .bodyValue(spec)
@@ -129,8 +129,8 @@ public class ApicurioHelper
         String version)
     {
         return webClient.get()
-            .uri(URI.create(config.adminHttpUrl())
-                .resolve("/v1/asyncapis/%s/versions/%s".formatted(artifactId, version)))
+            .uri(URI.create(config.apicurioUrl())
+                .resolve("/apis/registry/v2/groups/default/artifacts/%s/versions/%s".formatted(artifactId, version)))
             .retrieve()
             .bodyToMono(String.class)
             .block();
@@ -157,19 +157,5 @@ public class ApicurioHelper
         }
 
         return operations;
-    }
-
-    public boolean publishConfig(
-        String zillaConfig)
-    {
-        ResponseEntity<Void> response = webClient
-            .put()
-            .uri(URI.create(config.adminHttpUrl()).resolve("/v1/config/zilla.yaml"))
-            .bodyValue(zillaConfig)
-            .retrieve()
-            .toBodilessEntity()
-            .block();
-
-        return response != null && response.getStatusCode().value() == 204;
     }
 }

@@ -48,13 +48,11 @@ public class ApicurioHelperTest
     @InjectMocks
     private ApicurioHelper specConfigService;
 
-    private final String asyncapiUrl = "http://localhost:8080/v1/asyncapis";
-
     @BeforeEach
     public void setup()
     {
         MockitoAnnotations.openMocks(this);
-        when(config.adminHttpUrl()).thenReturn(asyncapiUrl);
+        when(config.apicurioUrl()).thenReturn("http://localhost:8080/");
     }
 
     @Test
@@ -68,7 +66,7 @@ public class ApicurioHelperTest
 
         when(webClient.post())
             .thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(URI.create(asyncapiUrl)))
+        when(requestBodyUriSpec.uri(any(URI.class)))
             .thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.header(any(), any()))
             .thenReturn(requestBodyUriSpec);
@@ -81,6 +79,35 @@ public class ApicurioHelperTest
         when(responseSpec.toEntity(String.class)).thenReturn(Mono.just(responseEntity));
 
         String result = specConfigService.register("test-id", body);
+
+        assertNotNull(result);
+        assertEquals("new-version-123", result);
+    }
+
+    @Test
+    public void shouldPublishSpec()
+    {
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+
+        String body = "test-spec";
+
+        when(webClient.post())
+            .thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(any(URI.class)))
+            .thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.header(any(), any()))
+            .thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.bodyValue(body))
+            .thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve())
+            .thenReturn(responseSpec);
+
+        ResponseEntity<String> responseEntity = new ResponseEntity<>("{\"version\":\"new-version-123\"}", HttpStatus.OK);
+        when(responseSpec.toEntity(String.class)).thenReturn(Mono.just(responseEntity));
+
+        String result = specConfigService.publishSpec("test-id", body);
 
         assertNotNull(result);
         assertEquals("new-version-123", result);

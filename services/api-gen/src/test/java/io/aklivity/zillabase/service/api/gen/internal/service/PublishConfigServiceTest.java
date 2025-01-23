@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ConfigHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -40,7 +41,10 @@ public class PublishConfigServiceTest
     private KafkaTopicSchemaHelper kafkaService;
 
     @Mock
-    private ApicurioHelper specService;
+    private ApicurioHelper apicurioHelper;
+
+    @Mock
+    private ConfigHelper configHelper;
 
     @InjectMocks
     private PublishConfigService publishConfigService;
@@ -60,7 +64,7 @@ public class PublishConfigServiceTest
     {
         ApiGenEvent event = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, "2.8.0", "1.1", null);
 
-        when(specService.publishConfig(anyString())).thenReturn(true);
+        when(configHelper.publishConfig(anyString())).thenReturn(true);
 
         ApiGenEvent result = publishConfigService.publish(event);
 

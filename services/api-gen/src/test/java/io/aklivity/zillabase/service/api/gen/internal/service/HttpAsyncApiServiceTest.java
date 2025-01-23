@@ -100,6 +100,6 @@ public class HttpAsyncApiServiceTest
         assertEquals(null, resultEvent.httpVersion());
 
         verify(specHelper, times(1)).fetchSpec(anyString(), anyString());
-        verify(specHelper, never()).register(anyString(), anyString());
+        verify(specHelper, never()).publishSpec(anyString(), anyString());
     }
 }

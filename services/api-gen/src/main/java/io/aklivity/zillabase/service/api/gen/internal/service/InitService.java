@@ -31,7 +31,7 @@ public class InitService implements CommandLineRunner
 
     @Override
     public void run(
-        String... args) throws Exception
+        String... args)
     {
         final String kafkaSpec = """
              asyncapi: 3.0.0

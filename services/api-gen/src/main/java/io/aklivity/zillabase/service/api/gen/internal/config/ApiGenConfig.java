@@ -22,25 +22,25 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app.gen")
 public class ApiGenConfig
 {
-    @Value("${admin.http.url:http://localhost:7184}")
-    private String adminHttpUrl;
-
     @Value("${risingwave.db:dev}")
     private String risingwaveDb;
 
-    @Value("${kafka.bootstrap.servers:localhost:9092}")
+    @Value("${kafka.bootstrap.servers:kafka:29092}")
     private String kafkaBootstrapServers;
 
-    @Value("${karapace.url:http://localhost:8081}")
+    @Value("${karapace.url:http://karapace.zillabase.dev:8081}")
     private String karapaceUrl;
 
-    @Value("${apicurio.registry.url:http://localhost:8080/}")
+    @Value("${config.server.url:http://config.zillabase.dev:7114/}")
+    private String configServerUrl;
+
+    @Value("${apicurio.registry.url:http://apicurio.zillabase.dev:8080/}")
     private String apicurioUrl;
 
     @Value("${apicurio.group.id:default}")
     private String apicurioGroupId;
 
-    @Value("${keycloak.url:http://localhost:8180}")
+    @Value("${keycloak.url:http://keycloak.zillabase.dev:8180}")
     private String keycloakUrl;
 
     @Value("${keycloak.realm:zillabase}")
@@ -58,11 +58,6 @@ public class ApiGenConfig
     @Value("${api.gen.events.topic:_zillabase.api-gen-events}")
     private String eventsTopic;
 
-    public String adminHttpUrl()
-    {
-        return adminHttpUrl;
-    }
-
     public String risingwaveDb()
     {
         return risingwaveDb;
@@ -76,6 +71,11 @@ public class ApiGenConfig
     public String karapaceUrl()
     {
         return karapaceUrl;
+    }
+
+    public String configServerUrl()
+    {
+        return configServerUrl;
     }
 
     public String apicurioUrl()
