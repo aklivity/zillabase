@@ -75,7 +75,8 @@ public class KafkaTopicSchemaHelper
         this.records = new ArrayList<>();
     }
 
-    public List<KafkaTopicSchemaRecord> resolve() throws ExecutionException, InterruptedException, JsonProcessingException
+    public List<KafkaTopicSchemaRecord> resolve()
+        throws ExecutionException, InterruptedException, JsonProcessingException
     {
         records.clear();
 

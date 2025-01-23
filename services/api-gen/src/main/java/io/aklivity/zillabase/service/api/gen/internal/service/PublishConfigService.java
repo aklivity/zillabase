@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.springframework.stereotype.Service;
 
@@ -53,8 +54,6 @@ public class PublishConfigService
     private final ApicurioHelper specHelper;
     private final ConfigHelper configHelper;
 
-    private final List<KafkaTopicSchemaRecord> records;
-
     public PublishConfigService(
         ApiGenConfig config,
         KafkaTopicSchemaHelper kafkaService,
@@ -65,8 +64,6 @@ public class PublishConfigService
         this.kafkaService = kafkaService;
         this.specHelper = specHelper;
         this.configHelper = configHelper;
-
-        this.records = new ArrayList<>();
     }
 
     public ApiGenEvent publish(
@@ -92,7 +89,7 @@ public class PublishConfigService
     }
 
     private String generateConfig(
-        ApiGenEvent event) throws IOException
+        ApiGenEvent event) throws IOException, ExecutionException, InterruptedException
     {
         List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
                     "Get", "GetItem");
@@ -211,8 +208,10 @@ public class PublishConfigService
     }
 
     private void extractedHeaders(
-        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig) throws JsonProcessingException
+        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig)
+            throws JsonProcessingException, ExecutionException, InterruptedException
     {
+        List<KafkaTopicSchemaRecord> records = kafkaService.resolve();
         for (KafkaTopicSchemaRecord record : records)
         {
             if (record.name.endsWith("_replies_sink"))
