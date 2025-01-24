@@ -83,7 +83,8 @@ public class KafkaTopicSchemaHelper
         KafkaFuture<Collection<TopicListing>> topics = adminClient.listTopics().listings();
         for (TopicListing topic : topics.get())
         {
-            if (!topic.isInternal())
+            if (!topic.isInternal() &&
+                !topic.name().contains("public.zcatalogs"))
             {
                 String topicName = topic.name();
 
