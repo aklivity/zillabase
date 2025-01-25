@@ -15,10 +15,16 @@
 package io.aklivity.zillabase.service.api.gen.internal.component;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.ClientScopeRepresentation;
+import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Component;
@@ -39,42 +45,45 @@ public class KeycloakHelper
         this.keycloak = keycloak;
     }
 
-    public void createAndAssignScope(String scopeName)
+    public void createAndAssignScope(
+        String scopeName)
     {
-        createRoleIfNotExists(scopeName);
-        addRoleToAllUsers(scopeName);
+        createClientScopeIfNotExists(scopeName);
+        addScopeToAllUsers(scopeName);
     }
 
-    private void createRoleIfNotExists(
+    public void createClientScopeIfNotExists(
         String scopeName)
     {
         RealmResource realmResource = keycloak.realm(config.realm());
 
-        List<RoleRepresentation> existingRoles = realmResource.roles().list();
-        boolean roleExists = existingRoles.stream()
-                .anyMatch(r -> r.getName().equals(scopeName));
+        List<ClientScopeRepresentation> allScopes = realmResource.clientScopes().findAll();
 
-        if (!roleExists)
+        boolean scopeExists = allScopes.stream()
+            .anyMatch(s -> s.getName().equals(scopeName));
+
+        if (!scopeExists)
         {
-            RoleRepresentation newRole = new RoleRepresentation();
-            newRole.setName(scopeName);
+            ClientScopeRepresentation newScope = new ClientScopeRepresentation();
+            newScope.setName(scopeName);
 
-            realmResource.roles().create(newRole);
-            System.out.println("Created new realm role: " + scopeName);
+            realmResource.clientScopes().create(newScope);
+            System.out.println("Created new client scope: " + scopeName);
         }
         else
         {
-            System.out.println("Role already exists: " + scopeName);
+            System.out.println("Client scope already exists: " + scopeName);
         }
     }
 
-    private void addRoleToAllUsers(
+    private void addScopeToAllUsers(
         String scopeName)
     {
         RealmResource realmResource = keycloak.realm(config.realm());
-        RoleRepresentation roleToAdd = realmResource.roles()
-                .get(scopeName)
-                .toRepresentation();
+
+        RoleRepresentation scopeToAdd = realmResource.roles()
+            .get(scopeName)
+            .toRepresentation();
 
         List<UserRepresentation> allUsers = realmResource.users().list();
 
@@ -83,17 +92,17 @@ public class KeycloakHelper
             try
             {
                 realmResource.users()
-                        .get(user.getId())
-                        .roles()
-                        .realmLevel()
-                        .add(Collections.singletonList(roleToAdd));
+                    .get(user.getId())
+                    .roles()
+                    .realmLevel()
+                    .add(Collections.singletonList(scopeToAdd));
 
-                System.out.printf("Added role '%s' to user '%s' (%s)%n",
+                System.out.printf("Added scope '%s' to user '%s' (%s)%n",
                                   scopeName, user.getUsername(), user.getId());
             }
             catch (Exception e)
             {
-                System.err.printf("Failed to add role '%s' to user '%s' (%s): %s%n",
+                System.err.printf("Failed to add scope '%s' to user '%s' (%s): %s%n",
                                   scopeName, user.getUsername(), user.getId(), e.getMessage());
             }
         }

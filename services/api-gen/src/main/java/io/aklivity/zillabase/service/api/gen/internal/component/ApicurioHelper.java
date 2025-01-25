@@ -39,7 +39,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecRegisterResponse;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
-import io.aklivity.zillabase.service.api.gen.internal.model.AsyncapiView;
 
 @Component
 public class ApicurioHelper
@@ -144,7 +143,7 @@ public class ApicurioHelper
             .block();
     }
 
-    public AsyncapiView asyncapiSpec(
+    public List<String> httpOperations(
         String httpSpecVersion) throws JsonProcessingException
     {
         String httpSpec = fetchSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpecVersion);
@@ -176,6 +175,35 @@ public class ApicurioHelper
             operations.add(operation.getKey());
         }
 
-        return new AsyncapiView(operations, channels);
+        return operations;
+    }
+
+    public List<String> kafkaChannels(
+        String kafkaSpecVersion) throws JsonProcessingException
+    {
+        String kafkaSpec = fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpecVersion);
+
+        channels.clear();
+
+        ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+        JsonNode yamlRoot = yamlMapper.readTree(kafkaSpec);
+
+        ObjectMapper jsonMapper = new ObjectMapper();
+        String asJsonString = jsonMapper.writeValueAsString(yamlRoot);
+        JsonValue jsonValue = Json.createReader(new StringReader(asJsonString)).readValue();
+
+        JsonObject channelsJson = jsonValue.asJsonObject().getJsonObject("channels");
+        for (String channel : channelsJson.keySet())
+        {
+            if (channel.endsWith("_replies_sink"))
+            {
+                continue;
+            }
+
+            String name = matcher.reset(channel).replaceFirst(match -> match.group(2));
+            channels.add(name);
+        }
+
+        return channels;
     }
 }

@@ -48,7 +48,6 @@ import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
-import io.aklivity.zillabase.service.api.gen.internal.model.AsyncapiView;
 
 @Service
 public class PublishConfigService
@@ -87,13 +86,14 @@ public class PublishConfigService
 
         try
         {
-            AsyncapiView httpAsyncapi = specHelper.asyncapiSpec(event.httpVersion());
-            String zillaConfig = generateConfig(event, httpAsyncapi);
+            List<String> operations = specHelper.httpOperations(event.httpVersion());
+            List<String> channels = specHelper.kafkaChannels(event.httpVersion());
+            String zillaConfig = generateConfig(event, operations);
             boolean published = zillaHelper.publishConfig(zillaConfig);
 
             if (published)
             {
-                createAndAssignScope(httpAsyncapi);
+                createAndAssignScope(channels);
             }
 
             newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILLA_CONFIG_ERRORED;
@@ -110,7 +110,7 @@ public class PublishConfigService
 
     private String generateConfig(
         ApiGenEvent event,
-        AsyncapiView httpAsyncapi) throws IOException, ExecutionException, InterruptedException
+        List<String> operations) throws IOException, ExecutionException, InterruptedException
     {
         List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
                     "Get", "GetItem");
@@ -149,7 +149,7 @@ public class PublishConfigService
 
         List<ZillaBindingRouteConfig> routes = new ArrayList<>();
 
-        for (String operation : httpAsyncapi.operations())
+        for (String operation : operations)
         {
             if (operation.endsWith("Replies"))
             {
@@ -276,9 +276,9 @@ public class PublishConfigService
     }
 
     private void createAndAssignScope(
-        AsyncapiView asyncapiSpec)
+        List<String> channels)
     {
-        for (String channel : asyncapiSpec.channel())
+        for (String channel : channels)
         {
             keycloakHelper.createAndAssignScope("%s:read".formatted(channel));
             keycloakHelper.createAndAssignScope("%s:write".formatted(channel));
