@@ -70,6 +70,7 @@ This project includes:
   Keycloak Core under Apache License, Version 2.0
   Kotlin Stdlib under The Apache License, Version 2.0
   Log4j API to SLF4J Adapter under Apache-2.0
+  Log4j Implemented Over SLF4J under Apache Software Licenses
   Logback Classic Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
   Logback Core Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
   micrometer-commons under The Apache Software License, Version 2.0
