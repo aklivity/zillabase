@@ -52,12 +52,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import reactor.core.publisher.Mono;
 
 public class KafkaTopicSchemaHelperTest
 {
     @Mock
     private ApiGenConfig config;
+
+    @Mock
+    private KafkaConfig kafkaConfig;
 
     @Mock
     private WebClient webClient;
@@ -74,7 +78,7 @@ public class KafkaTopicSchemaHelperTest
     public void setUp() throws URISyntaxException, IOException
     {
         MockitoAnnotations.initMocks(this);
-        when(config.karapaceUrl()).thenReturn("http://localhost:8081");
+        when(kafkaConfig.karapaceUrl()).thenReturn("http://localhost:8081");
 
         schema = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(
             getClass().getClassLoader().getResource("schemas/pet.json")).toURI())), UTF_8);

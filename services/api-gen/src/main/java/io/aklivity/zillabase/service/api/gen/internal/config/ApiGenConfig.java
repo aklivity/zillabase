@@ -25,12 +25,6 @@ public class ApiGenConfig
     @Value("${risingwave.db:dev}")
     private String risingwaveDb;
 
-    @Value("${kafka.bootstrap.servers:kafka:29092}")
-    private String kafkaBootstrapServers;
-
-    @Value("${karapace.url:http://karapace.zillabase.dev:8081}")
-    private String karapaceUrl;
-
     @Value("${config.server.url:http://config.zillabase.dev:7114/}")
     private String configServerUrl;
 
@@ -39,18 +33,6 @@ public class ApiGenConfig
 
     @Value("${apicurio.group.id:default}")
     private String apicurioGroupId;
-
-    @Value("${keycloak.url:http://keycloak.zillabase.dev:8180}")
-    private String keycloakUrl;
-
-    @Value("${keycloak.realm:zillabase}")
-    private String keycloakRealm;
-
-    @Value("${keycloak.audience:account}")
-    private String keycloakAudience;
-
-    @Value("${keycloak.jwks.url:http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs}")
-    private String keycloakJwksUrl;
 
     @Value("${zcatalogs.topic:public.zcatalogs}")
     private String zcatalogsTopic;
@@ -61,16 +43,6 @@ public class ApiGenConfig
     public String risingwaveDb()
     {
         return risingwaveDb;
-    }
-
-    public String kafkaBootstrapServers()
-    {
-        return kafkaBootstrapServers;
-    }
-
-    public String karapaceUrl()
-    {
-        return karapaceUrl;
     }
 
     public String configServerUrl()
@@ -88,25 +60,7 @@ public class ApiGenConfig
         return apicurioGroupId;
     }
 
-    public String keycloakUrl()
-    {
-        return keycloakUrl;
-    }
 
-    public String keycloakRealm()
-    {
-        return keycloakRealm;
-    }
-
-    public String keycloakAudience()
-    {
-        return keycloakAudience;
-    }
-
-    public String keycloakJwksUrl()
-    {
-        return keycloakJwksUrl;
-    }
 
     public String zcatalogsTopic()
     {

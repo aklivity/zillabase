@@ -32,6 +32,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
@@ -39,6 +40,9 @@ public class KafkaAsyncApiServiceTest
 {
     @Mock
     private ApiGenConfig config;
+
+    @Mock
+    private KafkaConfig kafkaConfig;
 
     @Mock
     private KafkaTopicSchemaHelper kafkaHelper;
@@ -53,7 +57,7 @@ public class KafkaAsyncApiServiceTest
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
-        when(config.kafkaBootstrapServers()).thenReturn("localhost:9092");
+        when(kafkaConfig.bootstrapServers()).thenReturn("localhost:9092");
         when(config.risingwaveDb()).thenReturn("dev");
     }
 

@@ -48,6 +48,12 @@ public class KafkaConfig
 {
     public static final String API_GEN_STREAMS_BUILDER_BEAN_NAME = "apiGenKafkaStreamsBuilder";
 
+    @Value("${kafka.bootstrap.servers:kafka:29092}")
+    private String bootstrapServers;
+
+    @Value("${karapace.url:http://karapace.zillabase.dev:8081}")
+    private String karapaceUrl;
+
     @Value("${spring.kafka.streams.state.dir:#{null}}")
     private String stateDir;
 
@@ -62,11 +68,21 @@ public class KafkaConfig
         this.context = context;
     }
 
+    public String bootstrapServers()
+    {
+        return bootstrapServers;
+    }
+
+    public String karapaceUrl()
+    {
+        return karapaceUrl;
+    }
+
     @Bean
     public AdminClient adminClient()
     {
         Map<String, Object> kafkaConfig = new HashMap<>();
-        kafkaConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapServers());
+        kafkaConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
 
         return AdminClient.create(kafkaConfig);
     }
@@ -88,7 +104,7 @@ public class KafkaConfig
     private Map<String, Object> commonStreamsConfigProperties()
     {
         final Map<String, Object> props = new HashMap<>();
-        props.put("bootstrap.servers", config.kafkaBootstrapServers());
+        props.put("bootstrap.servers", bootstrapServers);
         props.put(DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class.getName());
         props.put("default.deserialization.exception.handler", LogAndContinueExceptionHandler.class);
@@ -104,7 +120,7 @@ public class KafkaConfig
     private AdminClient createAdminClient()
     {
         Properties properties = new Properties();
-        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafkaBootstrapServers());
+        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         return AdminClient.create(properties);
     }
 

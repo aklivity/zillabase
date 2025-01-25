@@ -26,9 +26,10 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.ConfigHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ZillaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
@@ -38,13 +39,16 @@ public class PublishConfigServiceTest
     private ApiGenConfig config;
 
     @Mock
+    private KafkaConfig kafkaConfig;
+
+    @Mock
     private KafkaTopicSchemaHelper kafkaService;
 
     @Mock
     private ApicurioHelper apicurioHelper;
 
     @Mock
-    private ConfigHelper configHelper;
+    private ZillaHelper zillaHelper;
 
     @InjectMocks
     private PublishConfigService publishConfigService;
@@ -56,7 +60,7 @@ public class PublishConfigServiceTest
 
         when(config.apicurioUrl()).thenReturn("http://localhost:8080");
         when(config.apicurioGroupId()).thenReturn("public");
-        when(config.karapaceUrl()).thenReturn("http://localhost:8081");
+        when(kafkaConfig.karapaceUrl()).thenReturn("http://localhost:8081");
     }
 
     @Test
@@ -64,7 +68,7 @@ public class PublishConfigServiceTest
     {
         ApiGenEvent event = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, "2.8.0", "1.1", null);
 
-        when(configHelper.publishConfig(anyString())).thenReturn(true);
+        when(zillaHelper.publishConfig(anyString())).thenReturn(true);
 
         ApiGenEvent result = publishConfigService.publish(event);
 

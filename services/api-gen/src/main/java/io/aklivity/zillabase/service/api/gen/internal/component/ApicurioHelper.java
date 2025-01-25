@@ -19,6 +19,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -37,15 +39,20 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecRegisterResponse;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.model.AsyncapiView;
 
 @Component
 public class ApicurioHelper
 {
     public static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
     public static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
+    private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
+
+    private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
     private final ApiGenConfig config;
     private final WebClient webClient;
+    private final List<String> channels;
     private final List<String> operations;
 
     public ApicurioHelper(
@@ -54,6 +61,7 @@ public class ApicurioHelper
     {
         this.config = config;
         this.webClient = webClient;
+        this.channels = new ArrayList<>();
         this.operations = new ArrayList<>();
     }
 
@@ -136,7 +144,7 @@ public class ApicurioHelper
             .block();
     }
 
-    public List<String> httpOperations(
+    public AsyncapiView asyncapiSpec(
         String httpSpecVersion) throws JsonProcessingException
     {
         String httpSpec = fetchSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpecVersion);
@@ -148,14 +156,26 @@ public class ApicurioHelper
 
         ObjectMapper jsonMapper = new ObjectMapper();
         String asJsonString = jsonMapper.writeValueAsString(yamlRoot);
-
         JsonValue jsonValue = Json.createReader(new StringReader(asJsonString)).readValue();
+
+        JsonObject channelsJson = jsonValue.asJsonObject().getJsonObject("channels");
+        for (String channel : channelsJson.keySet())
+        {
+            if (channel.endsWith("_replies_sink"))
+            {
+                continue;
+            }
+
+            String name = matcher.reset(channel).replaceFirst(match -> match.group(2));
+            channels.add(name);
+        }
+
         JsonObject operationsMap = jsonValue.asJsonObject().getJsonObject("operations");
         for (Map.Entry<String, JsonValue> operation : operationsMap.entrySet())
         {
-            this.operations.add(operation.getKey());
+            operations.add(operation.getKey());
         }
 
-        return operations;
+        return new AsyncapiView(operations, channels);
     }
 }

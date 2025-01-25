@@ -47,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
 @Component
 public class KafkaTopicSchemaHelper
@@ -59,6 +60,7 @@ public class KafkaTopicSchemaHelper
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
     private final ApiGenConfig config;
+    private final KafkaConfig kafkaConfig;
     private final AdminClient adminClient;
 
     private final List<KafkaTopicSchemaRecord> records;
@@ -66,10 +68,12 @@ public class KafkaTopicSchemaHelper
 
     KafkaTopicSchemaHelper(
         ApiGenConfig config,
+        KafkaConfig kafkaConfig,
         AdminClient adminClient,
         WebClient webClient)
     {
         this.config = config;
+        this.kafkaConfig = kafkaConfig;
         this.adminClient = adminClient;
         this.webClient = webClient;
         this.records = new ArrayList<>();
@@ -220,7 +224,7 @@ public class KafkaTopicSchemaHelper
         try
         {
             schema = webClient.get()
-                .uri(URI.create(config.karapaceUrl()).resolve("/subjects/%s/versions/latest".formatted(subject)))
+                .uri(URI.create(kafkaConfig.karapaceUrl()).resolve("/subjects/%s/versions/latest".formatted(subject)))
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();

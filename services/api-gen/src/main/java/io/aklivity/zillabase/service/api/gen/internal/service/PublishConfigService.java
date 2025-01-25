@@ -40,30 +40,43 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindin
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.ConfigHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.KeycloakHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ZillaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
+import io.aklivity.zillabase.service.api.gen.internal.model.AsyncapiView;
 
 @Service
 public class PublishConfigService
 {
     private final ApiGenConfig config;
+    private final KeycloakConfig keycloakConfig;
+    private final KafkaConfig kafkaConfig;
     private final KafkaTopicSchemaHelper kafkaService;
     private final ApicurioHelper specHelper;
-    private final ConfigHelper configHelper;
+    private final ZillaHelper zillaHelper;
+    private final KeycloakHelper keycloakHelper;
 
     public PublishConfigService(
         ApiGenConfig config,
+        KeycloakConfig keycloakConfig,
+        KafkaConfig kafkaConfig,
         KafkaTopicSchemaHelper kafkaService,
         ApicurioHelper specHelper,
-        ConfigHelper configHelper)
+        ZillaHelper zillaHelper,
+        KeycloakHelper keycloakHelper)
     {
         this.config = config;
+        this.keycloakConfig = keycloakConfig;
+        this.kafkaConfig = kafkaConfig;
         this.kafkaService = kafkaService;
         this.specHelper = specHelper;
-        this.configHelper = configHelper;
+        this.zillaHelper = zillaHelper;
+        this.keycloakHelper = keycloakHelper;
     }
 
     public ApiGenEvent publish(
@@ -74,8 +87,14 @@ public class PublishConfigService
 
         try
         {
-            String zillaConfig = generateConfig(event);
-            boolean published = configHelper.publishConfig(zillaConfig);
+            AsyncapiView httpAsyncapi = specHelper.asyncapiSpec(event.httpVersion());
+            String zillaConfig = generateConfig(event, httpAsyncapi);
+            boolean published = zillaHelper.publishConfig(zillaConfig);
+
+            if (published)
+            {
+                createAndAssignScope(httpAsyncapi);
+            }
 
             newState = published ? ApiGenEventType.ZILLA_CONFIG_PUBLISHED : ApiGenEventType.ZILLA_CONFIG_ERRORED;
         }
@@ -83,13 +102,15 @@ public class PublishConfigService
         {
             newState = ApiGenEventType.ZILLA_CONFIG_ERRORED;
             message = ex.getMessage();
+            ex.printStackTrace(System.err);
         }
 
         return new ApiGenEvent(newState, event.kafkaVersion(), event.httpVersion(), message);
     }
 
     private String generateConfig(
-        ApiGenEvent event) throws IOException, ExecutionException, InterruptedException
+        ApiGenEvent event,
+        AsyncapiView httpAsyncapi) throws IOException, ExecutionException, InterruptedException
     {
         List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
                     "Get", "GetItem");
@@ -103,17 +124,17 @@ public class PublishConfigService
 
         ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
         karapaceCatalog.type = "karapace";
-        karapaceCatalog.options = Map.of("url", config.karapaceUrl());
+        karapaceCatalog.options = Map.of("url", kafkaConfig.karapaceUrl());
 
-        String realm = config.keycloakRealm();
+        String realm = keycloakConfig.realm();
         String authnJwt = "jwt0";
         if (realm != null)
         {
             ZillaGuardConfig guard = new ZillaGuardConfig();
             guard.type = "jwt";
-            guard.options.issuer = "%s/realms/%s".formatted(config.keycloakUrl(), realm);
-            guard.options.audience = config.keycloakAudience();
-            guard.options.keys = config.keycloakJwksUrl().formatted(realm);
+            guard.options.issuer = "%s/realms/%s".formatted(keycloakConfig.serverUrl(), realm);
+            guard.options.audience = keycloakConfig.audience();
+            guard.options.keys = keycloakConfig.jwksUrl().formatted(realm);
             guard.options.identity = "preferred_username";
 
             zilla.guards = Map.of(authnJwt, guard);
@@ -128,9 +149,7 @@ public class PublishConfigService
 
         List<ZillaBindingRouteConfig> routes = new ArrayList<>();
 
-        List<String> operations = specHelper.httpOperations(event.httpVersion());
-
-        for (String operation : operations)
+        for (String operation : httpAsyncapi.operations())
         {
             if (operation.endsWith("Replies"))
             {
@@ -253,6 +272,16 @@ public class PublishConfigService
                     topicsConfig.add(topicConfig);
                 }
             }
+        }
+    }
+
+    private void createAndAssignScope(
+        AsyncapiView asyncapiSpec)
+    {
+        for (String channel : asyncapiSpec.channel())
+        {
+            keycloakHelper.createAndAssignScope("%s:read".formatted(channel));
+            keycloakHelper.createAndAssignScope("%s:write".formatted(channel));
         }
     }
 }

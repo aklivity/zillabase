@@ -50,6 +50,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
@@ -57,15 +58,19 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 public class KafkaAsyncApiService
 {
     private final ApiGenConfig config;
+    private final KafkaConfig
+        kafkaConfig;
     private final KafkaTopicSchemaHelper kafkaHelper;
     private final ApicurioHelper specHelper;
 
     public KafkaAsyncApiService(
         ApiGenConfig config,
+        KafkaConfig kafkaConfig,
         KafkaTopicSchemaHelper kafkaHelper,
         ApicurioHelper specHelper)
     {
         this.config = config;
+        this.kafkaConfig = kafkaConfig;
         this.kafkaHelper = kafkaHelper;
         this.specHelper = specHelper;
     }
@@ -123,11 +128,11 @@ public class KafkaAsyncApiService
         info.setLicense(license);
 
         Server server = new Server();
-        server.setHost(config.kafkaBootstrapServers());
+        server.setHost(kafkaConfig.bootstrapServers());
         server.setProtocol("kafka");
 
         KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
-        kafkaServerBinding.setSchemaRegistryUrl(config.karapaceUrl());
+        kafkaServerBinding.setSchemaRegistryUrl(kafkaConfig.karapaceUrl());
         kafkaServerBinding.setSchemaRegistryVendor("karapace");
         server.setBindings(Map.of("kafka", kafkaServerBinding));
 

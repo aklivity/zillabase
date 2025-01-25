@@ -35,6 +35,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
+import io.aklivity.zillabase.service.api.gen.internal.model.AsyncapiView;
 import reactor.core.publisher.Mono;
 
 public class ApicurioHelperTest
@@ -161,7 +162,8 @@ public class ApicurioHelperTest
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(httpSpec));
 
-        List<String> result = specConfigService.httpOperations("1.0.0");
+        AsyncapiView spec = specConfigService.asyncapiSpec("1.0.0");
+        List<String> result = spec.operations();
 
         assertEquals(2, result.size());
         assertEquals("operation1", result.get(0));
