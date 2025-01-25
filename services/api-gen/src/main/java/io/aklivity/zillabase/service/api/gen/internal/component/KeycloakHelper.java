@@ -15,16 +15,13 @@
 package io.aklivity.zillabase.service.api.gen.internal.component;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
-import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Component;
@@ -79,32 +76,35 @@ public class KeycloakHelper
     private void addScopeToAllUsers(
         String scopeName)
     {
-        RealmResource realmResource = keycloak.realm(config.realm());
+        final String realm = config.realm();
+        final String clientId = "streampay";
+        RealmResource realmResource = keycloak.realm(realm);
 
-        RoleRepresentation scopeToAdd = realmResource.roles()
-            .get(scopeName)
-            .toRepresentation();
-
-        List<UserRepresentation> allUsers = realmResource.users().list();
-
-        for (UserRepresentation user : allUsers)
+        List<ClientRepresentation> clients = realmResource.clients().findByClientId(clientId);
+        if (clients.isEmpty())
         {
-            try
-            {
-                realmResource.users()
-                    .get(user.getId())
-                    .roles()
-                    .realmLevel()
-                    .add(Collections.singletonList(scopeToAdd));
-
-                System.out.printf("Added scope '%s' to user '%s' (%s)%n",
-                                  scopeName, user.getUsername(), user.getId());
-            }
-            catch (Exception e)
-            {
-                System.err.printf("Failed to add scope '%s' to user '%s' (%s): %s%n",
-                                  scopeName, user.getUsername(), user.getId(), e.getMessage());
-            }
+            System.err.printf("Client '%s' not found in realm '%s'%n", clientId, realm);
+            return;
         }
+        ClientRepresentation foundClient = clients.get(0);
+        ClientResource clientResource = realmResource.clients().get(foundClient.getId());
+
+        List<ClientScopeRepresentation> allScopes = realmResource.clientScopes().findAll();
+
+        ClientScopeRepresentation match = allScopes.stream()
+            .filter(s -> scopeName.equals(s.getName()))
+            .findFirst()
+            .orElse(null);
+
+        if (match == null)
+        {
+            System.err.printf("Client scope '%s' not found in realm '%s'%n", scopeName, realm);
+            return;
+        }
+
+        clientResource.addDefaultClientScope(match.getId());
+
+        System.out.printf("Attached client scope '%s' (%s) to client '%s' (%s)%n",
+                          scopeName, match.getId(), clientId, foundClient.getId());
     }
 }
