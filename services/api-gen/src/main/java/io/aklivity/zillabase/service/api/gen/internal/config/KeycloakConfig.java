@@ -24,6 +24,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class KeycloakConfig
 {
+    @Value("${keycloak.issuer:http://localhost:8180}")
+    private String issuer;
+
     @Value("${keycloak.url:http://keycloak.zillabase.dev:8180}")
     private String serverUrl;
 
@@ -36,8 +39,11 @@ public class KeycloakConfig
     @Value("${keycloak.realm:zillabase}")
     private String realm;
 
-    @Value("${keycloak.client-id:admin-cli}")
-    private String clientId;
+    @Value("${keycloak.admin.client-id:admin-cli}")
+    private String adminClientId;
+
+    @Value("${keycloak.app.client-id:streampay}")
+    private String appClientId;
 
     @Value("${keycloak.client-secret:@null}")
     private String clientSecret;
@@ -58,9 +64,19 @@ public class KeycloakConfig
         return realm;
     }
 
+    public String appClientId()
+    {
+        return appClientId;
+    }
+
     public String audience()
     {
         return audience;
+    }
+
+    public String issuer()
+    {
+        return issuer;
     }
 
     public String jwksUrl()
@@ -75,7 +91,7 @@ public class KeycloakConfig
                 .serverUrl(serverUrl)
                 .realm("master")
                 .grantType(OAuth2Constants.PASSWORD)
-                .clientId(clientId)
+                .clientId(adminClientId)
                 .username(username)
                 .password(password)
                 .build();

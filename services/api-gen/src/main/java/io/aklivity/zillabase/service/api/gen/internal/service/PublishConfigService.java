@@ -132,7 +132,7 @@ public class PublishConfigService
         {
             ZillaGuardConfig guard = new ZillaGuardConfig();
             guard.type = "jwt";
-            guard.options.issuer = "%s/realms/%s".formatted(keycloakConfig.serverUrl(), realm);
+            guard.options.issuer = "%s/realms/%s".formatted(keycloakConfig.issuer(), realm);
             guard.options.audience = keycloakConfig.audience();
             guard.options.keys = keycloakConfig.jwksUrl().formatted(realm);
             guard.options.identity = "preferred_username";

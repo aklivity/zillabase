@@ -90,7 +90,7 @@ public class KeycloakHelper
         String scopeName)
     {
         final String realm = config.realm();
-        final String clientId = "streampay";
+        final String clientId = config.appClientId();
         RealmResource realmResource = keycloak.realm(realm);
 
         List<ClientRepresentation> clients = realmResource.clients().findByClientId(clientId);
@@ -99,6 +99,7 @@ public class KeycloakHelper
             System.err.printf("Client '%s' not found in realm '%s'%n", clientId, realm);
             return;
         }
+
         ClientRepresentation foundClient = clients.get(0);
         ClientResource clientResource = realmResource.clients().get(foundClient.getId());
 
