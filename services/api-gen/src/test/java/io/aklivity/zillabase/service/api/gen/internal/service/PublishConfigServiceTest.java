@@ -27,9 +27,10 @@ import org.mockito.MockitoAnnotations;
 
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.ZillaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ZillaConfigHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
+import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
@@ -48,7 +49,10 @@ public class PublishConfigServiceTest
     private ApicurioHelper apicurioHelper;
 
     @Mock
-    private ZillaHelper zillaHelper;
+    private KeycloakConfig keycloakConfig;
+
+    @Mock
+    private ZillaConfigHelper zillaConfigHelper;
 
     @InjectMocks
     private PublishConfigService publishConfigService;
@@ -61,6 +65,9 @@ public class PublishConfigServiceTest
         when(config.apicurioUrl()).thenReturn("http://localhost:8080");
         when(config.apicurioGroupId()).thenReturn("public");
         when(kafkaConfig.karapaceUrl()).thenReturn("http://localhost:8081");
+        when(keycloakConfig.realm()).thenReturn("zillabase");
+        when(keycloakConfig.jwksUrl()).thenReturn(
+            "http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs");
     }
 
     @Test
@@ -68,7 +75,7 @@ public class PublishConfigServiceTest
     {
         ApiGenEvent event = new ApiGenEvent(ApiGenEventType.HTTP_ASYNC_API_PUBLISHED, "2.8.0", "1.1", null);
 
-        when(zillaHelper.publishConfig(anyString())).thenReturn(true);
+        when(zillaConfigHelper.publishConfig(anyString())).thenReturn(true);
 
         ApiGenEvent result = publishConfigService.publish(event);
 

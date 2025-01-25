@@ -14,7 +14,6 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.processor;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 import org.apache.kafka.common.serialization.Serde;
@@ -69,17 +68,7 @@ public class ApiGenProcessor
 
         streamsBuilder.stream(zcatalogsTopic, Consumed.with(stringSerde, byteSerde))
             .mapValues(e ->
-            {
-                try
-                {
-                    System.out.println("Catalog updated: " + new String(e, "UTF-8"));
-                }
-                catch (UnsupportedEncodingException ex)
-                {
-                    throw new RuntimeException(ex);
-                }
-                return new ApiGenEvent(ApiGenEventType.CATALOG_UPDATED, null, null, null);
-            })
+                new ApiGenEvent(ApiGenEventType.CATALOG_UPDATED, null, null, null))
             .to(eventsTopic, Produced.with(stringSerde, eventSerde));
 
         KStream<String, ApiGenEvent> eventsStream = streamsBuilder.stream(eventsTopic,

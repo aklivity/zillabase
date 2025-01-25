@@ -23,6 +23,8 @@ import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
@@ -30,6 +32,8 @@ import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
 @Component
 public class KeycloakHelper
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(KeycloakHelper.class);
+
     private final KeycloakConfig config;
     private final Keycloak keycloak;
 
@@ -70,11 +74,11 @@ public class KeycloakHelper
             int status = response.getStatus();
             if (status == 201 || status == 204)
             {
-                System.out.printf("Created new client scope: %s%n", scopeName);
+                LOGGER.info("Created new client scope: {}", scopeName);
             }
             else
             {
-                System.err.printf("Failed to create client scope '%s'. Status: %d. Message: %s%n",
+                LOGGER.error("Failed to create client scope '{}'. Status: {}. Message: {}",
                     scopeName, status, response.readEntity(String.class));
             }
 
@@ -82,7 +86,7 @@ public class KeycloakHelper
         }
         else
         {
-            System.out.printf("Client scope already exists: %s%n", scopeName);
+            LOGGER.debug("Client scope already exists: {}", scopeName);
         }
     }
 
@@ -96,7 +100,7 @@ public class KeycloakHelper
         List<ClientRepresentation> clients = realmResource.clients().findByClientId(clientId);
         if (clients.isEmpty())
         {
-            System.err.printf("Client '%s' not found in realm '%s'%n", clientId, realm);
+            LOGGER.error("Client '{}' not found in realm '{}'", clientId, realm);
             return;
         }
 
@@ -112,13 +116,13 @@ public class KeycloakHelper
 
         if (match == null)
         {
-            System.err.printf("Client scope '%s' not found in realm '%s'%n", scopeName, realm);
+            LOGGER.error("Client scope '{}' not found in realm '{}'", scopeName, realm);
             return;
         }
 
         clientResource.addDefaultClientScope(match.getId());
 
-        System.out.printf("Attached client scope '%s' (%s) to client '%s' (%s)%n",
-                          scopeName, match.getId(), clientId, foundClient.getId());
+        LOGGER.info("Attached client scope '{}' ({}) to client '{}' ({})",
+                    scopeName, match.getId(), clientId, foundClient.getId());
     }
 }

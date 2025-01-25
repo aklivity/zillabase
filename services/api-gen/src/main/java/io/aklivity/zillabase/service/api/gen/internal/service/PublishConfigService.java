@@ -42,7 +42,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardC
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KeycloakHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.ZillaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.component.ZillaConfigHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
@@ -57,7 +57,7 @@ public class PublishConfigService
     private final KafkaConfig kafkaConfig;
     private final KafkaTopicSchemaHelper kafkaService;
     private final ApicurioHelper specHelper;
-    private final ZillaHelper zillaHelper;
+    private final ZillaConfigHelper zillaConfigHelper;
     private final KeycloakHelper keycloakHelper;
 
     public PublishConfigService(
@@ -66,7 +66,7 @@ public class PublishConfigService
         KafkaConfig kafkaConfig,
         KafkaTopicSchemaHelper kafkaService,
         ApicurioHelper specHelper,
-        ZillaHelper zillaHelper,
+        ZillaConfigHelper zillaConfigHelper,
         KeycloakHelper keycloakHelper)
     {
         this.config = config;
@@ -74,7 +74,7 @@ public class PublishConfigService
         this.kafkaConfig = kafkaConfig;
         this.kafkaService = kafkaService;
         this.specHelper = specHelper;
-        this.zillaHelper = zillaHelper;
+        this.zillaConfigHelper = zillaConfigHelper;
         this.keycloakHelper = keycloakHelper;
     }
 
@@ -89,7 +89,7 @@ public class PublishConfigService
             List<String> operations = specHelper.httpOperations(event.httpVersion());
             List<String> channels = specHelper.kafkaChannels(event.httpVersion());
             String zillaConfig = generateConfig(event, operations);
-            boolean published = zillaHelper.publishConfig(zillaConfig);
+            boolean published = zillaConfigHelper.publishConfig(zillaConfig);
 
             if (published)
             {

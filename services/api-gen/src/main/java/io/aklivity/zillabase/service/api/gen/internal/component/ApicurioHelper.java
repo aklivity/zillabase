@@ -28,6 +28,8 @@ import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -156,18 +158,6 @@ public class ApicurioHelper
         ObjectMapper jsonMapper = new ObjectMapper();
         String asJsonString = jsonMapper.writeValueAsString(yamlRoot);
         JsonValue jsonValue = Json.createReader(new StringReader(asJsonString)).readValue();
-
-        JsonObject channelsJson = jsonValue.asJsonObject().getJsonObject("channels");
-        for (String channel : channelsJson.keySet())
-        {
-            if (channel.endsWith("_replies_sink"))
-            {
-                continue;
-            }
-
-            String name = matcher.reset(channel).replaceFirst(match -> match.group(2));
-            channels.add(name);
-        }
 
         JsonObject operationsMap = jsonValue.asJsonObject().getJsonObject("operations");
         for (Map.Entry<String, JsonValue> operation : operationsMap.entrySet())

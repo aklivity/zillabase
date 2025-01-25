@@ -23,12 +23,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
 @Component
-public class ZillaHelper
+public class ZillaConfigHelper
 {
     private final ApiGenConfig config;
     private final WebClient webClient;
 
-    public ZillaHelper(
+    public ZillaConfigHelper(
         ApiGenConfig config,
         WebClient webClient)
     {
