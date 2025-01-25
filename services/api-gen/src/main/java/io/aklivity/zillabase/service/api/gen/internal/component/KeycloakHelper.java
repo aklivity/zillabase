@@ -14,16 +14,15 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.component;
 
-import java.util.Collections;
 import java.util.List;
+
+import javax.ws.rs.core.Response;
 
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Component;
 
 import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
@@ -64,12 +63,26 @@ public class KeycloakHelper
             ClientScopeRepresentation newScope = new ClientScopeRepresentation();
             newScope.setName(scopeName);
 
-            realmResource.clientScopes().create(newScope);
-            System.out.println("Created new client scope: " + scopeName);
+            newScope.setProtocol("openid-connect");
+
+            Response response = realmResource.clientScopes().create(newScope);
+
+            int status = response.getStatus();
+            if (status == 201 || status == 204)
+            {
+                System.out.printf("Created new client scope: %s%n", scopeName);
+            }
+            else
+            {
+                System.err.printf("Failed to create client scope '%s'. Status: %d. Message: %s%n",
+                    scopeName, status, response.readEntity(String.class));
+            }
+
+            response.close();
         }
         else
         {
-            System.out.println("Client scope already exists: " + scopeName);
+            System.out.printf("Client scope already exists: %s%n", scopeName);
         }
     }
 
