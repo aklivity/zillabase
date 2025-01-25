@@ -133,13 +133,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <environmentVariables>
-            <AUTH_SERVER_PORT>7184</AUTH_SERVER_PORT>
-            <DEBUG>true</DEBUG>
-            <KEYCLOAK_URL>http://localhost:8180</KEYCLOAK_URL>
-          </environmentVariables>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

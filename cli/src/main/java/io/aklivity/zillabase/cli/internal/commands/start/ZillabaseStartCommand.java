@@ -164,11 +164,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         seedKafkaAndRegistry(config);
 
+        initializeKeycloakService(config);
+
         processInitSql(config);
 
         processSql(config);
-
-        initializeKeycloakService(config);
     }
 
     private void startContainers(
@@ -1425,7 +1425,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "KAFKA_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl),
                 "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
                 "APICURIO_REGISTRY_URL=%s".formatted(config.registry.apicurio.url),
-                "KEYCLOAK_URL=%s".formatted(config.keycloak.url),
                 "KEYLOAK_JWT_SECRET=%s".formatted(config.keycloak.jwks),
                 "DEBUG=%s".formatted(true));
 

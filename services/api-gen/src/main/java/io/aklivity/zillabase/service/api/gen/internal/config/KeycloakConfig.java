@@ -33,16 +33,13 @@ public class KeycloakConfig
     @Value("${keycloak.jwks.url:http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs}")
     private String jwksUrl;
 
-    @Value("${keycloak.auth-server-url:http://keycloak.zillabase.dev:8180/auth}")
-    private String authServerUrl;
-
     @Value("${keycloak.realm:zillabase}")
     private String realm;
 
-    @Value("${keycloak.client-id:@nul}")
+    @Value("${keycloak.client-id:admin-cli}")
     private String clientId;
 
-    @Value("${keycloak.client-secret:}")
+    @Value("${keycloak.client-secret:@null}")
     private String clientSecret;
 
     @Value("${keycloak.username:admin}")
@@ -75,8 +72,8 @@ public class KeycloakConfig
     public Keycloak keycloak()
     {
         return KeycloakBuilder.builder()
-                .serverUrl(authServerUrl)
-                .realm(realm)
+                .serverUrl(serverUrl)
+                .realm("master")
                 .grantType(OAuth2Constants.PASSWORD)
                 .clientId(clientId)
                 .username(username)

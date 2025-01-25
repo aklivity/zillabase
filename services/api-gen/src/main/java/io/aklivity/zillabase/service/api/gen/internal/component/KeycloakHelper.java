@@ -54,9 +54,6 @@ public class KeycloakHelper
         boolean roleExists = existingRoles.stream()
                 .anyMatch(r -> r.getName().equals(scopeName));
 
-        System.out.println("Existing roles:");
-        realmResource.roles().list().forEach(r -> System.out.println(r.getName()));
-
         if (!roleExists)
         {
             RoleRepresentation newRole = new RoleRepresentation();
