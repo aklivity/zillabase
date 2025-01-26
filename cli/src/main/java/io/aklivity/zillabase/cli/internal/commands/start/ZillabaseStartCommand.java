@@ -169,6 +169,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         processInitSql(config);
 
         processSql(config);
+
+        processSystemSql(config);
     }
 
     private void startContainers(
@@ -308,6 +310,21 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE TABLE zb_catalog.zstreams(
                     name VARCHAR PRIMARY KEY,
                     sql VARCHAR);
+                """);
+        }
+    }
+
+    private void processSystemSql(
+        ZillabaseConfig config)
+    {
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave, "postgres");
+
+        pgsql.connect();
+
+        if (pgsql.connected)
+        {
+            pgsql.process("<systemdb>",
+                """
                 CREATE ZVIEW zcatalogs AS
                   SELECT name AS source_id FROM "zb_catalog"."zviews"
                   UNION ALL
