@@ -114,6 +114,7 @@ public final class ZillabaseAdminConfig
               - when:
                   - headers:
                       :scheme: http
+                      :authority: localhost:7184
                       :path: /v1/config/{id}
                 with:
                   headers:
@@ -136,6 +137,7 @@ public final class ZillabaseAdminConfig
                   - headers:
                       :method: GET
                       :scheme: http
+                      :authority: localhost:7184
                       :path: /v1/asyncapis/{id}
                 with:
                   headers:
