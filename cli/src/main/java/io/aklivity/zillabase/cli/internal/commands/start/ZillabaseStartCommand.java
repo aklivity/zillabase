@@ -534,7 +534,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         String realm = config.keycloak.realm;
         String clientId = config.keycloak.client.clientId;
-        System.out.println("Linking scopes with client: %s".formatted(clientId));
+
         HttpResponse<String> response;
         HttpRequest request;
         try
