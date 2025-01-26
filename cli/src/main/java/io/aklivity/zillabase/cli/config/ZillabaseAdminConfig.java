@@ -125,6 +125,7 @@ public final class ZillabaseAdminConfig
               - when:
                   - headers:
                       :scheme: http
+                      :authority: localhost:7184
                       :path: /v1/asyncapis
                 with:
                   headers:
