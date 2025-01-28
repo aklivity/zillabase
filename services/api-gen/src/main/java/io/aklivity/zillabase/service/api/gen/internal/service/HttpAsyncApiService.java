@@ -163,7 +163,7 @@ public class HttpAsyncApiService
         for (Map.Entry<String, JsonValue> channelJson : channelsJson.entrySet())
         {
             String channelName = channelJson.getKey();
-            if (channelName.endsWith("_replies_sink"))
+            if (channelName.endsWith("_replies"))
             {
                 continue;
             }

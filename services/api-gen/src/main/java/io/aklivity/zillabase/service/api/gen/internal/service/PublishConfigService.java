@@ -233,7 +233,7 @@ public class PublishConfigService
         List<KafkaTopicSchemaRecord> records = kafkaService.resolve();
         for (KafkaTopicSchemaRecord record : records)
         {
-            if (record.name.endsWith("_replies_sink"))
+            if (record.name.endsWith("_replies"))
             {
                 ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
                     new ZillaBindingOptionsConfig.KafkaTopicConfig();

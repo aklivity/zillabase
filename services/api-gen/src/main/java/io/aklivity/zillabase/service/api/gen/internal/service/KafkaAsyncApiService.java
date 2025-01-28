@@ -189,7 +189,7 @@ public class KafkaAsyncApiService
             operation.setMessages(Collections.singletonList(reference));
             if (name.endsWith("_commands"))
             {
-                String replyTopic = name.replace("_commands", "_replies_sink");
+                String replyTopic = name.replace("_commands", "_replies");
                 OperationReply reply = new OperationReply();
                 reference = new Reference("#/channels/%s".formatted(replyTopic));
                 reply.setChannel(reference);
