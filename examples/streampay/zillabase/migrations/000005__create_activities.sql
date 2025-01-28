@@ -20,7 +20,7 @@ CREATE ZVIEW streampay_activities AS
   SELECT
       generate_unique_id()::varchar AS id,
       'PaymentReceived' AS eventName,
-      sc.user_id AS from_user_id,
+      sc.owner_id AS from_user_id,
       fu.username AS from_username,
       sc.user_id AS to_user_id,
       tu.username AS to_username,
