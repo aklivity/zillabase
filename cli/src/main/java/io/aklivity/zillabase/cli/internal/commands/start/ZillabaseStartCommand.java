@@ -307,9 +307,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE TABLE zb_catalog.zfunctions(
                     name VARCHAR PRIMARY KEY,
                     sql VARCHAR);
-                CREATE TABLE zb_catalog.zstreams(
-                    name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
                 """);
         }
     }
@@ -328,9 +325,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE ZVIEW zcatalogs AS
                   SELECT name AS source_id FROM "zb_catalog"."zviews"
                   UNION ALL
-                  SELECT name AS source_id FROM "zb_catalog"."ztables"
-                  UNION ALL
-                  SELECT name AS source_id FROM "zb_catalog"."zstreams";
+                  SELECT name AS source_id FROM "zb_catalog"."ztables";
                 """);
         }
     }
