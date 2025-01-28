@@ -19,7 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "app.gen")
+@ConfigurationProperties(prefix = "api.gen")
 public class ApiGenConfig
 {
     @Value("${risingwave.db:dev}")
