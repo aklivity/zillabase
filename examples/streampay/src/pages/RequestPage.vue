@@ -115,8 +115,7 @@ async function readRequests() {
 }
 
 function pay(request: any) {
-  api.post('/streampay_commands', {
-    command: 'SendPayment',
+  api.post('/streampay_send_payment_commands', {
     user_id: request.from_user_id,
     request_id: request?.id || '',
     amount: request.amount,
@@ -141,8 +140,7 @@ function pay(request: any) {
 }
 
 function reject(request: any) {
-  api.post('/streampay_commands', {
-    command: 'RejectRequest',
+  api.post('/streampay_reject_payment_commands', {
     user_id: request.from_user_id,
     request_id: request?.id || '',
     amount: request.amount,
