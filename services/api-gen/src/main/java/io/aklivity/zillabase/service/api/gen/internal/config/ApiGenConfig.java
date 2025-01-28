@@ -60,8 +60,6 @@ public class ApiGenConfig
         return apicurioGroupId;
     }
 
-
-
     public String zcatalogsTopic()
     {
         return zcatalogsTopic;
