@@ -1,6 +1,6 @@
 -- create_payment_requests
 
-CREATE VIEW request_payments AS
+CREATE MATERIALIZED VIEW request_payments AS
   SELECT
       CASE
           WHEN sc.request_id IS NULL OR sc.request_id = '' THEN generate_unique_id()::varchar

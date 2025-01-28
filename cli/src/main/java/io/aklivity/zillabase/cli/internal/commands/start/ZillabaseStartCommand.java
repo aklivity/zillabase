@@ -362,9 +362,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE TABLE zb_catalog.zfunctions(
                     name VARCHAR PRIMARY KEY,
                     sql VARCHAR);
-                CREATE TABLE zb_catalog.zstreams(
-                    name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
                 """);
         }
     }
@@ -941,7 +938,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         for (KafkaTopicSchemaRecord record : records)
         {
-            if (record.name.endsWith("_replies_sink"))
+            if (record.name.endsWith("_replies"))
             {
                 ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
                     new ZillaBindingOptionsConfig.KafkaTopicConfig();
@@ -1462,7 +1459,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 operation.setMessages(Collections.singletonList(reference));
                 if (name.endsWith("_commands"))
                 {
-                    String replyTopic = name.replace("_commands", "_replies_sink");
+                    String replyTopic = name.replace("_commands", "_replies");
                     OperationReply reply = new OperationReply();
                     reference = new Reference("#/channels/%s".formatted(replyTopic));
                     reply.setChannel(reference);
