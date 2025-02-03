@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
 
@@ -38,13 +39,14 @@ public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
 
     protected ZillabaseMigrationCommand()
     {
-        this.helper = new ZillabaseMigrationsHelper();
+        ZillabaseConfig config = new ZillabaseConfig();
+        this.helper = new ZillabaseMigrationsHelper(config.risingwave.db);
         this.matcher = helper.matcher;
     }
 
     protected final Stream<String> listMigrations() throws IOException
     {
-        return helper.list()
+        return helper.files().stream()
             .map(p -> p.getFileName().toString());
     }
 

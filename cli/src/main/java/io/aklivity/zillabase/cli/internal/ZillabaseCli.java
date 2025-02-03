@@ -28,6 +28,7 @@ import io.aklivity.zillabase.cli.internal.commands.config.show.ZillabaseConfigSh
 import io.aklivity.zillabase.cli.internal.commands.init.ZillabaseInitCommand;
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
 import io.aklivity.zillabase.cli.internal.commands.migration.add.ZillabaseMigrationAddCommand;
+import io.aklivity.zillabase.cli.internal.commands.migration.diff.ZillabaseMigrationDiffCommand;
 import io.aklivity.zillabase.cli.internal.commands.migration.list.ZillabaseMigrationListCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.ZillabaseSsoCommand;
 import io.aklivity.zillabase.cli.internal.commands.sso.add.ZillabaseSsoAddCommand;
@@ -77,7 +78,8 @@ import io.aklivity.zillabase.cli.internal.commands.stop.ZillabaseStopCommand;
             commands =
             {
                 ZillabaseMigrationAddCommand.class,
-                ZillabaseMigrationListCommand.class
+                ZillabaseMigrationListCommand.class,
+                ZillabaseMigrationDiffCommand.class
             })
     },
     commands =

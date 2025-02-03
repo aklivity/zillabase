@@ -355,13 +355,23 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE SCHEMA zb_catalog AUTHORIZATION postgres;
                 CREATE TABLE zb_catalog.zviews(
                     name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
+                    sql VARCHAR
+                );
                 CREATE TABLE zb_catalog.ztables(
                     name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
+                    sql VARCHAR
+                );
                 CREATE TABLE zb_catalog.zfunctions(
                     name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
+                    sql VARCHAR
+                );
+                CREATE TABLE zb_catalog.schema_version(
+                    version VARCHAR PRIMARY KEY,
+                    description VARCHAR,
+                    script_name VARCHAR,
+                    checksum VARCHAR,
+                    applied_on TIMESTAMP
+                );
                 """);
         }
     }
@@ -375,11 +385,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         if (pgsql.connected)
         {
-            ZillabaseMigrationsHelper migrations = new ZillabaseMigrationsHelper();
+            ZillabaseMigrationsHelper migrations = new ZillabaseMigrationsHelper(config.risingwave.db);
 
-            migrations.list()
-                .filter(m -> pgsql.connected)
-                .forEach(pgsql::process);
+            migrations.applyMigration();
 
             if (pgsql.connected)
             {
