@@ -1,0 +1,6 @@
+{
+  "subject": "pet",
+  "version": 3,
+  "id": 1,
+  "schema": "{\"fields\":[{\"name\":\"id\",\"type\":[\"null\",{\"type\":\"string\"}]},{\"name\":\"breed\",\"type\":[\"null\",{\"type\":\"string\"}]}],\"name\":\"petstore_pets\",\"namespace\":\"public\",\"type\":\"record\"}"
+}
