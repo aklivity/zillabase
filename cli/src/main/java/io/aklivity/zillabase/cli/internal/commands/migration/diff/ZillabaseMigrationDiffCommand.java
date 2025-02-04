@@ -14,41 +14,65 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.migration.diff;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import com.github.rvesse.airline.annotations.Arguments;
 import com.github.rvesse.airline.annotations.Command;
-import com.github.rvesse.airline.annotations.restrictions.Required;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationFile;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationMetadata;
 
 @Command(
     name = "diff",
     description = "Shows delta of SQL commands between explicit migrations and current state.")
 public final class ZillabaseMigrationDiffCommand extends ZillabaseMigrationCommand
 {
-    @Arguments(title = { "name" })
-    @Required
-    public List<String> args;
-
     @Override
     protected void invoke()
     {
         try
         {
-            String name = args.get(0);
+            List<ZillabaseMigrationMetadata> appliedMigrations = helper.allAppliedMigrations();
+            List<ZillabaseMigrationFile> localMigrations = helper.allMigrationFiles();
 
-            Optional<String> latest = listMigrations().reduce((n1, n2) -> n2);
+            List<ZillabaseMigrationFile> pending = findPendingMigrations(appliedMigrations, localMigrations);
 
-            int next = latest.isPresent() && matcher.reset(latest.get()).matches()
-                ? Integer.parseInt(matcher.group("number")) + 1
-                : 0;
+            System.out.println("Pending migrations:");
+
+            for (ZillabaseMigrationFile mf : pending)
+            {
+                System.out.println(" - " + mf.version() + " : " + mf.scriptName());
+            }
+
+
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             ex.printStackTrace(System.err);
         }
+    }
+
+    private  List<ZillabaseMigrationFile> findPendingMigrations(
+        List<ZillabaseMigrationMetadata> appliedMigrations,
+        List<ZillabaseMigrationFile> localMigrations)
+    {
+        List<ZillabaseMigrationFile> pending = new ArrayList<>();
+
+        List<String> appliedVersions = new ArrayList<>();
+        for (ZillabaseMigrationMetadata mm : appliedMigrations)
+        {
+            appliedVersions.add(mm.version());
+        }
+
+        for (ZillabaseMigrationFile mf : localMigrations)
+        {
+            if (!appliedVersions.contains(mf.version()))
+            {
+                pending.add(mf);
+            }
+        }
+
+        return pending;
     }
 }

@@ -14,6 +14,7 @@
  */
 package io.aklivity.zillabase.cli.internal.migrations;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyList;
 
 import java.io.IOException;
@@ -28,7 +29,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -44,7 +44,7 @@ public final class ZillabaseMigrationsHelper
 {
     public static final Path MIGRATIONS_PATH = ZillabaseCommand.ZILLABASE_PATH.resolve("migrations");
 
-    public static final Pattern MIGRATION_FILE_PATTERN = Pattern.compile("(?<number>\\d{6})__.+\\.sql");
+    public static final Pattern MIGRATION_FILE_PATTERN = Pattern.compile("(?<number>\\d{6})__(?<description>.+)\\.sql");
     public static final String MIGRATION_FILE_FORMAT = "%06d__%s.sql";
 
     public final Matcher matcher = MIGRATION_FILE_PATTERN.matcher("");
@@ -67,16 +67,11 @@ public final class ZillabaseMigrationsHelper
 
     public void applyMigration()
     {
-        files().forEach(path ->
+        allMigrationFiles().forEach(f ->
         {
-            String filename = path.getFileName().toString();
-            String version = matcher.reset(filename).matches()
-                ? matcher.group("number")
-                : "000000";
-
-            if (!isVersionApplied(version))
+            if (!isVersionApplied(f.version()))
             {
-                processMigrationFile(version, path);
+                processMigrationFile(f);
             }
         });
     }
@@ -105,10 +100,7 @@ public final class ZillabaseMigrationsHelper
     }
 
     public void recordMigration(
-            String version,
-            String description,
-            String scriptName,
-            String checksum) throws SQLException
+        ZillabaseMigrationFile migration) throws SQLException
     {
         String insertSql = """
             INSERT INTO zb_catalog.schema_version
@@ -118,17 +110,17 @@ public final class ZillabaseMigrationsHelper
         try (Connection conn = DriverManager.getConnection(url, postgresProps);
             PreparedStatement ps = conn.prepareStatement(insertSql))
         {
-            ps.setString(1, version);
-            ps.setString(2, description);
-            ps.setString(3, scriptName);
-            ps.setString(4, checksum);
+            ps.setString(1, migration.version());
+            ps.setString(2, migration.description());
+            ps.setString(3, migration.scriptName());
+            ps.setString(4, migration.checksum());
             ps.executeUpdate();
         }
     }
 
-    public List<MigrationMetadata> allAppliedMigrations() throws SQLException
+    public List<ZillabaseMigrationMetadata> allAppliedMigrations()
     {
-        List<MigrationMetadata> migrations = new ArrayList<>();
+        List<ZillabaseMigrationMetadata> migrations = new ArrayList<>();
         String query = """
             SELECT version, description, script_name, checksum, applied_on
             FROM zb_catalog.schema_version
@@ -141,7 +133,7 @@ public final class ZillabaseMigrationsHelper
         {
             while (rs.next())
             {
-                MigrationMetadata metadata = new MigrationMetadata(
+                ZillabaseMigrationMetadata metadata = new ZillabaseMigrationMetadata(
                     rs.getString("version"),
                     rs.getString("description"),
                     rs.getString("script_name"),
@@ -151,12 +143,17 @@ public final class ZillabaseMigrationsHelper
                 migrations.add(metadata);
             }
         }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+        }
+
         return migrations;
     }
 
-    public List<Path> files()
+    public List<ZillabaseMigrationFile> allMigrationFiles()
     {
-        List<Path> migrations;
+        List<ZillabaseMigrationFile> migrations;
 
         try
         {
@@ -164,6 +161,7 @@ public final class ZillabaseMigrationsHelper
                 .sorted()
                 .filter(Files::isRegularFile)
                 .filter(n -> matcher.reset(n.getFileName().toString()).matches())
+                .map(this::parseMigrationFile)
                 .collect(Collectors.toList());
         }
         catch (IOException ex)
@@ -174,27 +172,32 @@ public final class ZillabaseMigrationsHelper
         return migrations;
     }
 
-    private String readSql(
-        Path seedPath)
+    private ZillabaseMigrationFile parseMigrationFile(
+        Path filePath)
     {
-        String content = null;
+        String fileName = filePath.getFileName().toString();
+
+        String version = matcher.reset(fileName).matches()
+            ? matcher.group("number")
+            : "000000";
+        String description = matcher.group("description");
+
+        String sqlContent = "";
+        String checksum = "";
+
         try
         {
-            if (Files.exists(seedPath) &&
-                Files.size(seedPath) != 0 &&
-                Files.readAllLines(seedPath).stream()
-                    .anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")))
-            {
-                content = Files.readString(seedPath);
-            }
+            sqlContent = Files.readString(filePath, UTF_8);
+            checksum = computeSHA256Checksum(filePath);
         }
-        catch (IOException ex)
+        catch (Exception e)
         {
-            ex.printStackTrace(System.err);
+            e.printStackTrace();
         }
 
-        return content;
+        return new ZillabaseMigrationFile(version, description, fileName, sqlContent, checksum);
     }
+
 
     private static List<String> splitSQL(
         String sql)
@@ -230,14 +233,12 @@ public final class ZillabaseMigrationsHelper
     }
 
     private void processMigrationFile(
-        String version,
-        Path sql)
+        ZillabaseMigrationFile migration)
     {
-        final String filename = sql.getFileName().toString();
 
         try
         {
-            String content = readSql(sql);
+            String content = migration.sqlContents();
             if (content != null)
             {
                 Connection conn = DriverManager.getConnection(url, zillabaseProps);
@@ -260,13 +261,12 @@ public final class ZillabaseMigrationsHelper
                 }
             }
 
-            String checksum = computeSHA256Checksum(sql);
-            recordMigration(version, "", filename, checksum);
+            recordMigration(migration);
 
         }
         catch (Exception ex)
         {
-            System.out.format("Failed to process %s. ex: %s\n", filename, ex.getMessage());
+            System.out.format("Failed to process %s. ex: %s\n", migration.scriptName(), ex.getMessage());
         }
     }
 
@@ -293,14 +293,5 @@ public final class ZillabaseMigrationsHelper
         }
 
         return sb.toString();
-    }
-
-    private record MigrationMetadata(
-        String version,
-        String description,
-        String scriptName,
-        String checksum,
-        Timestamp appliedOn)
-    {
     }
 }

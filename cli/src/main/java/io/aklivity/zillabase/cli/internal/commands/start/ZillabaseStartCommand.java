@@ -2287,7 +2287,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-
     private static final class CreateMinioFactory extends CreateContainerFactory
     {
         CreateMinioFactory(
