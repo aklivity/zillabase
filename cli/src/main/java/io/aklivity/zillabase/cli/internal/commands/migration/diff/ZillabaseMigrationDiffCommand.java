@@ -20,8 +20,8 @@ import java.util.List;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationFile;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationMetadata;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationMetadata;
 
 @Command(
     name = "diff",

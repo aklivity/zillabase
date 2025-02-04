@@ -23,7 +23,7 @@ import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationFile;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
 
 public abstract class ZillabaseMigrationCommand extends ZillabaseCommand

@@ -39,6 +39,8 @@ import java.util.stream.Collectors;
 import org.postgresql.jdbc.PreferQueryMode;
 
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationMetadata;
 
 public final class ZillabaseMigrationsHelper
 {

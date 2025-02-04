@@ -12,13 +12,15 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.migrations;
+package io.aklivity.zillabase.cli.internal.migrations.model;
 
-public record ZillabaseMigrationFile(
+import java.sql.Timestamp;
+
+public record ZillabaseMigrationMetadata(
     String version,
     String description,
     String scriptName,
-    String sqlContents,
-    String checksum)
+    String checksum,
+    Timestamp appliedOn)
 {
 }
