@@ -167,7 +167,7 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsApplyHelper;
 
 @Command(
     name = "start",
@@ -385,9 +385,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         if (pgsql.connected)
         {
-            ZillabaseMigrationsHelper migrations = new ZillabaseMigrationsHelper(config.risingwave.db);
+            ZillabaseMigrationsApplyHelper migration = new ZillabaseMigrationsApplyHelper(config.risingwave.db);
 
-            migrations.applyMigration();
+            migration.apply();
 
             if (pgsql.connected)
             {

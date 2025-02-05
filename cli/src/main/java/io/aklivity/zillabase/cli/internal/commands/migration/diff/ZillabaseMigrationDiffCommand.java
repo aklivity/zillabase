@@ -33,8 +33,8 @@ public final class ZillabaseMigrationDiffCommand extends ZillabaseMigrationComma
     {
         try
         {
-            List<ZillabaseMigrationMetadata> appliedMigrations = helper.allAppliedMigrations();
-            List<ZillabaseMigrationFile> localMigrations = helper.allMigrationFiles();
+            List<ZillabaseMigrationMetadata> appliedMigrations = migrationDiff.metadata();
+            List<ZillabaseMigrationFile> localMigrations = migrationDiff.allFiles();
 
             List<ZillabaseMigrationFile> pending = findPendingMigrations(appliedMigrations, localMigrations);
 
