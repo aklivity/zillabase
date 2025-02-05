@@ -37,4 +37,20 @@ public class ZillabaseDatabaseSchema
     {
         zviews.add(zview);
     }
+
+    public List<ZillabaseCreateZtable> ztables()
+    {
+        return ztables;
+    }
+
+    public List<ZillabaseCreateZfunction> zfunctions()
+    {
+        return zfunctions;
+    }
+
+    public List<ZillabaseCreateZview> zviews()
+    {
+        return zviews;
+    }
+
 }

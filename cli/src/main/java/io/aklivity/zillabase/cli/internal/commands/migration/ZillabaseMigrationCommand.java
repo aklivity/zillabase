@@ -16,7 +16,6 @@ package io.aklivity.zillabase.cli.internal.commands.migration;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -41,12 +40,11 @@ public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
     {
         ZillabaseConfig config = new ZillabaseConfig();
         this.migrationDiff = new ZillabaseMigrationsDiffHelper(config.risingwave.db);
-        this.matcher = migrationDiff.matcher;
+        this.matcher = migrationDiff.fileMatcher;
     }
 
-    protected final Stream<String> listMigrations() throws IOException, SQLException
+    protected final Stream<String> listMigrations() throws IOException
     {
-        migrationDiff.connect();
         return migrationDiff.allFiles().stream().map(ZillabaseMigrationFile::scriptName);
     }
 

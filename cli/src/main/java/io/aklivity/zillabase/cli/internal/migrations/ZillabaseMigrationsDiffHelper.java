@@ -48,15 +48,28 @@ import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseCreateZview;
 public final class ZillabaseMigrationsDiffHelper
 {
     public static final Path MIGRATIONS_PATH = ZillabaseCommand.ZILLABASE_PATH.resolve("migrations");
-
-    public static final Pattern MIGRATION_FILE_PATTERN = Pattern.compile("(?<number>\\d{6})__(?<description>.+)\\.sql");
     public static final String MIGRATION_FILE_FORMAT = "%06d__%s.sql";
 
-    public final Matcher matcher = MIGRATION_FILE_PATTERN.matcher("");
+    private static final Pattern MIGRATION_FILE_PATTERN = Pattern.compile("(?<number>\\d{6})__(?<description>.+)\\.sql");
+    private static final Pattern CREATE_QUERY_PATTERN = Pattern.compile(
+        "(?i)^\\s*CREATE\\s+([^\\s]+(?:\\s+[^\\s]+)*)\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([^\\s(]+)");
+
+    public final Matcher fileMatcher = MIGRATION_FILE_PATTERN.matcher("");
+    public final Matcher createMatcher = CREATE_QUERY_PATTERN.matcher("");
+
     private final String url;
     private final Properties props;
 
     private Connection connection;
+
+    private List<SchemaComparisonStrategy> strategies;
+    {
+         List<SchemaComparisonStrategy> strategies = new ArrayList<>();
+         strategies.add(this::createZtableCompare);
+         strategies.add(this::createZfunctionCompare);
+         strategies.add(this::createZviewCompare);
+         this.strategies = strategies;
+    }
 
     public ZillabaseMigrationsDiffHelper(
          String db)
@@ -67,48 +80,13 @@ public final class ZillabaseMigrationsDiffHelper
         this.props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
     }
 
-    public ZillabaseDatabaseSchema readSchemaFromDatabase()
-    {
-        ZillabaseDatabaseSchema schema = new ZillabaseDatabaseSchema();
-        appliedZtables(schema);
-        appliedZfunctions(schema);
-        appliedZviews(schema);
-
-        return schema;
-    }
-
-    public ZillabaseDatabaseSchema readSchemaFromFiles()
-    {
-        ZillabaseDatabaseSchema schema = new ZillabaseDatabaseSchema();
-        allFiles().stream()
-            .map(ZillabaseMigrationFile::sqlContents)
-            .map(ZillabaseMigrationsDiffHelper::splitSQL)
-            .flatMap(List::stream)
-            .forEach(s ->
-            {
-                if (s.startsWith("CREATE ZTABLE"))
-                {
-                    schema.a(new ZillabaseCreateZtable(s));
-                }
-                else if (s.startsWith("CREATE ZFUNCTION"))
-                {
-                    schema.appliedZfunctions().add(new ZillabaseCreateZfunction(s));
-                }
-                else if (s.startsWith("CREATE ZVIEW"))
-                {
-                    schema.appliedZviews().add(new ZillabaseCreateZview(s));
-                }
-            });
-        return schema;
-    }
-
     public void record(
         ZillabaseMigrationFile migration)
     {
         String insertSql = """
             INSERT INTO zb_catalog.schema_version
             (version, description, script_name, checksum, applied_on)
-            VALUES (?, ?, ?, ?, now())æ
+            VALUES (?, ?, ?, ?, now())
             """;
 
         connect();
@@ -170,7 +148,7 @@ public final class ZillabaseMigrationsDiffHelper
             migrations = Files.list(MIGRATIONS_PATH)
                 .sorted()
                 .filter(Files::isRegularFile)
-                .filter(n -> matcher.reset(n.getFileName().toString()).matches())
+                .filter(n -> fileMatcher.reset(n.getFileName().toString()).matches())
                 .map(this::parseFile)
                 .collect(Collectors.toList());
         }
@@ -191,7 +169,7 @@ public final class ZillabaseMigrationsDiffHelper
             migrations = Files.list(MIGRATIONS_PATH)
                 .sorted()
                 .filter(Files::isRegularFile)
-                .filter(n -> matcher.reset(n.getFileName().toString()).matches())
+                .filter(n -> fileMatcher.reset(n.getFileName().toString()).matches())
                 .map(this::parseFile)
                 .filter(f -> !isVersionApplied(f.version()))
                 .collect(Collectors.toList());
@@ -202,6 +180,25 @@ public final class ZillabaseMigrationsDiffHelper
         }
 
         return migrations;
+    }
+
+    public String diff()
+    {
+        ZillabaseDatabaseSchema actual = readSchemaFromDatabase();
+        ZillabaseDatabaseSchema expected = readSchemaFromFiles();
+
+        ZillabaseSchemaDiff schemaDiff = compareSchemas(actual, expected);
+
+        return schemaDiff.generatePatchScript();
+    }
+
+    @FunctionalInterface
+    private interface SchemaComparisonStrategy
+    {
+        void compareAndAddDifferences(
+            ZillabaseDatabaseSchema actual,
+            ZillabaseDatabaseSchema expected,
+            ZillabaseSchemaDiff diff);
     }
 
     private void connect()
@@ -218,6 +215,71 @@ public final class ZillabaseMigrationsDiffHelper
             }
         }
     }
+
+    private ZillabaseDatabaseSchema readSchemaFromDatabase()
+    {
+        ZillabaseDatabaseSchema schema = new ZillabaseDatabaseSchema();
+        appliedZtables(schema);
+        appliedZfunctions(schema);
+        appliedZviews(schema);
+
+        return schema;
+    }
+
+    private ZillabaseDatabaseSchema readSchemaFromFiles()
+    {
+        ZillabaseDatabaseSchema schema = new ZillabaseDatabaseSchema();
+        allFiles().stream()
+            .map(ZillabaseMigrationFile::sqlContents)
+            .map(ZillabaseMigrationsDiffHelper::splitSQL)
+            .flatMap(List::stream)
+            .forEach(s ->
+            {
+                parserCreate(schema, s);
+            });
+
+        return schema;
+    }
+
+    private ZillabaseSchemaDiff compareSchemas(
+        ZillabaseDatabaseSchema actual,
+        ZillabaseDatabaseSchema expected)
+    {
+        ZillabaseSchemaDiff diff = new ZillabaseSchemaDiff();
+
+        for (SchemaComparisonStrategy strategy : strategies)
+        {
+            strategy.compareAndAddDifferences(actual, expected, diff);
+        }
+
+        return diff;
+    }
+
+    private void parserCreate(
+        ZillabaseDatabaseSchema schema,
+        String sql)
+    {
+        createMatcher.reset(sql);
+        if (createMatcher.matches())
+        {
+            String type = createMatcher.group(1);
+            String name = createMatcher.group(2);
+
+            switch (type)
+            {
+            case "ZFUNCTION":
+                schema.addZfunction(new ZillabaseCreateZfunction(name, sql));
+                break;
+            case "ZTABLE":
+                schema.addZtable(new ZillabaseCreateZtable(name, sql));
+                break;
+            case "ZVIEW":
+                schema.addZview(new ZillabaseCreateZview(name, sql));
+                break;
+            }
+        }
+    }
+
 
     private boolean isVersionApplied(
         String version)
@@ -336,10 +398,10 @@ public final class ZillabaseMigrationsDiffHelper
     {
         String fileName = filePath.getFileName().toString();
 
-        String version = matcher.reset(fileName).matches()
-            ? matcher.group("number")
+        String version = fileMatcher.reset(fileName).matches()
+            ? fileMatcher.group("number")
             : "000000";
-        String description = matcher.group("description");
+        String description = fileMatcher.group("description");
 
         String sqlContent = "";
         String checksum = "";
@@ -413,5 +475,47 @@ public final class ZillabaseMigrationsDiffHelper
         }
 
         return sb.toString();
+    }
+
+    private void createZtableCompare(
+        ZillabaseDatabaseSchema actual,
+        ZillabaseDatabaseSchema expected,
+        ZillabaseSchemaDiff diff)
+    {
+        for (ZillabaseCreateZtable ztable : actual.ztables())
+        {
+            if (!expected.ztables().contains(ztable))
+            {
+                diff.addDifference(ztable.sql());
+            }
+        }
+    }
+
+    private void createZviewCompare(
+        ZillabaseDatabaseSchema actual,
+        ZillabaseDatabaseSchema expected,
+        ZillabaseSchemaDiff diff)
+    {
+        for (ZillabaseCreateZview zview : actual.zviews())
+        {
+            if (!expected.zviews().contains(zview))
+            {
+                diff.addDifference(zview.sql());
+            }
+        }
+    }
+
+    private void createZfunctionCompare(
+        ZillabaseDatabaseSchema actual,
+        ZillabaseDatabaseSchema expected,
+        ZillabaseSchemaDiff diff)
+    {
+        for (ZillabaseCreateZfunction zfunction : actual.zfunctions())
+        {
+            if (!expected.zfunctions().contains(zfunction))
+            {
+                diff.addDifference(zfunction.sql());
+            }
+        }
     }
 }
