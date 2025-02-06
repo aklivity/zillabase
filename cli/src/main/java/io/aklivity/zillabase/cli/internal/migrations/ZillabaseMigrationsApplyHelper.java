@@ -35,9 +35,10 @@ public final class ZillabaseMigrationsApplyHelper
     private Connection connection;
 
     public ZillabaseMigrationsApplyHelper(
+        ZillabaseMigrationsDiffHelper diffHelper,
         String db)
     {
-        this.diffHelper = new ZillabaseMigrationsDiffHelper(db);
+        this.diffHelper = diffHelper;
         this.url = "jdbc:postgresql://localhost:4567/%s".formatted(db);
         this.props = new Properties();
         this.props.setProperty("user", "zillabase");
