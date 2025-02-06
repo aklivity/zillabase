@@ -127,6 +127,7 @@
                   placeholder="SELECT * FROM `ZillaBase` ORDER BY id;"
                   rows="12"
                   autogrow
+                  v-model="query"
                   class="rounded-10 self-center text-weight-light rounded-input"
                 />
               </div>
@@ -149,6 +150,7 @@
                     unelevated
                     label="Run"
                     :ripple="false"
+                    @click="runQuery"
                     class="bg-light-green rounded-10 text-white q-mt-sm"
                   />
                 </div>
@@ -156,7 +158,7 @@
                 <q-card-section
                   class="text-grey bg-custom-dark-color sql-result"
                 >
-                  <code>// Example Results</code>
+                  <pre>{{ resuleSet }}</pre>
                 </q-card-section>
               </q-card-section>
             </q-card>
@@ -226,15 +228,11 @@ export default defineComponent({
       selectedTab: "initialTab",
       tabs: [
         {
-          name: "Snippet 1",
-        },
-        {
-          name: "Snippet 2",
-        },
-        {
-          name: "Snippet 3",
+          name: "Run Queries",
         },
       ],
+      resuleSet: null,
+      query: "",
     };
   },
   setup() {
@@ -242,9 +240,22 @@ export default defineComponent({
       splitterModel: ref(20),
     };
   },
+  mounted() {
+    this.$ws.addMessageHandler((data) => {
+      if (data.type == "execute_queries") {
+        this.resuleSet = JSON.stringify(data.data, null, 4);
+      }
+    });
+  },
+  beforeUnmount() {
+    this.$ws.removeAll();
+  },
   methods: {
     addNewSnippetDialog() {
       this.addNewSnippet = !this.addNewSnippet;
+    },
+    runQuery() {
+      this.$ws.sendMessage(this.query, "execute_queries");
     },
   },
 });
@@ -279,7 +290,8 @@ export default defineComponent({
 .sql-result-container {
   border-radius: 20px;
   .sql-result {
-    height: 150px;
+    height: calc(100vh - 490px);
+    overflow: auto;
   }
 }
 </style>

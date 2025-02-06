@@ -11,8 +11,9 @@
       @view-row="openEditDialog"
       @delete-row="openDeleteDialog"
       @add-new="openFunctionDialog"
-      :tableName="'function-table'"
+      :isShowEdit="false"
     />
+    <!-- :tableName="'function-table'" -->
   </div>
 
   <q-dialog
@@ -48,93 +49,6 @@
             name="img:/icons/function.svg"
             class="fs-30 filter-custom-dark"
             style="min-height: 30px"
-          />
-        </q-card-section>
-        <q-separator />
-        <q-card-section class="q-py-xl px-28">
-          <div class="row items-start">
-            <div class="col-3">
-              <span
-                class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Name</span
-              >
-            </div>
-            <div class="col-9">
-              <q-input
-                dense
-                outlined
-                v-model="functionInfo.name"
-                placeholder="Function Name"
-                class="rounded-10 self-center text-weight-light rounded-input"
-                :rules="[(val) => !!val || 'Field is required']"
-              />
-            </div>
-          </div>
-          <div class="row items-start q-mt-lg">
-            <div class="col-3">
-              <span
-                class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Return Type</span
-              >
-            </div>
-            <div class="col-9">
-              <q-input
-                dense
-                outlined
-                v-model="functionInfo.returnType"
-                placeholder="Function Return Type"
-                class="rounded-10 self-center text-weight-light rounded-input"
-                :rules="[(val) => !!val || 'Field is required']"
-              />
-            </div>
-          </div>
-          <div class="row items-start q-mt-lg">
-            <div class="col-3">
-              <span
-                class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Language</span
-              >
-            </div>
-            <div class="col-9">
-              <q-select
-                v-model="functionInfo.language"
-                :options="languageOptions"
-                outlined
-                dense
-                placeholder="Select Language"
-                dropdown-icon="keyboard_arrow_down"
-                class="rounded-input"
-                :rules="[(val) => !!val || 'Field is required']"
-              />
-            </div>
-          </div>
-        </q-card-section>
-        <q-separator />
-        <q-card-section class="q-py-lg px-28">
-          <div class="flex justify-between items-center q-mb-sm">
-            <p class="text-custom-text-secondary text-subtitle1 fw-600">
-              Parameters
-            </p>
-            <div>
-              <q-tooltip anchor="center left" self="center end">
-                Functions Docs
-              </q-tooltip>
-              <q-btn
-                flat
-                icon="img:/icons/export.svg"
-                size="md"
-                class="filter-light-green"
-                :ripple="false"
-              />
-            </div>
-          </div>
-          <data-type-table
-            :columns="functionTypeColumns"
-            :rows="functionTypeRow"
-            :typeOptions="functionTypeOptions"
-            @add-row="addRow"
-            ref="dataTypeTable"
-            @remove-row="removeRow"
           />
         </q-card-section>
         <q-separator />
@@ -186,10 +100,10 @@
             </div>
           </div>
         </q-card-section>
-        <q-separator v-if="functionInfo.functionType == 'external'" />
+        <q-separator />
         <q-card-section
-          v-if="functionInfo.functionType == 'external'"
-          class="q-py-lg px-28"
+          v-if="functionInfo.functionType == 'embedded'"
+          class="q-py-md px-28"
         >
           <div class="row items-start">
             <div class="col-3">
@@ -216,6 +130,93 @@
               />
             </div>
           </div>
+        </q-card-section>
+        <q-card-section class="q-pb-xl px-28">
+          <div class="row items-start">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Name</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="functionInfo.name"
+                placeholder="Function Name"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
+          </div>
+          <div class="row items-start q-mt-lg">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Language</span
+              >
+            </div>
+            <div class="col-9">
+              <q-select
+                v-model="functionInfo.language"
+                :options="filteredLanguageOptions"
+                outlined
+                dense
+                placeholder="Select Language"
+                dropdown-icon="keyboard_arrow_down"
+                class="rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="q-py-lg px-28">
+          <div class="flex justify-between items-center q-mb-sm">
+            <p class="text-custom-text-secondary text-subtitle1 fw-600">
+              Return Type
+            </p>
+          </div>
+          <data-type-table
+            :columns="functionParamTypeColumns"
+            :rows="functionParmaTypeRow"
+            :typeOptions="functionTypeOptions"
+            @add-row="addReturnRow"
+            ref="dataReturnTypeTable"
+            @remove-row="removeReturnRow"
+            :isSettingShow="false"
+            :isMultiSelect="isMultiSelect"
+          />
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="q-py-lg px-28">
+          <div class="flex justify-between items-center q-mb-sm">
+            <p class="text-custom-text-secondary text-subtitle1 fw-600">
+              Parameters
+            </p>
+            <div>
+              <q-tooltip anchor="center left" self="center end">
+                Functions Docs
+              </q-tooltip>
+              <q-btn
+                flat
+                icon="img:/icons/export.svg"
+                size="md"
+                class="filter-light-green"
+                :ripple="false"
+              />
+            </div>
+          </div>
+          <data-type-table
+            :columns="functionTypeColumns"
+            :rows="functionTypeRow"
+            :typeOptions="functionTypeOptions"
+            @add-row="addRow"
+            ref="dataTypeTable"
+            @remove-row="removeRow"
+            :isSettingShow="false"
+          />
         </q-card-section>
         <q-separator />
         <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
@@ -310,7 +311,10 @@ export default defineComponent({
         functionType: "embedded",
         body: "",
       },
-      languageOptions: ["php", "javaScript", "r", "sql", "python"],
+      allOptions: {
+        embedded: ["python", "javascript", "rust"],
+        external: ["python", "java"],
+      },
       tableColumns: [
         { name: "name", label: "Name", align: "left", field: "name" },
         {
@@ -344,7 +348,8 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
-      functionTypeRow: [{ name: "", type: "", defaultValue: "" }],
+      functionTypeRow: [{ name: "", type: "" }],
+      functionParmaTypeRow: [{ type: "" }],
       functionTypeColumns: [
         {
           name: "name",
@@ -354,65 +359,31 @@ export default defineComponent({
           field: "name",
         },
         { name: "type", label: "Type", align: "left", field: "type" },
-        {
-          name: "defaultValue",
-          label: "Default Value",
-          align: "left",
-          field: "defaultValue",
-        },
         { name: "actions", label: "Actions", align: "center" },
       ],
+      // functionParamTypeColumns: [
+      //   { name: "type", label: "Type", align: "left", field: "type" },
+      //   { name: "actions", label: "Actions", align: "center" },
+      // ],
       functionTypeOptions: [
+        "boolean",
         "smallint",
         "integer",
         "bigint",
-        "decimal",
         "numeric",
         "real",
         "double precision",
-        "serial",
-        "bigserial",
-        "money",
-        "character varying",
         "varchar",
-        "character",
-        "char",
-        "text",
         "bytea",
-        "boolean",
         "date",
-        "timestamp",
-        "timestamp with time zone",
-        "timestamp without time zone",
-        "time",
-        "time with time zone",
         "time without time zone",
+        "timestamp without time zone",
+        "timestamp with time zone",
         "interval",
-        "uuid",
-        "json",
-        "jsonb",
-        "xml",
+        "struct",
         "array",
-        "cidr",
-        "inet",
-        "macaddr",
-        "macaddr8",
-        "point",
-        "line",
-        "lseg",
-        "box",
-        "path",
-        "polygon",
-        "circle",
-        "tsvector",
-        "tsquery",
-        "uuid",
-        "bit",
-        "bit varying",
-        "hstore",
-        "range types (int4range, int8range, numrange, tsrange, tstzrange, daterange)",
-        "composite types",
-        "custom types",
+        "map",
+        "JSONB",
       ],
     };
   },
@@ -433,7 +404,7 @@ export default defineComponent({
           language: x.Language,
           rows: x.total_rows,
           ztable: false,
-          type: x.Link ? "Embedded" : "External",
+          type: x.Link ? "External" : "Embedded",
         }));
       }
       if (data.type == "create_function" || data.type == "drop_function") {
@@ -476,15 +447,20 @@ export default defineComponent({
         body: "",
       };
 
-      this.functionTypeRow = [
-        { name: "", type: "", defaultValue: "" },
-        { name: "", type: "", defaultValue: "" },
-        { name: "", type: "", defaultValue: "" },
-      ];
+      this.functionTypeRow = [{ name: "", type: "", defaultValue: "" }];
+      this.functionParmaTypeRow = [{ type: "" }];
+      this.$nextTick(() => {
+        if (this.$refs.dataTypeTable) {
+          this.$refs.dataTypeTable.rows = this.functionTypeRow;
+        }
+        if (this.$refs.dataReturnTypeTable) {
+          this.$refs.dataReturnTypeTable.rows = this.functionParmaTypeRow;
+        }
+      });
     },
     dropFunction() {
       this.$ws.sendMessage(
-        `DROP FUNCTION \"${this.selectedRow.name}\";`,
+        `DROP FUNCTION ${this.selectedRow.name};`,
         "drop_function"
       );
     },
@@ -503,11 +479,14 @@ export default defineComponent({
         .join(", ");
 
       return `
-      CREATE OR ALTER FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
+      CREATE FUNCTION ${
+        this.functionInfo.name
+      }(${params}) RETURNS (${this.functionParmaTypeRow
+        .filter((x) => x.type && x.name)
+        .map((x) => `${x.name} ${x.type}`)
+        .join(", ")})
       LANGUAGE ${this.functionInfo.language} 
-      AS $$
-        return ${this.functionInfo.body}
-      $$;`;
+      AS '${this.functionInfo.name}';`;
     },
     generateEmbeddedFunction() {
       const params = this.$refs.dataTypeTable.rows
@@ -521,16 +500,23 @@ export default defineComponent({
         .join(", ");
 
       return `
-      CREATE OR ALTER FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
+      CREATE FUNCTION ${
+        this.functionInfo.name
+      }(${params}) RETURNS ${this.functionParmaTypeRow
+        .filter((x) => x.type)
+        .map((x) => x.type)
+        .join(", ")}
         LANGUAGE ${this.functionInfo.language} 
-      AS '${this.functionInfo.name}';`;
+      AS $$
+        ${this.functionInfo.body}
+      $$;`;
     },
     openEditDialog(row) {
       this.functionInfo = {
         name: row.name,
         returnType: row.returnType,
         language: row.language,
-        functionType: row.link ? "embedded" : "external",
+        functionType: row.link ? "external" : "embedded",
         body: row.link,
       };
       this.functionTypeRow = [{ name: "", type: "", defaultValue: "" }];
@@ -556,12 +542,75 @@ export default defineComponent({
     },
     openFunctionDialog() {
       this.addNewFunction = !this.addNewFunction;
+      this.resetFunction();
     },
     addRow() {
       this.functionTypeRow.push({ name: "", type: "", defaultValue: "" });
     },
     removeRow(row) {
       this.functionTypeRow = this.functionTypeRow.filter((r) => r !== row);
+    },
+    addReturnRow() {
+      const row = this.isMultiSelect ? { type: [], name: "" } : { type: "" };
+      this.functionParmaTypeRow.push(row);
+    },
+    removeReturnRow(row) {
+      this.functionParmaTypeRow = this.functionParmaTypeRow.filter(
+        (r) => r !== row
+      );
+    },
+  },
+  computed: {
+    filteredLanguageOptions() {
+      return this.functionInfo.functionType
+        ? this.allOptions[this.functionInfo.functionType]
+        : [];
+    },
+    isMultiSelect() {
+      return this.functionInfo.functionType === "external";
+    },
+    functionParamTypeColumns() {
+      const baseColumns = [
+        { name: "type", label: "Type", align: "left", field: "type" },
+      ];
+      if (this.isMultiSelect) {
+        baseColumns.splice(0, 0, {
+          name: "name",
+          label: "Name",
+          align: "left",
+          field: "name",
+        });
+        baseColumns.push({
+          name: "actions",
+          label: "Actions",
+          align: "center",
+        });
+      }
+      return baseColumns;
+    },
+  },
+  watch: {
+    "functionInfo.functionType"(newVal, oldVal) {
+      this.functionInfo.language = "";
+      this.functionInfo.body = "";
+    },
+    isMultiSelect(newVal) {
+      this.functionParmaTypeRow = this.functionParmaTypeRow.map((row) => {
+        if (newVal) {
+          return {
+            ...row,
+            type: Array.isArray(row.type)
+              ? row.type
+              : [row.type].filter(Boolean),
+            name: row.name || "",
+          };
+        } else {
+          return {
+            ...row,
+            type: Array.isArray(row.type) ? row.type[0] || "" : row.type,
+          };
+        }
+      });
     },
   },
 });
