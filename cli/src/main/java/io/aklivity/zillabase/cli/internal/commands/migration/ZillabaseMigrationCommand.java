@@ -23,8 +23,8 @@ import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsDiffHelper;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
 {
@@ -45,7 +45,7 @@ public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
 
     protected final Stream<String> listMigrations() throws IOException
     {
-        return migrationDiff.allFiles().stream().map(ZillabaseMigrationFile::scriptName);
+        return migrationDiff.allMigrationFiles().stream().map(ZillabaseMigrationFile::scriptName);
     }
 
     @Command(

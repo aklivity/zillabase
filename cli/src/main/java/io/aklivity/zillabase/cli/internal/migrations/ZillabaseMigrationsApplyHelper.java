@@ -49,11 +49,18 @@ public final class ZillabaseMigrationsApplyHelper
         diffHelper.unappliedFiles().forEach(this::processFile);
     }
 
-    private void connect() throws SQLException
+    private void connect()
     {
-        if (connection != null)
+        if (connection == null)
         {
-            connection = DriverManager.getConnection(url, props);
+            try
+            {
+                connection = DriverManager.getConnection(url, props);
+            }
+            catch (SQLException e)
+            {
+                System.out.println("Failed to connect to " + url);
+            }
         }
     }
 

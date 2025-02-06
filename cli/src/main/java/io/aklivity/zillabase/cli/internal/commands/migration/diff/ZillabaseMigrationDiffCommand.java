@@ -14,14 +14,12 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.migration.diff;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationMetadata;
 
 @Command(
     name = "diff",
@@ -33,46 +31,29 @@ public final class ZillabaseMigrationDiffCommand extends ZillabaseMigrationComma
     {
         try
         {
-            List<ZillabaseMigrationMetadata> appliedMigrations = migrationDiff.metadata();
-            List<ZillabaseMigrationFile> localMigrations = migrationDiff.allFiles();
+            List<ZillabaseMigrationFile> pending = migrationDiff.filesDiff();
 
-            List<ZillabaseMigrationFile> pending = findPendingMigrations(appliedMigrations, localMigrations);
-
-            System.out.println("Pending migrations:");
-
-            for (ZillabaseMigrationFile mf : pending)
+            if (!pending.isEmpty())
             {
-                System.out.println(" - " + mf.version() + " : " + mf.scriptName());
+                System.out.println("Pending migrations:");
+
+                for (ZillabaseMigrationFile mf : pending)
+                {
+                    System.out.println(" - " + mf.version() + " : " + mf.scriptName());
+                }
             }
 
+            String patchScript =  migrationDiff.databaseDiff();
 
+            if (!patchScript.isEmpty())
+            {
+                System.out.println("Detected manual changes:\n");
+                System.out.println(patchScript);
+            }
         }
         catch (Exception ex)
         {
             ex.printStackTrace(System.err);
         }
-    }
-
-    private  List<ZillabaseMigrationFile> findPendingMigrations(
-        List<ZillabaseMigrationMetadata> appliedMigrations,
-        List<ZillabaseMigrationFile> localMigrations)
-    {
-        List<ZillabaseMigrationFile> pending = new ArrayList<>();
-
-        List<String> appliedVersions = new ArrayList<>();
-        for (ZillabaseMigrationMetadata mm : appliedMigrations)
-        {
-            appliedVersions.add(mm.version());
-        }
-
-        for (ZillabaseMigrationFile mf : localMigrations)
-        {
-            if (!appliedVersions.contains(mf.version()))
-            {
-                pending.add(mf);
-            }
-        }
-
-        return pending;
     }
 }
