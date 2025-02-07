@@ -29266,7 +29266,7 @@ var options = {
   port: 7184,
   path: '/pgsql',
   database: 'dev',
-  user: 'zillabase',
+  user: 'postgres',
   fetch_types: false,
   prepare: false
   //simple: true
