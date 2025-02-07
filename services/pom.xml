@@ -17,6 +17,7 @@
   <name>zillabase::services</name>
 
   <modules>
+    <module>api-gen</module>
     <module>auth</module>
     <module>udf-java</module>
     <module>udf-python</module>

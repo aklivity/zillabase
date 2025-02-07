@@ -72,6 +72,8 @@ public final class ZillabaseAdminConfig
                 when:
                   - commands:
                       - "CREATE TOPIC"
+                      - "ALTER TOPIC"
+                      - "DROP TOPIC"
             exit: pgsql_client
           pgsql_client:
             type: pgsql
