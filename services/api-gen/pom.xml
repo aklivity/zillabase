@@ -10,16 +10,71 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>service-auth</artifactId>
-  <name>zillabase::services::auth</name>
+  <artifactId>service-api-gen</artifactId>
+  <name>zillabase::services::api-gen</name>
 
   <properties>
     <jacoco.coverage.ratio>1.0</jacoco.coverage.ratio>
     <jacoco.missed.count>0</jacoco.missed.count>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>3.4.1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-streams</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.asyncapi</groupId>
+      <artifactId>asyncapi-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse</groupId>
+      <artifactId>yasson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.keycloak</groupId>
+      <artifactId>keycloak-admin-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
     <dependency>
       <groupId>jakarta.json.bind</groupId>
       <artifactId>jakarta.json.bind-api</artifactId>
@@ -29,18 +84,35 @@
       <artifactId>joy-yaml</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse</groupId>
-      <artifactId>yasson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.aklivity.k3po</groupId>
-      <artifactId>control-junit</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.aklivity.k3po</groupId>
-      <artifactId>lang</artifactId>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka-test</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-streams-test-utils</artifactId>
+      <version>3.8.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-streams-test-utils</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
     </dependency>
   </dependencies>
 
@@ -65,13 +137,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <environmentVariables>
-            <AUTH_SERVER_PORT>7184</AUTH_SERVER_PORT>
-            <DEBUG>true</DEBUG>
-            <KEYCLOAK_URL>http://localhost:8180</KEYCLOAK_URL>
-          </environmentVariables>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -101,6 +166,13 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+            <finalName>${project.artifactId}-shade</finalName>
+        </configuration>
+      </plugin>
+           <plugin>
         <groupId>io.gatling</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.4.4.2</version>
@@ -109,7 +181,7 @@
           <transformers>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-              <mainClass>io.aklivity.zillabase.service.internal.ZillabaseServerMain</mainClass>
+              <mainClass>io.aklivity.zillabase.service.api.gen.internal.ApiGenServiceApplication</mainClass>
               <manifestEntries>
                 <Class-Path>${project.build.directory}/${project.artifactId}-shaded.jar</Class-Path>
               </manifestEntries>
@@ -140,8 +212,8 @@
           <filter>${*}</filter>
           <images combine.children="append">
             <image>
-              <alias>auth</alias>
-              <name>ghcr.io/aklivity/zillabase/auth:%v</name>
+              <alias>api-gen</alias>
+              <name>ghcr.io/aklivity/zillabase/api-gen:%v</name>
               <build>
                 <contextDir>${project.basedir}</contextDir>
                 <tags>

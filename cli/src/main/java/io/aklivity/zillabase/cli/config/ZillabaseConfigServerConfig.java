@@ -17,6 +17,7 @@ package io.aklivity.zillabase.cli.config;
 public final class ZillabaseConfigServerConfig
 {
     public static final String ZILLABASE_CONFIG_KAFKA_TOPIC = "_zillabase.config";
+    public static final String ZILLABASE_API_GEN_EVENTS_KAFKA_TOPIC = "_zillabase.api-gen-events";
     public static final String ZILLABASE_CONFIG_SERVER_ZILLA_YAML = """
         ---
         name: zillabase-config-server
