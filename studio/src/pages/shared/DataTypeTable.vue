@@ -23,6 +23,7 @@
                 outlined
                 dense
                 placeholder="Enter name"
+                class="flex-grow"
               />
             </div>
           </template>
@@ -36,6 +37,7 @@
               placeholder="Select type"
               dropdown-icon="keyboard_arrow_down"
               style="min-width: 180px"
+              :multiple="isMultiSelect"
             />
           </template>
 
@@ -51,11 +53,15 @@
           <template v-else-if="col.name === 'primary'">
             <q-checkbox v-model="props.row.primary" dense color="light-green" />
           </template>
+          <template v-else-if="col.name === 'isNullable'">
+            <q-checkbox v-model="props.row.isNullable" dense color="light-green" />
+          </template>
 
           <template v-else-if="col.name === 'actions'">
             <!-- Show action buttons for all rows except the last one -->
             <!-- <template v-if="props.row !== rows[rows.length - 1]"> -->
               <q-btn
+              v-if="isSettingShow"
                 icon="img:/icons/setting-2.svg"
                 flat
                 dense
@@ -115,6 +121,15 @@ export default defineComponent({
       type: Array,
       required: true,
     },
+    isSettingShow: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+    isMultiSelect: {
+      type: Boolean,
+      default: false
+    },
   },
   methods: {
     addRow() {
@@ -129,3 +144,8 @@ export default defineComponent({
   },
 });
 </script>
+<style lang="scss" scope>
+.flex-grow {
+  flex-grow: 1;
+}
+</style>

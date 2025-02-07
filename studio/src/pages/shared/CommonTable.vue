@@ -245,6 +245,7 @@
             @click="viewRow(props.row)"
           />
           <q-btn
+            v-if="isShowEdit"
             flat
             dense
             icon="img:/icons/edit.svg"
@@ -459,6 +460,10 @@ export default defineComponent({
       type: String,
       default: "",
     },
+    isShowEdit: {
+      type: Boolean,
+      default: true,
+    }
   },
   data() {
     return {
