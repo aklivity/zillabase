@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -82,6 +83,7 @@ public final class ZillabaseMigrationsDiffHelper
         appliers.add(this::applyZtables);
         appliers.add(this::applyZfunctions);
         appliers.add(this::applyZviews);
+        appliers.add(this::applyTables);
         this.appliers = appliers;
     }
 
@@ -92,31 +94,6 @@ public final class ZillabaseMigrationsDiffHelper
         this.props = new Properties();
         this.props.setProperty("user", "postgres");
         this.props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
-    }
-
-    public void record(
-        ZillabaseMigrationFile migration)
-    {
-        String insertSql = """
-            INSERT INTO zb_catalog.schema_version
-            (version, description, script_name, checksum, applied_on)
-            VALUES (?, ?, ?, ?, now())
-            """;
-
-        connect();
-
-        try (PreparedStatement ps = connection.prepareStatement(insertSql))
-        {
-            ps.setString(1, migration.version());
-            ps.setString(2, migration.description());
-            ps.setString(3, migration.scriptName());
-            ps.setString(4, migration.checksum());
-            ps.executeUpdate();
-        }
-        catch (SQLException ex)
-        {
-            System.out.format("Failed to record migration %s\n",  ex.getMessage());
-        }
     }
 
     public List<ZillabaseMigrationMetadata> appliedMigrationsMetadata()
@@ -359,6 +336,7 @@ public final class ZillabaseMigrationsDiffHelper
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(query))
         {
+            connection.getMetaData();
             while (rs.next())
             {
                 ZillabaseCreateZtable metadata = new ZillabaseCreateZtable(
@@ -427,6 +405,27 @@ public final class ZillabaseMigrationsDiffHelper
         catch (SQLException e)
         {
             System.out.println("Failed to fetch zfunctions " + e.getMessage());
+        }
+    }
+
+    private void applyTables(
+        ZillabaseDatabaseSchema schema)
+    {
+        try
+        {
+            DatabaseMetaData meta = connection.getMetaData();
+            ResultSet tables = meta.getTables(null, null, "%", new String[] {"TABLE"});
+
+            while (tables.next())
+            {
+                String tableName = tables.getString("TABLE_NAME");
+
+                System.out.println(tableName);
+            }
+        }
+        catch (SQLException e)
+        {
+            System.out.println("Failed to fetch tables " + e.getMessage());
         }
     }
 

@@ -17,7 +17,6 @@ package io.aklivity.zillabase.cli.internal.commands.migration.apply;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 @Command(
     name = "apply",
@@ -29,18 +28,7 @@ public final class ZillabaseMigrationApplyCommand extends ZillabaseMigrationComm
     {
         try
         {
-            migrationApply.apply();
-
-            String patchScript =  migrationDiff.databaseDiff();
-            if (!patchScript.isEmpty())
-            {
-                saveNewMigrationFile("manual_changes_catchup", patchScript);
-
-                ZillabaseMigrationFile newMigration = migrationDiff.unappliedFiles().get(0);
-
-                migrationDiff.record(newMigration);
-            }
-
+            migrationApply.apply(migrationDiff.unappliedFiles());
         }
         catch (Exception ex)
         {

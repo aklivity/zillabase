@@ -16,6 +16,7 @@ package io.aklivity.zillabase.cli.internal.migrations;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -28,40 +29,83 @@ import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFil
 
 public final class ZillabaseMigrationsApplyHelper
 {
-    private final ZillabaseMigrationsDiffHelper diffHelper;
     private final String url;
-    private final Properties props;
 
-    private Connection connection;
+    private Connection postgresConn;
+    private Connection zillabaseConn;
 
     public ZillabaseMigrationsApplyHelper(
-        ZillabaseMigrationsDiffHelper diffHelper,
         String db)
     {
-        this.diffHelper = diffHelper;
         this.url = "jdbc:postgresql://localhost:4567/%s".formatted(db);
-        this.props = new Properties();
-        this.props.setProperty("user", "zillabase");
-        this.props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
     }
 
-    public void apply()
+    public void apply(
+        List<ZillabaseMigrationFile> unappliedFiles)
     {
-        diffHelper.unappliedFiles().forEach(this::processFile);
+        unappliedFiles.forEach(this::processFile);
     }
 
-    private void connect()
+    private void connectPostgres()
     {
-        if (connection == null)
+        if (postgresConn == null)
         {
             try
             {
-                connection = DriverManager.getConnection(url, props);
+                Properties props = new Properties();
+                props.setProperty("user", "postgres");
+                props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
+
+                postgresConn = DriverManager.getConnection(url, props);
             }
             catch (SQLException e)
             {
                 System.out.println("Failed to connect to " + url);
             }
+        }
+    }
+
+    private void connectZillabase()
+    {
+        if (zillabaseConn == null)
+        {
+            try
+            {
+                Properties props = new Properties();
+                props.setProperty("user", "zillabase");
+                props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
+
+                zillabaseConn = DriverManager.getConnection(url, props);
+            }
+            catch (SQLException e)
+            {
+                System.out.println("Failed to connect to " + url);
+            }
+        }
+    }
+
+    private void record(
+        ZillabaseMigrationFile migration)
+    {
+        String insertSql = """
+            INSERT INTO zb_catalog.schema_version
+            (version, description, script_name, checksum, applied_on)
+            VALUES (?, ?, ?, ?, now())
+            """;
+
+        connectPostgres();
+
+        try (PreparedStatement ps = postgresConn.prepareStatement(insertSql))
+        {
+            ps.setString(1, migration.version());
+            ps.setString(2, migration.description());
+            ps.setString(3, migration.scriptName());
+            ps.setString(4, migration.checksum());
+            ps.executeUpdate();
+        }
+        catch (SQLException ex)
+        {
+            System.out.format("Failed to record migration %s\n",  ex.getMessage());
         }
     }
 
@@ -73,9 +117,9 @@ public final class ZillabaseMigrationsApplyHelper
             String content = migration.sqlContents();
             if (content != null)
             {
-                connect();
+                connectZillabase();
 
-                Statement stmt = connection.createStatement();
+                Statement stmt = zillabaseConn.createStatement();
                 // Set the timeout in seconds (for example, 30 seconds)
                 stmt.setQueryTimeout(30);
                 String noCommentsSQL = content.replaceAll("(?s)/\\*.*?\\*/", "")
@@ -94,7 +138,7 @@ public final class ZillabaseMigrationsApplyHelper
                 }
             }
 
-            diffHelper.record(migration);
+            record(migration);
 
         }
         catch (Exception ex)

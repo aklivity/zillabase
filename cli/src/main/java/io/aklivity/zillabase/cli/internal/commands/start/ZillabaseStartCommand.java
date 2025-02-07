@@ -388,9 +388,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         {
             final String dbName = config.risingwave.db;
             final ZillabaseMigrationsDiffHelper migrationDiff = new ZillabaseMigrationsDiffHelper(dbName);
-            final ZillabaseMigrationsApplyHelper migration = new ZillabaseMigrationsApplyHelper(migrationDiff, dbName);
+            final ZillabaseMigrationsApplyHelper migrationApply = new ZillabaseMigrationsApplyHelper(dbName);
 
-            migration.apply();
+            migrationApply.apply(migrationDiff.unappliedFiles());
 
             pgsql.process(seedSqlPath);
         }

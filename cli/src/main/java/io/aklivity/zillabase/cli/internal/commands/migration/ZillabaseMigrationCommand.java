@@ -48,8 +48,9 @@ public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
     {
         ZillabaseConfig config = new ZillabaseConfig();
         String dbName = config.risingwave.db;
+
         this.migrationDiff = new ZillabaseMigrationsDiffHelper(dbName);
-        this.migrationApply = new ZillabaseMigrationsApplyHelper(migrationDiff, dbName);
+        this.migrationApply = new ZillabaseMigrationsApplyHelper(dbName);
         this.matcher = migrationDiff.fileMatcher;
     }
 
