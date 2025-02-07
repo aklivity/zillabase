@@ -481,10 +481,10 @@ export default defineComponent({
       return `
       CREATE FUNCTION ${
         this.functionInfo.name
-      }(${params}) RETURNS (${this.functionParmaTypeRow
+      }(${params}) RETURNS struct<${this.functionParmaTypeRow
         .filter((x) => x.type && x.name)
         .map((x) => `${x.name} ${x.type}`)
-        .join(", ")})
+        .join(", ")}>
       LANGUAGE ${this.functionInfo.language} 
       AS '${this.functionInfo.name}';`;
     },
