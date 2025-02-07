@@ -38,10 +38,9 @@ public class ZillabaseSchemaDiff
 
         if (!differences.isEmpty())
         {
-            sb.append("-- Auto-generated patch script\n");
             for (String diff : differences)
             {
-                sb.append(diff).append("\n");
+                sb.append(diff).append("\n\n");
             }
         }
 

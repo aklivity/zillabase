@@ -17,54 +17,94 @@ package io.aklivity.zillabase.cli.internal.migrations;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseCreateZfunction;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseCreateZtable;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseCreateZview;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMaterializedView;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseTable;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZfunction;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZtable;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZview;
 
 public class ZillabaseDatabaseSchema
 {
-    private final List<ZillabaseCreateZtable> ztables;
-    private final List<ZillabaseCreateZfunction> zfunctions;
-    private final List<ZillabaseCreateZview> zviews;
+    private final List<ZillabaseZtable> ztables;
+    private final List<ZillabaseZfunction> zfunctions;
+    private final List<ZillabaseZview> zviews;
+    private final List<ZillabaseTable> tables;
+    private final List<ZillabaseMaterializedView> materializedViews;
+    private final List<ZillabaseZview> views;
 
     public ZillabaseDatabaseSchema()
     {
         this.ztables = new ArrayList<>();
         this.zfunctions = new ArrayList<>();
         this.zviews = new ArrayList<>();
+        this.tables = new ArrayList<>();
+        this.materializedViews = new ArrayList<>();
+        this.views = new ArrayList<>();
     }
 
     public void addZtable(
-        ZillabaseCreateZtable ztable)
+        ZillabaseZtable ztable)
     {
         ztables.add(ztable);
     }
 
     public void addZfunction(
-        ZillabaseCreateZfunction zfunction)
+        ZillabaseZfunction zfunction)
     {
         zfunctions.add(zfunction);
     }
 
     public void addZview(
-        ZillabaseCreateZview zview)
+        ZillabaseZview zview)
     {
         zviews.add(zview);
     }
 
-    public List<ZillabaseCreateZtable> ztables()
+    public void addTable(
+        ZillabaseTable table)
+    {
+        tables.add(table);
+    }
+
+    public void addMaterializedView(
+        ZillabaseMaterializedView mview)
+    {
+        materializedViews.add(mview);
+    }
+
+    public void addView(
+        ZillabaseZview view)
+    {
+        views.add(view);
+    }
+
+    public List<ZillabaseZtable> ztables()
     {
         return ztables;
     }
 
-    public List<ZillabaseCreateZfunction> zfunctions()
+    public List<ZillabaseZfunction> zfunctions()
     {
         return zfunctions;
     }
 
-    public List<ZillabaseCreateZview> zviews()
+    public List<ZillabaseZview> zviews()
     {
         return zviews;
     }
 
+    public List<ZillabaseTable> tables()
+    {
+        return tables;
+    }
+
+    public List<ZillabaseMaterializedView> materializedViews()
+    {
+        return materializedViews;
+    }
+
+    public List<ZillabaseZview> views()
+    {
+        return views;
+    }
 }

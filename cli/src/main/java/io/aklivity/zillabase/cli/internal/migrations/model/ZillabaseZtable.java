@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.cli.internal.migrations.model;
 
-public record ZillabaseCreateZtable(
+public record ZillabaseZtable(
     String name,
     String sql)
 {

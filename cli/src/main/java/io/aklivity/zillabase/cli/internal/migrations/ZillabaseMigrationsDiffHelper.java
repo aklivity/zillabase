@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -40,11 +39,13 @@ import java.util.stream.Collectors;
 import org.postgresql.jdbc.PreferQueryMode;
 
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseCreateZfunction;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseCreateZtable;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseCreateZview;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMaterializedView;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationMetadata;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseTable;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZfunction;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZtable;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZview;
 
 public final class ZillabaseMigrationsDiffHelper
 {
@@ -65,26 +66,32 @@ public final class ZillabaseMigrationsDiffHelper
 
     private final String url;
     private final Properties props;
+    private final List<String> shows;
 
     private Connection connection;
 
     private final List<SchemaComparisonStrategy> strategies;
     {
         List<SchemaComparisonStrategy> strategies = new ArrayList<>();
-        strategies.add(this::compareCreateZtable);
-        strategies.add(this::compareCreateZfunction);
-        strategies.add(this::compareCreateZview);
+        strategies.add(this::compareZtable);
+        strategies.add(this::compareZfunction);
+        strategies.add(this::compareZview);
+        strategies.add(this::compareTable);
+        strategies.add(this::compareMaterializedView);
+        strategies.add(this::compareView);
         this.strategies = strategies;
     }
 
-    private final List<DatabaseObjectApplier> appliers;
+    private final List<DatabaseObjectLoader> loader;
     {
-        List<DatabaseObjectApplier> appliers = new ArrayList<>();
-        appliers.add(this::applyZtables);
-        appliers.add(this::applyZfunctions);
-        appliers.add(this::applyZviews);
-        appliers.add(this::applyTables);
-        this.appliers = appliers;
+        List<DatabaseObjectLoader> appliers = new ArrayList<>();
+        appliers.add(this::loadZtables);
+        appliers.add(this::loadZfunctions);
+        appliers.add(this::loadZviews);
+        appliers.add(this::loadTables);
+        appliers.add(this::loadMaterializedViews);
+        appliers.add(this::loadViews);
+        this.loader = appliers;
     }
 
     public ZillabaseMigrationsDiffHelper(
@@ -94,9 +101,11 @@ public final class ZillabaseMigrationsDiffHelper
         this.props = new Properties();
         this.props.setProperty("user", "postgres");
         this.props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
+
+        this.shows = new ArrayList<>();
     }
 
-    public List<ZillabaseMigrationMetadata> appliedMigrationsMetadata()
+    public List<ZillabaseMigrationMetadata> loadMigrationsMetadata()
     {
         List<ZillabaseMigrationMetadata> migrations = new ArrayList<>();
         String query = """
@@ -178,7 +187,7 @@ public final class ZillabaseMigrationsDiffHelper
         List<ZillabaseMigrationFile> pending = new ArrayList<>();
         List<String> appliedVersions = new ArrayList<>();
 
-        List<ZillabaseMigrationMetadata> appliedMigrations = appliedMigrationsMetadata();
+        List<ZillabaseMigrationMetadata> appliedMigrations = loadMigrationsMetadata();
         List<ZillabaseMigrationFile> localMigrations = allMigrationFiles();
 
         for (ZillabaseMigrationMetadata metadata : appliedMigrations)
@@ -217,7 +226,7 @@ public final class ZillabaseMigrationsDiffHelper
     }
 
     @FunctionalInterface
-    private interface DatabaseObjectApplier
+    private interface DatabaseObjectLoader
     {
         void apply(
             ZillabaseDatabaseSchema schema);
@@ -241,7 +250,7 @@ public final class ZillabaseMigrationsDiffHelper
     private ZillabaseDatabaseSchema readSchemaFromDatabase()
     {
         ZillabaseDatabaseSchema schema = new ZillabaseDatabaseSchema();
-        appliers.forEach(a -> a.apply(schema));
+        loader.forEach(a -> a.apply(schema));
 
         return schema;
     }
@@ -285,13 +294,22 @@ public final class ZillabaseMigrationsDiffHelper
             switch (type)
             {
             case "ZFUNCTION":
-                schema.addZfunction(new ZillabaseCreateZfunction(name, sql));
+                schema.addZfunction(new ZillabaseZfunction(name, sql));
                 break;
             case "ZTABLE":
-                schema.addZtable(new ZillabaseCreateZtable(name, sql));
+                schema.addZtable(new ZillabaseZtable(name, sql));
                 break;
             case "ZVIEW":
-                schema.addZview(new ZillabaseCreateZview(name, sql));
+                schema.addZview(new ZillabaseZview(name, sql));
+                break;
+            case "TABLE":
+                schema.addTable(new ZillabaseTable(name, sql));
+                break;
+            case "MATERIALIZED VIEW":
+                schema.addMaterializedView(new ZillabaseMaterializedView(name, sql));
+                break;
+            case "VIEW":
+                schema.addView(new ZillabaseZview(name, sql));
                 break;
             }
         }
@@ -307,8 +325,7 @@ public final class ZillabaseMigrationsDiffHelper
 
         connect();
 
-        try (Connection conn = DriverManager.getConnection(url, props);
-            PreparedStatement ps = conn.prepareStatement(query))
+        try (PreparedStatement ps = connection.prepareStatement(query))
         {
             ps.setString(1, version);
 
@@ -323,7 +340,7 @@ public final class ZillabaseMigrationsDiffHelper
         return applied;
     }
 
-    private void applyZtables(
+    private void loadZtables(
         ZillabaseDatabaseSchema schema)
     {
         String query = """
@@ -339,7 +356,7 @@ public final class ZillabaseMigrationsDiffHelper
             connection.getMetaData();
             while (rs.next())
             {
-                ZillabaseCreateZtable metadata = new ZillabaseCreateZtable(
+                ZillabaseZtable metadata = new ZillabaseZtable(
                     rs.getString("name"),
                     rs.getString("sql")
                 );
@@ -352,7 +369,7 @@ public final class ZillabaseMigrationsDiffHelper
         }
     }
 
-    private void applyZviews(
+    private void loadZviews(
         ZillabaseDatabaseSchema schema)
     {
         String query = """
@@ -367,7 +384,7 @@ public final class ZillabaseMigrationsDiffHelper
         {
             while (rs.next())
             {
-                ZillabaseCreateZview metadata = new ZillabaseCreateZview(
+                ZillabaseZview metadata = new ZillabaseZview(
                     rs.getString("name"),
                     rs.getString("sql")
                 );
@@ -380,7 +397,7 @@ public final class ZillabaseMigrationsDiffHelper
         }
     }
 
-    private void applyZfunctions(
+    private void loadZfunctions(
         ZillabaseDatabaseSchema schema)
     {
         String query = """
@@ -395,7 +412,7 @@ public final class ZillabaseMigrationsDiffHelper
         {
             while (rs.next())
             {
-                ZillabaseCreateZfunction metadata = new ZillabaseCreateZfunction(
+                ZillabaseZfunction metadata = new ZillabaseZfunction(
                     rs.getString("name"),
                     rs.getString("sql")
                 );
@@ -408,28 +425,130 @@ public final class ZillabaseMigrationsDiffHelper
         }
     }
 
-    private void applyTables(
+    private void loadTables(
         ZillabaseDatabaseSchema schema)
     {
-        try
-        {
-            DatabaseMetaData meta = connection.getMetaData();
-            ResultSet tables = meta.getTables(null, null, "%", new String[] {"TABLE"});
+        connect();
 
-            while (tables.next())
+        List<String> tables = shows("TABLES");
+        if (!tables.isEmpty())
+        {
+            String includes = tables.stream()
+                .map("'%s'"::formatted)
+                .collect(Collectors.joining(", "));
+
+            String query = "SELECT name, definition FROM rw_tables WHERE name IN (%s)".formatted(includes);
+
+            try (Statement stmt = connection.createStatement();
+                ResultSet rs = stmt.executeQuery(query))
             {
-                String tableName = tables.getString("TABLE_NAME");
-
-                System.out.println(tableName);
+                while (rs.next())
+                {
+                    ZillabaseTable metadata = new ZillabaseTable(
+                        rs.getString("name"),
+                        rs.getString("definition")
+                    );
+                    schema.addTable(metadata);
+                }
             }
-        }
-        catch (SQLException e)
-        {
-            System.out.println("Failed to fetch tables " + e.getMessage());
+            catch (SQLException e)
+            {
+                System.out.println("Failed to fetch tables " + e.getMessage());
+            }
         }
     }
 
-    private void compareCreateZtable(
+    private void loadMaterializedViews(
+        ZillabaseDatabaseSchema schema)
+    {
+        connect();
+
+        List<String> mviews = shows("MATERIALIZED VIEWS");
+        if (!mviews.isEmpty())
+        {
+            String includes = mviews.stream()
+                .map("'%s'"::formatted)
+                .collect(Collectors.joining(", "));
+
+            String query = "SELECT name, definition FROM rw_materialized_views WHERE name IN (%s)".formatted(includes);
+
+            try (Statement stmt = connection.createStatement();
+                ResultSet rs = stmt.executeQuery(query))
+            {
+                while (rs.next())
+                {
+                    ZillabaseMaterializedView metadata = new ZillabaseMaterializedView(
+                        rs.getString("name"),
+                        rs.getString("definition")
+                    );
+                    schema.addMaterializedView(metadata);
+                }
+            }
+            catch (SQLException e)
+            {
+                System.out.println("Failed to fetch materialized views " + e.getMessage());
+            }
+        }
+    }
+
+    private void loadViews(
+        ZillabaseDatabaseSchema schema)
+    {
+        connect();
+
+        List<String> mviews = shows("VIEWS");
+        if (!mviews.isEmpty())
+        {
+            String includes = mviews.stream()
+                .map("'%s'"::formatted)
+                .collect(Collectors.joining(", "));
+
+            String query = "SELECT name, definition FROM rw_views WHERE name IN (%s)".formatted(includes);
+
+            try (Statement stmt = connection.createStatement();
+                ResultSet rs = stmt.executeQuery(query))
+            {
+                while (rs.next())
+                {
+                    ZillabaseZview metadata = new ZillabaseZview(
+                        rs.getString("name"),
+                        rs.getString("definition")
+                    );
+                    schema.addView(metadata);
+                }
+            }
+            catch (SQLException e)
+            {
+                System.out.println("Failed to fetch materialized views " + e.getMessage());
+            }
+        }
+    }
+
+    private List<String> shows(
+        String type)
+    {
+        shows.clear();
+
+        connect();
+
+        String query = "SHOW %s".formatted(type);
+        try (Statement ps = connection.createStatement();
+            ResultSet rs = ps.executeQuery(query))
+        {
+            while (rs.next())
+            {
+                shows.add(rs.getString("name"));
+            }
+        }
+        catch (SQLException ex)
+        {
+            System.out.format("Failed to show %s\n",  ex.getMessage());
+        }
+
+        return shows;
+    }
+
+    private void compareZtable(
         ZillabaseDatabaseSchema actual,
         ZillabaseDatabaseSchema expected,
         ZillabaseSchemaDiff diff)
@@ -439,7 +558,7 @@ public final class ZillabaseMigrationsDiffHelper
             .forEach(z -> diff.addDifference(z.sql()));
     }
 
-    private void compareCreateZview(
+    private void compareZview(
         ZillabaseDatabaseSchema actual,
         ZillabaseDatabaseSchema expected,
         ZillabaseSchemaDiff diff)
@@ -449,7 +568,7 @@ public final class ZillabaseMigrationsDiffHelper
             .forEach(z -> diff.addDifference(z.sql()));
     }
 
-    private void compareCreateZfunction(
+    private void compareZfunction(
         ZillabaseDatabaseSchema actual,
         ZillabaseDatabaseSchema expected,
         ZillabaseSchemaDiff diff)
@@ -457,6 +576,38 @@ public final class ZillabaseMigrationsDiffHelper
         actual.zfunctions().stream()
             .filter(z -> expected.zfunctions().stream().noneMatch(e -> e.name().equals(z.name())))
             .forEach(z -> diff.addDifference(z.sql()));
+    }
+
+    private void compareTable(
+        ZillabaseDatabaseSchema actual,
+        ZillabaseDatabaseSchema expected,
+        ZillabaseSchemaDiff diff)
+    {
+        actual.tables().stream()
+            .filter(t -> actual.ztables().stream().noneMatch(z -> z.name().equals(t.name())))
+            .filter(t -> expected.tables().stream().noneMatch(e -> e.name().equals(t.name())))
+            .forEach(t -> diff.addDifference(t.sql()));
+    }
+
+    private void compareMaterializedView(
+        ZillabaseDatabaseSchema actual,
+        ZillabaseDatabaseSchema expected,
+        ZillabaseSchemaDiff diff)
+    {
+        actual.materializedViews().stream()
+            .filter(t -> actual.zviews().stream().noneMatch(z -> z.name().equals(t.name())))
+            .filter(t -> expected.materializedViews().stream().noneMatch(e -> e.name().equals(t.name())))
+            .forEach(t -> diff.addDifference(t.sql()));
+    }
+
+    private void compareView(
+        ZillabaseDatabaseSchema actual,
+        ZillabaseDatabaseSchema expected,
+        ZillabaseSchemaDiff diff)
+    {
+        actual.views().stream()
+            .filter(t -> expected.views().stream().noneMatch(e -> e.name().equals(t.name())))
+            .forEach(t -> diff.addDifference(t.sql()));
     }
 
     private ZillabaseMigrationFile parseFile(
