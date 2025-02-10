@@ -49,26 +49,24 @@ public final class DatabaseSchemaRepository
 
     public ZillabaseDatabaseSchema loadActualSchema()
     {
+        ZillabaseDatabaseSchema schema = new ZillabaseDatabaseSchema();
+
         try (Connection connection = DriverManager.getConnection(url, props))
         {
-            ZillabaseDatabaseSchema schema = new ZillabaseDatabaseSchema();
-
-            // load ztables
             loadZtables(connection, schema);
             loadZviews(connection, schema);
             loadZfunctions(connection, schema);
 
-            // load normal tables, materialized views, standard views
             loadTables(connection, schema);
             loadMaterializedViews(connection, schema);
             loadViews(connection, schema);
-
-            return schema;
         }
         catch (SQLException e)
         {
-            return new ZillabaseDatabaseSchema();
+            System.err.format("Failed to load database schema: %s\n", e.getMessage());
         }
+
+        return schema;
     }
 
     private void loadZtables(
