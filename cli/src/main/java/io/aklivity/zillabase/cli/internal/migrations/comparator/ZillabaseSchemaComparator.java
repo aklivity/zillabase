@@ -14,30 +14,43 @@
  */
 package io.aklivity.zillabase.cli.internal.migrations.comparator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseDatabaseSchema;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseSchemaDiff;
 
 public final class ZillabaseSchemaComparator
 {
+    @FunctionalInterface
+    private interface SchemaComparisonStrategy
+    {
+        void compare(
+            ZillabaseDatabaseSchema actual,
+            ZillabaseDatabaseSchema expected,
+            ZillabaseSchemaDiff diff);
+    }
+
+    private final List<SchemaComparisonStrategy> strategies;
+    {
+        List<SchemaComparisonStrategy> strategies = new ArrayList<>();
+        strategies.add(this::compareZtables);
+        strategies.add(this::compareZfunctions);
+        strategies.add(this::compareZviews);
+        strategies.add(this::compareTables);
+        strategies.add(this::compareMaterializedViews);
+        strategies.add(this::compareViews);
+        this.strategies = strategies;
+    }
+
     public ZillabaseSchemaDiff compareSchemas(
         ZillabaseDatabaseSchema actual,
         ZillabaseDatabaseSchema expected)
     {
         ZillabaseSchemaDiff diff = new ZillabaseSchemaDiff();
-        compareZtables(actual, expected, diff);
-        compareZviews(actual, expected, diff);
-        compareZfunctions(actual, expected, diff);
-        compareTables(actual, expected, diff);
-        compareMaterializedViews(actual, expected, diff);
-        compareViews(actual, expected, diff);
 
-        // symmetrical check: also see what's in expected but not in actual
-        compareZtables(expected, actual, diff);
-        compareZviews(expected, actual, diff);
-        compareZfunctions(expected, actual, diff);
-        compareTables(expected, actual, diff);
-        compareMaterializedViews(expected, actual, diff);
-        compareViews(expected, actual, diff);
+        strategies.forEach(strategy -> strategy.compare(actual, expected, diff));
+        strategies.forEach(strategy -> strategy.compare(expected, actual, diff));
 
         return diff;
     }

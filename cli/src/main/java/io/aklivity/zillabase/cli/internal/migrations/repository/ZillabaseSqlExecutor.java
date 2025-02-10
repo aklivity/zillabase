@@ -14,11 +14,13 @@
  */
 package io.aklivity.zillabase.cli.internal.migrations.repository;
 
+import static io.aklivity.zillabase.cli.internal.migrations.parser.SchemaParser.removeSqlComments;
+import static io.aklivity.zillabase.cli.internal.migrations.parser.SchemaParser.splitSQL;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -44,7 +46,7 @@ public final class ZillabaseSqlExecutor
     {
         try (Connection conn = DriverManager.getConnection(url, props))
         {
-            String noCommentsSQL = removeComments(rawSql);
+            String noCommentsSQL = removeSqlComments(rawSql);
 
             List<String> statements = splitSQL(noCommentsSQL);
 
@@ -64,42 +66,5 @@ public final class ZillabaseSqlExecutor
                 }
             }
         }
-    }
-
-    private String removeComments(
-        String sql)
-    {
-        return sql.replaceAll("(?s)/\\*.*?\\*/", "")
-                  .replaceAll("--.*?(\\r?\\n)", "");
-    }
-
-    private List<String> splitSQL(
-        String sql)
-    {
-        List<String> result = new ArrayList<>();
-        StringBuilder command = new StringBuilder();
-        boolean insideDollarBlock = false;
-
-        String[] lines = sql.split("\\r?\\n");
-        for (String line : lines)
-        {
-            if (line.contains("$$"))
-            {
-                insideDollarBlock = !insideDollarBlock;
-            }
-            command.append(line).append("\n");
-            if (!insideDollarBlock && line.trim().endsWith(";"))
-            {
-                result.add(command.toString().trim());
-                command.setLength(0);
-            }
-        }
-
-        if (!command.isEmpty())
-        {
-            result.add(command.toString().trim());
-        }
-
-        return result;
     }
 }

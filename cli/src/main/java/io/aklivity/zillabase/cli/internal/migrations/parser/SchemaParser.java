@@ -53,7 +53,11 @@ public final class SchemaParser
         }
     }
 
-    private void addToSchema(ZillabaseDatabaseSchema schema, String type, String name, String sql)
+    private void addToSchema(
+        ZillabaseDatabaseSchema schema,
+        String type,
+        String name,
+        String sql)
     {
         switch (type.toUpperCase())
         {
@@ -81,7 +85,7 @@ public final class SchemaParser
         }
     }
 
-    private static List<String> splitSQL(
+    public static List<String> splitSQL(
         String sql)
     {
         sql = removeSqlComments(sql);
@@ -112,7 +116,7 @@ public final class SchemaParser
         return result;
     }
 
-    private static String removeSqlComments(
+    public static String removeSqlComments(
         String sql)
     {
         return sql.replaceAll("(?s)/\\*.*?\\*/", "")
