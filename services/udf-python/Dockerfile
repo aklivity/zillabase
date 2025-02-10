@@ -21,6 +21,8 @@ COPY src/io/aklivity/zillabase/udf-server.py .
 
 RUN pip install --upgrade pip
 
+RUN pip install flask
+
 RUN pip install arrow-udf
 
 ENV PYTHONPATH="/opt/udf/lib"

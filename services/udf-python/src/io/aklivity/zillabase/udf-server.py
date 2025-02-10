@@ -21,7 +21,15 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+from flask import Flask, jsonify
+from threading import Thread
+
 from arrow_udf import UdfServer
+
+CLASS_NAME_PATTERN = re.compile(r"([a-z])([A-Z])")
+
+app = Flask(__name__)
 
 def fetch_classes():
     class_names = []
@@ -78,7 +86,65 @@ def dynamic_import(file_path):
     spec.loader.exec_module(module)
     return module
 
-CLASS_NAME_PATTERN = re.compile(r"([a-z])([A-Z])")
+@app.route("/python/methods", methods=["GET"])
+def list_methods():
+    all_functions_info = []
+
+    for f in functions:
+        input_schema_str = str(getattr(f, "_input_schema", ""))
+        result_schema_str = str(getattr(f, "_result_schema", ""))
+
+        input_pairs = []
+        for line in input_schema_str.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            if ": " in line:
+                left, right = line.split(": ", 1)
+                field_name = left.strip()
+                field_type = right.strip()
+
+                if field_name == f._name:
+                    field_name = ""
+
+                input_pairs.append({
+                    "name": field_name,
+                    "type": field_type
+                })
+
+        result_pairs = []
+        for line in result_schema_str.splitlines():
+            line = line.strip()
+            if not line or line.startswith("child"):
+                continue
+
+            if ": " in line:
+                left, right = line.split(": ", 1)
+                field_name = left.strip()
+                field_type = right.strip()
+
+                if field_name == f._name:
+                    field_name = ""
+
+                result_pairs.append({
+                    "name": field_name,
+                    "type": field_type
+                })
+
+        function_info = {
+            "name": f._name,
+            "input_type": input_pairs,
+            "result_type": result_pairs
+        }
+        all_functions_info.append(function_info)
+
+    return jsonify(all_functions_info)
+
+def start_flask_server():
+    # Start the Flask server on port 5000 in a separate thread
+    app.run(host="0.0.0.0", port=5000)
+
 
 if __name__ == "__main__":
     functions = []
@@ -104,6 +170,11 @@ if __name__ == "__main__":
             except (ModuleNotFoundError, AttributeError, ImportError) as ex:
                 print(f"Error loading {class_file}: {ex}")
 
+        # Start up your web server for listing methods:
+        flask_thread = Thread(target=start_flask_server, daemon=True)
+        flask_thread.start()
+
+         #Start up the Arrow UDF server:
         server = UdfServer(location="0.0.0.0:8816")
         for function in functions:
             server.add_function(function)

@@ -114,6 +114,17 @@ public final class ZillabaseAdminConfig
                       upgrade: websocket
                 exit: ws_server
               - when:
+                - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/udf/python
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.PYTHON_UDF_SERVER_HOST}}:${{env.PYTHON_UDF_SERVER_PORT}}
+                      :path: /python/methods
+                exit: python_udf_http_client
+              - when:
                   - headers:
                       :scheme: http
                       :authority: localhost:7184
@@ -202,6 +213,16 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.CONFIG_SERVER_HOST}}
               port: ${{env.CONFIG_SERVER_PORT}}
+          python_udf_http_client:
+            type: http
+            kind: client
+            exit: python_udf_tcp_client
+          python_udf_tcp_client:
+            type: tcp
+            kind: client
+            options:
+              host: ${{env.PYTHON_UDF_SERVER_HOST}}
+              port: ${{env.PYTHON_UDF_SERVER_PORT}}
           apicurio_http_client:
             type: http
             kind: client
