@@ -12,16 +12,10 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.migrations;
+package io.aklivity.zillabase.cli.internal.migrations.model;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMaterializedView;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseTable;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZfunction;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZtable;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZview;
 
 public class ZillabaseDatabaseSchema
 {

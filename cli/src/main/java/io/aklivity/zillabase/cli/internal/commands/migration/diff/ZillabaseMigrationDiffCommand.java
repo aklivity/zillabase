@@ -14,12 +14,9 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.migration.diff;
 
-import java.util.List;
-
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 @Command(
     name = "diff",
@@ -31,25 +28,16 @@ public final class ZillabaseMigrationDiffCommand extends ZillabaseMigrationComma
     {
         try
         {
-            List<ZillabaseMigrationFile> pending = migrationDiff.filesDiff();
+            System.out.println("All migrations:");
+            migrationService.allMigrationFiles().forEach(file ->
+                System.out.println(file.version() + " -> " + file.description()));
 
-            if (!pending.isEmpty())
-            {
-                System.out.println("Pending migrations:");
+            System.out.println("Unapplied migrations:");
+            migrationService.unappliedFiles().forEach(file ->
+                System.out.println(file.version() + " -> " + file.description()));
 
-                for (ZillabaseMigrationFile mf : pending)
-                {
-                    System.out.println(" - " + mf.version() + " : " + mf.scriptName());
-                }
-            }
-
-            String patchScript =  migrationDiff.databaseDiff();
-
-            if (!patchScript.isEmpty())
-            {
-                System.out.println("Detected manual changes:\n");
-                System.out.println(patchScript);
-            }
+            String diffScript = migrationService.databaseDiff();
+            System.out.println("Database diff:\n" + diffScript);
         }
         catch (Exception ex)
         {

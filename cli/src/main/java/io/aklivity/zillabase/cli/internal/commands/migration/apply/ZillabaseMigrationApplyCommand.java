@@ -14,9 +14,12 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.migration.apply;
 
+import java.util.List;
+
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 @Command(
     name = "apply",
@@ -26,13 +29,7 @@ public final class ZillabaseMigrationApplyCommand extends ZillabaseMigrationComm
     @Override
     protected void invoke()
     {
-        try
-        {
-            migrationApply.apply(migrationDiff.unappliedFiles());
-        }
-        catch (Exception ex)
-        {
-            ex.printStackTrace(System.err);
-        }
+        List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
+        migrationApplier.applyAll(unappliedFiles);
     }
 }

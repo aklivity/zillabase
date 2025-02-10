@@ -167,8 +167,9 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsApplyHelper;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsDiffHelper;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationApplier;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationService;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 @Command(
     name = "start",
@@ -387,10 +388,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         if (pgsql.connected)
         {
             final String dbName = config.risingwave.db;
-            final ZillabaseMigrationsDiffHelper migrationDiff = new ZillabaseMigrationsDiffHelper(dbName);
-            final ZillabaseMigrationsApplyHelper migrationApply = new ZillabaseMigrationsApplyHelper(dbName);
 
-            migrationApply.apply(migrationDiff.unappliedFiles());
+            ZillabaseMigrationService migrationService = new ZillabaseMigrationService(dbName);
+            List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
+
+            ZillabaseMigrationApplier applier = new ZillabaseMigrationApplier(dbName);
+            applier.applyAll(unappliedFiles);
 
             pgsql.process(seedSqlPath);
         }

@@ -37,8 +37,9 @@ public final class ZillabaseMigrationAddCommand extends ZillabaseMigrationComman
     {
         try
         {
-            String name = args.get(0);
-            String filename = saveNewMigrationFile(name, null);
+            String migrationName = args.get(0);
+            String filename = migrationService.saveNewMigrationFile(migrationName, null);
+            System.out.printf("Created migration: %s%n", filename);
 
             System.out.printf("Created migration %s\n", filename);
 

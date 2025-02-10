@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.migrations;
+package io.aklivity.zillabase.cli.internal.migrations.model;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +42,10 @@ public class ZillabaseSchemaDiff
             {
                 sb.append(diff).append("\n\n");
             }
+        }
+        else
+        {
+            sb.append("No changes detected.");
         }
 
 

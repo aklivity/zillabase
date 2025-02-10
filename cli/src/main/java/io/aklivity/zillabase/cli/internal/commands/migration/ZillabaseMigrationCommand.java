@@ -14,73 +14,34 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.migration;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsApplyHelper;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsDiffHelper;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationApplier;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationService;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
 {
-    protected static final Path MIGRATIONS_PATH = ZillabaseMigrationsDiffHelper.MIGRATIONS_PATH;
-
-    protected static final String MIGRATION_FILE_FORMAT = ZillabaseMigrationsDiffHelper.MIGRATION_FILE_FORMAT;
-
-    protected final Matcher matcher;
-
-    protected final ZillabaseMigrationsDiffHelper migrationDiff;
-    protected final ZillabaseMigrationsApplyHelper migrationApply;
+    protected final ZillabaseMigrationService migrationService;
+    protected final ZillabaseMigrationApplier migrationApplier;
 
     protected ZillabaseMigrationCommand()
     {
         ZillabaseConfig config = new ZillabaseConfig();
         String dbName = config.risingwave.db;
 
-        this.migrationDiff = new ZillabaseMigrationsDiffHelper(dbName);
-        this.migrationApply = new ZillabaseMigrationsApplyHelper(dbName);
-        this.matcher = migrationDiff.fileMatcher;
+        this.migrationService = new ZillabaseMigrationService(dbName);
+        this.migrationApplier = new ZillabaseMigrationApplier(dbName);
     }
 
     protected final Stream<String> listMigrations() throws IOException
     {
-        return migrationDiff.allMigrationFiles().stream().map(ZillabaseMigrationFile::scriptName);
-    }
-
-    protected String saveNewMigrationFile(
-        String name,
-        String content) throws IOException
-    {
-        Optional<String> latest = listMigrations().reduce((n1, n2) -> n2);
-
-        int next = latest.isPresent() && matcher.reset(latest.get()).matches()
-            ? Integer.parseInt(matcher.group("number")) + 1
-            : 0;
-
-        String filename = MIGRATION_FILE_FORMAT.formatted(next, name);
-        Path newMigration = MIGRATIONS_PATH.resolve(filename);
-
-        Files.createDirectories(MIGRATIONS_PATH);
-        Path path = Files.createFile(newMigration);
-
-        if (content != null)
-        {
-            Files.writeString(path, content, UTF_8, CREATE, TRUNCATE_EXISTING);
-        }
-
-        return filename;
+        return migrationService.allMigrationFiles().stream().map(ZillabaseMigrationFile::scriptName);
     }
 
     @Command(
