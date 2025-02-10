@@ -30,6 +30,6 @@ public final class ZillabaseMigrationApplyCommand extends ZillabaseMigrationComm
     protected void invoke()
     {
         List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
-        migrationApplier.applyAll(unappliedFiles);
+        migrationApplier.apply(unappliedFiles);
     }
 }

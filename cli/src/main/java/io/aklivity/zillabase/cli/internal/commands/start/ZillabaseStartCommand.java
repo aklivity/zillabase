@@ -357,7 +357,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
 
             ZillabaseMigrationApplier applier = new ZillabaseMigrationApplier(dbName);
-            applier.applyAll(unappliedFiles);
+            applier.apply(unappliedFiles);
 
             pgsql.process(seedSqlPath);
         }

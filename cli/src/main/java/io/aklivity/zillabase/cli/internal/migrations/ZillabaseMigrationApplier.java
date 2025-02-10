@@ -32,16 +32,16 @@ public final class ZillabaseMigrationApplier
         this.metadataRepository = new MigrationMetadataRepository(dbName);
     }
 
-    public void applyAll(
+    public void apply(
         List<ZillabaseMigrationFile> unappliedFiles)
     {
         for (ZillabaseMigrationFile file : unappliedFiles)
         {
-            applySingle(file);
+            apply(file);
         }
     }
 
-    private void applySingle(
+    private void apply(
         ZillabaseMigrationFile migration)
     {
         try
