@@ -33,7 +33,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMaterializedView;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 public final class MigrationFileRepository
