@@ -14,6 +14,7 @@
  */
 package io.aklivity.zillabase.cli.internal.migrations.repository;
 
+import static com.google.common.collect.ImmutableList.of;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
@@ -32,6 +33,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMaterializedView;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 public final class MigrationFileRepository
@@ -66,7 +68,7 @@ public final class MigrationFileRepository
                     .map(matcher -> Integer.parseInt(matcher.group("number")))
                     .max(Comparator.naturalOrder());
 
-                return maxVersion.map(v -> v + 1).orElse(1);
+                nextVersion = maxVersion.map(v -> v + 1).orElse(1);
             }
         }
 
@@ -91,9 +93,10 @@ public final class MigrationFileRepository
 
     public List<ZillabaseMigrationFile> listAllMigrationFiles()
     {
+        List<ZillabaseMigrationFile> files = of();
         try
         {
-            return Files.list(migrationsPath)
+            files = Files.list(migrationsPath)
                 .sorted()
                 .filter(Files::isRegularFile)
                 .filter(this::matchesPattern)
@@ -102,9 +105,10 @@ public final class MigrationFileRepository
         }
         catch (IOException ex)
         {
-            // log or handle
-            return List.of();
+            System.err.println("Failed to list migration files");
         }
+
+        return files;
     }
 
     private boolean matchesPattern(
@@ -116,6 +120,8 @@ public final class MigrationFileRepository
     private ZillabaseMigrationFile parseFile(
         Path filePath)
     {
+        ZillabaseMigrationFile migration = null;
+
         String fileName = filePath.getFileName().toString();
         Matcher matcher = MIGRATION_FILE_PATTERN.matcher(fileName);
 
@@ -131,13 +137,14 @@ public final class MigrationFileRepository
         {
             String sqlContent = Files.readString(filePath, UTF_8);
             String checksum = computeSHA256Checksum(filePath);
-            return new ZillabaseMigrationFile(version, description, fileName, sqlContent, checksum);
+            migration = new ZillabaseMigrationFile(version, description, fileName, sqlContent, checksum);
         }
         catch (Exception e)
         {
-            // log or handle
-            return new ZillabaseMigrationFile(version, description, fileName, "", "");
+            System.err.println("Failed to parse migration file: " + filePath);
         }
+
+        return migration;
     }
 
     private String computeSHA256Checksum(
