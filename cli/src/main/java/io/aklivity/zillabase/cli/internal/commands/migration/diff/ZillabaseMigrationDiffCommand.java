@@ -28,10 +28,6 @@ public final class ZillabaseMigrationDiffCommand extends ZillabaseMigrationComma
     {
         try
         {
-            System.out.println("All migrations:");
-            migrationService.allMigrationFiles().forEach(file ->
-                System.out.println(file.version() + " -> " + file.description()));
-
             System.out.println("Unapplied migrations:");
             migrationService.unappliedFiles().forEach(file ->
                 System.out.println(file.version() + " -> " + file.description()));
