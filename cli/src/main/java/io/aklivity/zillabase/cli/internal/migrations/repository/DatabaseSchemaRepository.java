@@ -100,6 +100,7 @@ public final class DatabaseSchemaRepository
         String query = """
             SELECT name, sql
             FROM zb_catalog.zviews
+            WHERE name NOT IN ('zcatalogs')
             """;
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(query))
@@ -169,24 +170,23 @@ public final class DatabaseSchemaRepository
         ZillabaseDatabaseSchema schema) throws SQLException
     {
         List<String> mviews = showObjects(connection, "MATERIALIZED VIEWS");
-        if (!mviews.isEmpty())
-        {
-            String includes = mviews.stream()
-                .map(name -> "'" + name + "'")
-                .collect(Collectors.joining(", "));
-            String query = "SELECT name, definition FROM rw_materialized_views WHERE name IN (%s)".formatted(includes);
 
-            try (Statement stmt = connection.createStatement();
-                 ResultSet rs = stmt.executeQuery(query))
+        String includes = mviews.stream()
+            .filter(m -> !"zcatalogs".equals(m))
+            .map(name -> "'" + name + "'")
+            .collect(Collectors.joining(", "));
+        String query = "SELECT name, definition FROM rw_materialized_views WHERE name IN (%s)".formatted(includes);
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query))
+        {
+            while (rs.next())
             {
-                while (rs.next())
-                {
-                    ZillabaseMaterializedView mv = new ZillabaseMaterializedView(
-                        rs.getString("name"),
-                        rs.getString("definition")
-                    );
-                    schema.addMaterializedView(mv);
-                }
+                ZillabaseMaterializedView mv = new ZillabaseMaterializedView(
+                    rs.getString("name"),
+                    rs.getString("definition")
+                );
+                schema.addMaterializedView(mv);
             }
         }
     }

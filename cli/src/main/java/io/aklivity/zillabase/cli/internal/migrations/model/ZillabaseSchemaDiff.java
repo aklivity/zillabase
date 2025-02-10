@@ -45,7 +45,7 @@ public class ZillabaseSchemaDiff
         }
         else
         {
-            sb.append("No changes detected.");
+            sb.append("--No changes detected.--");
         }
 
 
