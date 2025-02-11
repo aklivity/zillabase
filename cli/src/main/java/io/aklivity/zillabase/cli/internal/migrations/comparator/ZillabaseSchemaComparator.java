@@ -26,8 +26,8 @@ public final class ZillabaseSchemaComparator
     private interface SchemaComparisonStrategy
     {
         void compare(
-            ZillabaseDatabaseSchema actual,
-            ZillabaseDatabaseSchema expected,
+            ZillabaseDatabaseSchema from,
+            ZillabaseDatabaseSchema to,
             ZillabaseSchemaDiff diff);
     }
 
