@@ -206,6 +206,7 @@
                 props.row.type === 'External' || props.row.type === 'Active',
               'bg-custom-dark':
                 props.row.type === 'Embedded' ||
+                props.row.zfunction === true ||
                 props.row.type === 'Real-time Synced',
             }"
           >
@@ -463,7 +464,7 @@ export default defineComponent({
     isShowEdit: {
       type: Boolean,
       default: true,
-    }
+    },
   },
   data() {
     return {

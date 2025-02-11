@@ -607,14 +607,15 @@ export default defineComponent({
       this.isDeleteDialogOpen = false;
       if (this.selectedRow.ztable) {
         this.$ws.sendMessage(
-          `DROP ZTABLE ztable_${this.selectedRow.name};`,
+          `DROP ZTABLE ${this.selectedRow.name};`,
           "drop_ztable"
         );
+      } else {
+        this.$ws.sendMessage(
+          `DROP TABLE ${this.selectedRow.name};`,
+          "drop_table"
+        );
       }
-      this.$ws.sendMessage(
-        `DROP TABLE ${this.selectedRow.name};`,
-        "drop_table"
-      );
       this.selectedRow = null;
     },
     openTableDialog() {
