@@ -5,7 +5,7 @@ This example demonstrates how to register external User Defined Functions (UDFs)
 #### Build external User Defined Functions (UDFs)
 
 ```bash
-cd zillabase/functions/java/risingwave-java-udf-template/
+cd zillabase/functions/java/
 ./mvnw clean install
 ```
 
