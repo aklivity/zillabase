@@ -1523,6 +1523,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "CONFIG_SERVER_PORT=%d".formatted(configServer.getPort()),
                 "PYTHON_UDF_SERVER_HOST=%s".formatted("udf-server-python.zillabase.dev"),
                 "PYTHON_UDF_SERVER_PORT=%d".formatted(5000),
+                "JAVA_UDF_SERVER_HOST=%s".formatted("udf-server-java.zillabase.dev"),
+                "JAVA_UDF_SERVER_PORT=%d".formatted(5001),
                 "APICURIO_HOST=%s".formatted(apicurio.getHost()),
                 "APICURIO_PORT=%d".formatted(apicurio.getPort()),
                 "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
