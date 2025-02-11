@@ -17,14 +17,12 @@ FROM python:3.12-slim
 
 WORKDIR /opt/udf
 
-COPY src/io/aklivity/zillabase/udf-server.py .
+COPY src/io/aklivity/zillabase/* .
 
 RUN pip install --upgrade pip
-
 RUN pip install flask
-
 RUN pip install arrow-udf
 
 ENV PYTHONPATH="/opt/udf/lib"
 
-CMD ["python3", "udf-server.py"]
+CMD ["python3", "main.py"]
