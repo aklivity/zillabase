@@ -35,7 +35,7 @@ public final class ZillabaseSqlExecutor
         int port,
         String db)
     {
-        this.url = "jdbc:postgresql://localhost:%d/%s".formatted(port,db);
+        this.url = "jdbc:postgresql://localhost:%d/%s".formatted(port, db);
 
         this.props = new Properties();
         this.props.setProperty("user", "zillabase");
