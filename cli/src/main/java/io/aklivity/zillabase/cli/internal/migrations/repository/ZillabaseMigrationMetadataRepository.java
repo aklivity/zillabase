@@ -29,15 +29,16 @@ import org.postgresql.jdbc.PreferQueryMode;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationMetadata;
 
-public final class MigrationMetadataRepository
+public final class ZillabaseMigrationMetadataRepository
 {
     private final String url;
     private final Properties props;
 
-    public MigrationMetadataRepository(
-        String dbName)
+    public ZillabaseMigrationMetadataRepository(
+        int port,
+        String db)
     {
-        this.url = "jdbc:postgresql://localhost:4567/%s".formatted(dbName);
+        this.url = "jdbc:postgresql://localhost:%d/%s".formatted(port, db);
         this.props = new Properties();
         this.props.setProperty("user", "postgres");
         this.props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());

@@ -18,6 +18,7 @@ import static com.google.common.collect.ImmutableList.of;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static org.agrona.BitUtil.toHex;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,30 +36,30 @@ import java.util.stream.Stream;
 
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
-public final class MigrationFileRepository
+public final class ZillabaseMigrationFileRepository
 {
     public static final Pattern MIGRATION_FILE_PATTERN =
         Pattern.compile("(?<number>\\d{6})__(?<description>.+)\\.sql");
 
-    private final Path migrationsPath;
+    private final Path path;
 
-    public MigrationFileRepository(
-        Path migrationsPath)
+    public ZillabaseMigrationFileRepository(
+        Path path)
     {
-        this.migrationsPath = migrationsPath;
+        this.path = path;
     }
 
     public int findNextMigrationVersion() throws IOException
     {
         int nextVersion = 1;
 
-        if (!Files.exists(migrationsPath))
+        if (!Files.exists(path))
         {
-            Files.createDirectories(migrationsPath);
+            Files.createDirectories(path);
         }
         else
         {
-            try (Stream<Path> stream = Files.list(migrationsPath))
+            try (Stream<Path> stream = Files.list(path))
             {
                 Optional<Integer> maxVersion = stream
                     .filter(Files::isRegularFile)
@@ -78,12 +79,12 @@ public final class MigrationFileRepository
         String fileName,
         String sqlContent) throws IOException
     {
-        if (!Files.exists(migrationsPath))
+        if (!Files.exists(path))
         {
-            Files.createDirectories(migrationsPath);
+            Files.createDirectories(path);
         }
 
-        Path newFile = migrationsPath.resolve(fileName);
+        Path newFile = path.resolve(fileName);
 
         Files.writeString(newFile, sqlContent, CREATE, TRUNCATE_EXISTING);
 
@@ -95,7 +96,7 @@ public final class MigrationFileRepository
         List<ZillabaseMigrationFile> files = of();
         try
         {
-            files = Files.list(migrationsPath)
+            files = Files.list(path)
                 .sorted()
                 .filter(Files::isRegularFile)
                 .filter(this::matchesPattern)
@@ -160,12 +161,6 @@ public final class MigrationFileRepository
             }
         }
 
-        byte[] hashBytes = digest.digest();
-        StringBuilder sb = new StringBuilder();
-        for (byte b : hashBytes)
-        {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
+        return toHex(digest.digest());
     }
 }

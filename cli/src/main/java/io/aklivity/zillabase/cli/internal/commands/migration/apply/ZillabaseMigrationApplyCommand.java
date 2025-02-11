@@ -29,7 +29,7 @@ public final class ZillabaseMigrationApplyCommand extends ZillabaseMigrationComm
     @Override
     protected void invoke()
     {
-        List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
-        migrationApplier.apply(unappliedFiles);
+        List<ZillabaseMigrationFile> unappliedFiles = service.unappliedFiles();
+        applier.apply(unappliedFiles);
     }
 }

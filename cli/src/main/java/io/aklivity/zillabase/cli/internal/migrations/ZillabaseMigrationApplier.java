@@ -17,19 +17,20 @@ package io.aklivity.zillabase.cli.internal.migrations;
 import java.util.List;
 
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
-import io.aklivity.zillabase.cli.internal.migrations.repository.MigrationMetadataRepository;
+import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseMigrationMetadataRepository;
 import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseSqlExecutor;
 
 public final class ZillabaseMigrationApplier
 {
     private final ZillabaseSqlExecutor sqlExecutor;
-    private final MigrationMetadataRepository metadataRepository;
+    private final ZillabaseMigrationMetadataRepository metadataRepository;
 
     public ZillabaseMigrationApplier(
-        String dbName)
+        int port,
+        String db)
     {
-        this.sqlExecutor = new ZillabaseSqlExecutor(dbName);
-        this.metadataRepository = new MigrationMetadataRepository(dbName);
+        this.sqlExecutor = new ZillabaseSqlExecutor(port, db);
+        this.metadataRepository = new ZillabaseMigrationMetadataRepository(port, db);
     }
 
     public void apply(

@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseAdminConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationApplier;
@@ -27,21 +28,22 @@ import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFil
 
 public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
 {
-    protected final ZillabaseMigrationService migrationService;
-    protected final ZillabaseMigrationApplier migrationApplier;
+    protected final ZillabaseMigrationService service;
+    protected final ZillabaseMigrationApplier applier;
 
     protected ZillabaseMigrationCommand()
     {
         ZillabaseConfig config = new ZillabaseConfig();
-        String dbName = config.risingwave.db;
+        int port = ZillabaseAdminConfig.DEFAULT_ADMIN_PGSQL_PORT;
+        String db = config.risingwave.db;
 
-        this.migrationService = new ZillabaseMigrationService(dbName);
-        this.migrationApplier = new ZillabaseMigrationApplier(dbName);
+        this.service = new ZillabaseMigrationService(port, db);
+        this.applier = new ZillabaseMigrationApplier(port, db);
     }
 
     protected final Stream<String> listMigrations() throws IOException
     {
-        return migrationService.allMigrationFiles().stream().map(ZillabaseMigrationFile::scriptName);
+        return service.allMigrationFiles().stream().map(ZillabaseMigrationFile::scriptName);
     }
 
     @Command(

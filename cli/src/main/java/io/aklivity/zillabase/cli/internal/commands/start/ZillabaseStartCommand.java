@@ -110,6 +110,7 @@ import com.github.dockerjava.api.model.ResponseItem;
 import com.github.dockerjava.api.model.Volume;
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseAdminConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
@@ -351,12 +352,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         if (pgsql.connected)
         {
-            final String dbName = config.risingwave.db;
+            final int port = ZillabaseAdminConfig.DEFAULT_ADMIN_PGSQL_PORT;
+            final String db = config.risingwave.db;
 
-            ZillabaseMigrationService migrationService = new ZillabaseMigrationService(dbName);
+            ZillabaseMigrationService migrationService = new ZillabaseMigrationService(port, db);
             List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
 
-            ZillabaseMigrationApplier applier = new ZillabaseMigrationApplier(dbName);
+            ZillabaseMigrationApplier applier = new ZillabaseMigrationApplier(port, db);
             applier.apply(unappliedFiles);
 
             pgsql.process(seedSqlPath);

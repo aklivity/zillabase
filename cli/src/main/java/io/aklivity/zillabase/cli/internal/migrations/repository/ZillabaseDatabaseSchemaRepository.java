@@ -33,15 +33,16 @@ import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZfunction;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZtable;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZview;
 
-public final class DatabaseSchemaRepository
+public final class ZillabaseDatabaseSchemaRepository
 {
     private final String url;
     private final Properties props;
 
-    public DatabaseSchemaRepository(
-        String dbName)
+    public ZillabaseDatabaseSchemaRepository(
+        int port,
+        String db)
     {
-        this.url = "jdbc:postgresql://localhost:4567/%s".formatted(dbName);
+        this.url = "jdbc:postgresql://localhost:%d/%s".formatted(port, db);
         this.props = new Properties();
         this.props.setProperty("user", "postgres");
         this.props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
@@ -144,7 +145,7 @@ public final class DatabaseSchemaRepository
         if (!tables.isEmpty())
         {
             String includes = tables.stream()
-                .map(name -> "'" + name + "'")
+                .map("'%s'"::formatted)
                 .collect(Collectors.joining(", "));
             String query = "SELECT name, definition FROM rw_tables WHERE name IN (%s)".formatted(includes);
 
@@ -171,7 +172,7 @@ public final class DatabaseSchemaRepository
 
         String includes = mviews.stream()
             .filter(m -> !"zcatalogs".equals(m))
-            .map(name -> "'" + name + "'")
+            .map("'%s'"::formatted)
             .collect(Collectors.joining(", "));
         String query = "SELECT name, definition FROM rw_materialized_views WHERE name IN (%s)".formatted(includes);
 
@@ -197,7 +198,7 @@ public final class DatabaseSchemaRepository
         if (!views.isEmpty())
         {
             String includes = views.stream()
-                .map(name -> "'" + name + "'")
+                .map("'%s'"::formatted)
                 .collect(Collectors.joining(", "));
             String query = "SELECT name, definition FROM rw_views WHERE name IN (%s)".formatted(includes);
 

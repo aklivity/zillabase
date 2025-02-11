@@ -29,10 +29,10 @@ public final class ZillabaseMigrationDiffCommand extends ZillabaseMigrationComma
         try
         {
             System.out.println("Unapplied migrations:");
-            migrationService.unappliedFiles().forEach(file ->
+            service.unappliedFiles().forEach(file ->
                 System.out.println(file.scriptName()));
 
-            String diffScript = migrationService.databaseDiff();
+            String diffScript = service.databaseDiff();
             System.out.println("Database diff:\n" + diffScript);
         }
         catch (Exception ex)

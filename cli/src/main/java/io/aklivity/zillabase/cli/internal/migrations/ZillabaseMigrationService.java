@@ -26,36 +26,43 @@ import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFil
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationMetadata;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseSchemaDiff;
 import io.aklivity.zillabase.cli.internal.migrations.parser.SchemaParser;
-import io.aklivity.zillabase.cli.internal.migrations.repository.DatabaseSchemaRepository;
-import io.aklivity.zillabase.cli.internal.migrations.repository.MigrationFileRepository;
-import io.aklivity.zillabase.cli.internal.migrations.repository.MigrationMetadataRepository;
+import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseDatabaseSchemaRepository;
+import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseMigrationFileRepository;
+import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseMigrationMetadataRepository;
 
 public final class ZillabaseMigrationService
 {
     private static final Path MIGRATIONS_PATH = ZillabaseCommand.ZILLABASE_PATH.resolve("migrations");
 
-    private final DatabaseSchemaRepository databaseSchemaRepository;
-    private final MigrationMetadataRepository migrationMetadataRepository;
-    private final MigrationFileRepository migrationFileRepository;
+    private final ZillabaseDatabaseSchemaRepository zillabaseDatabaseSchemaRepository;
+    private final ZillabaseMigrationMetadataRepository metadataRepository;
+    private final ZillabaseMigrationFileRepository fileRepository;
     private final SchemaParser schemaParser;
     private final ZillabaseSchemaComparator schemaComparator;
 
     public ZillabaseMigrationService(
-        String dbName)
+        int port,
+        String db)
     {
-        this.databaseSchemaRepository = new DatabaseSchemaRepository(dbName);
-        this.migrationMetadataRepository = new MigrationMetadataRepository(dbName);
+        this.zillabaseDatabaseSchemaRepository = new ZillabaseDatabaseSchemaRepository(port, db);
+        this.metadataRepository = new ZillabaseMigrationMetadataRepository(port, db);
 
-        this.migrationFileRepository = new MigrationFileRepository(MIGRATIONS_PATH);
+        this.fileRepository = new ZillabaseMigrationFileRepository(MIGRATIONS_PATH);
         this.schemaParser = new SchemaParser();
         this.schemaComparator = new ZillabaseSchemaComparator();
+    }
+
+    public String newEmptyMigrationFile(
+        String name) throws IOException
+    {
+        return saveNewMigrationFile(name, null);
     }
 
     public String saveNewMigrationFile(
         String name,
         String content) throws IOException
     {
-        int nextVersion = migrationFileRepository.findNextMigrationVersion();
+        int nextVersion = fileRepository.findNextMigrationVersion();
 
         String versionStr = String.format("%06d", nextVersion);
         String safeName = sanitizeName(name);
@@ -71,32 +78,32 @@ public final class ZillabaseMigrationService
             actualContent = content;
         }
 
-        return migrationFileRepository.createNewMigrationFile(fileName, actualContent);
+        return fileRepository.createNewMigrationFile(fileName, actualContent);
     }
 
     public List<ZillabaseMigrationMetadata> loadMigrationsMetadata()
     {
-        return migrationMetadataRepository.loadMetadata();
+        return metadataRepository.loadMetadata();
     }
 
     public List<ZillabaseMigrationFile> allMigrationFiles()
     {
-        return migrationFileRepository.listAllMigrationFiles();
+        return fileRepository.listAllMigrationFiles();
     }
 
     public List<ZillabaseMigrationFile> unappliedFiles()
     {
         return allMigrationFiles().stream()
-            .filter(f -> !migrationMetadataRepository.isVersionApplied(f.version()))
+            .filter(f -> !metadataRepository.isVersionApplied(f.version()))
             .collect(Collectors.toList());
     }
 
     public String databaseDiff()
     {
-        ZillabaseDatabaseSchema actual = databaseSchemaRepository.loadActualSchema();
-        ZillabaseDatabaseSchema expected = buildExpectedSchema();
+        ZillabaseDatabaseSchema from = zillabaseDatabaseSchemaRepository.loadActualSchema();
+        ZillabaseDatabaseSchema to = buildExpectedSchema();
 
-        ZillabaseSchemaDiff diff = schemaComparator.compareSchemas(actual, expected);
+        ZillabaseSchemaDiff diff = schemaComparator.compareSchemas(from, to);
 
         return diff.generatePatchScript();
     }
@@ -107,7 +114,7 @@ public final class ZillabaseMigrationService
         List<ZillabaseMigrationFile> allFiles = allMigrationFiles();
         for (ZillabaseMigrationFile file : allFiles)
         {
-            if (migrationMetadataRepository.isVersionApplied(file.version()))
+            if (metadataRepository.isVersionApplied(file.version()))
             {
                 schemaParser.parseCreateStatements(expectedSchema, file.sqlContents());
             }
