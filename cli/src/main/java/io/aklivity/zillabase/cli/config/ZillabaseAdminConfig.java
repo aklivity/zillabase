@@ -122,7 +122,7 @@ public final class ZillabaseAdminConfig
                   headers:
                     overrides:
                       :authority: ${{env.PYTHON_UDF_SERVER_HOST}}:${{env.PYTHON_UDF_SERVER_PORT}}
-                      :path: /python/methods
+                      :path: /python/functions
                 exit: python_udf_http_client
               - when:
                 - headers:
@@ -133,7 +133,7 @@ public final class ZillabaseAdminConfig
                   headers:
                     overrides:
                       :authority: ${{env.JAVA_UDF_SERVER_HOST}}:${{env.JAVA_UDF_SERVER_PORT}}
-                      :path: /java/methods
+                      :path: /java/functions
                 exit: java_udf_http_client
               - when:
                   - headers:

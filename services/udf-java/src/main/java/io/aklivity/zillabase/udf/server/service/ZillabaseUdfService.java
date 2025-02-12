@@ -29,8 +29,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObjectBuilder;
+
 import com.risingwave.functions.ScalarFunction;
 import com.risingwave.functions.TableFunction;
 import com.risingwave.functions.UdfServer;
@@ -203,7 +205,7 @@ public class ZillabaseUdfService
     {
         HttpServer httpServer = HttpServer.create(new InetSocketAddress("0.0.0.0", HTTP_PORT), 0);
 
-        httpServer.createContext("/java/methods", exchange ->
+        httpServer.createContext("/java/functions", exchange ->
         {
             String response = toJson(discoveredFunctions);
             byte[] bytes = response.getBytes();
@@ -225,12 +227,32 @@ public class ZillabaseUdfService
         String json = "[]";
         try
         {
-            ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
-            json = writer.writeValueAsString(discoveredFunctions);
+            JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+
+            for (DiscoveredFunction function : discoveredFunctions)
+            {
+                JsonObjectBuilder functionBuilder = Json.createObjectBuilder()
+                    .add("name", function.name())
+                    .add("returnType", function.returnType());
+
+                jakarta.json.JsonArrayBuilder paramsArrayBuilder = Json.createArrayBuilder();
+                for (ParameterInfo param : function.params())
+                {
+                    JsonObjectBuilder paramBuilder = Json.createObjectBuilder()
+                        .add("name", param.paramName())
+                        .add("type", param.paramType());
+                    paramsArrayBuilder.add(paramBuilder);
+                }
+
+                functionBuilder.add("params", paramsArrayBuilder);
+                arrayBuilder.add(functionBuilder);
+            }
+
+            json = arrayBuilder.build().toString();
         }
         catch (Exception e)
         {
-            //Ignore
+            System.out.println("Failed to create json: " + e.getMessage());
         }
 
         return json;

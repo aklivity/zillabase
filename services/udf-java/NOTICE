@@ -36,7 +36,10 @@ This project includes:
   Jackson-annotations under The Apache Software License, Version 2.0
   Jackson-core under The Apache Software License, Version 2.0
   jackson-databind under The Apache Software License, Version 2.0
+  Jakarta JSON Processing API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   javax.annotation API under CDDL + GPLv2 with classpath exception
+  JSON-B API under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
+  JSON-P Default Provider under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   Netty/Buffer under Apache License, Version 2.0
   Netty/Codec under Apache License, Version 2.0
   Netty/Codec/HTTP under Apache License, Version 2.0
@@ -48,6 +51,7 @@ This project includes:
   Netty/TomcatNative [OpenSSL - Classes] under The Apache Software License, Version 2.0
   Netty/Transport under Apache License, Version 2.0
   Netty/Transport/Native/Unix/Common under Apache License, Version 2.0
+  org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
   proto-google-common-protos under Apache-2.0
   Protocol Buffers [Core] under BSD-3-Clause
   RisingWave Java UDF SDK under Apache License, Version 2.0

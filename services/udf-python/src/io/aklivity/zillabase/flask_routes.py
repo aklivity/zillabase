@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 functions = []
 
-@app.route("/python/methods", methods=["GET"])
+@app.route("/python/functions", methods=["GET"])
 def list_methods():
     global functions
     all_functions_info = []
