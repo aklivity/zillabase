@@ -13,7 +13,6 @@
       @add-new="openFunctionDialog"
       :isShowEdit="false"
     />
-    <!-- :tableName="'function-table'" -->
   </div>
 
   <q-dialog
@@ -411,10 +410,6 @@ export default defineComponent({
         { name: "type", label: "Type", align: "left", field: "type" },
         { name: "actions", label: "Actions", align: "center" },
       ],
-      // functionParamTypeColumns: [
-      //   { name: "type", label: "Type", align: "left", field: "type" },
-      //   { name: "actions", label: "Actions", align: "center" },
-      // ],
       functionTypeOptions: [
         "boolean",
         "smallint",

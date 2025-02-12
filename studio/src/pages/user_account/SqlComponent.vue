@@ -41,7 +41,6 @@
             </div>
           </q-card-section>
           <q-tab v-for="(tab, index) in tabs" :key="tab.name" :name="tab.name">
-            <!-- <div class="row q-pl-sm justify-between items-center"> -->
             <!-- Tab name on the left -->
             <span
               class="text-custom-gray-dark text-capitalize text-weight-light"
@@ -66,7 +65,6 @@
                 size="14px"
               />
             </div>
-            <!-- </div> -->
           </q-tab>
         </q-tabs>
       </template>

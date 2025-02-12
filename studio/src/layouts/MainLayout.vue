@@ -28,19 +28,6 @@
           :ripple="false"
           class="filter-text-secondary w-70px"
         />
-        <!-- <q-separator vertical />
-        <div class="row no-wrap items-center">
-          <q-avatar size="42px" class="q-mr-sm">
-            <q-img src="/icons/person-01.svg" height="28px" width="28px" />
-          </q-avatar>
-          <div class="column">
-            <div class="text-subtitle1 text-custom-text-secondary text-weight-medium">
-              John Doe
-            </div>
-            <div class="text-caption text-custom-gray-dark text-weight-light">Web Developer</div>
-          </div>
-          <q-btn flat icon="img:/icons/arrow-down.svg" class="filter-text-secondary text-caption" :ripple="false" />
-        </div> -->
       </q-toolbar>
     </q-header>
 
@@ -120,7 +107,6 @@
             class="fs-30 filter-text-secondary q-pl-lg"
           />
         </div>
-        <!-- <q-btn unelevated label="Settings" icon="img:/icons/setting.svg" :ripple="false" color="dark" class="text-capitalize rounded-10 highlighted-border" /> -->
       </div>
       <q-separator />
       <router-view />

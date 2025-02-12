@@ -54,48 +54,40 @@
             <q-checkbox v-model="props.row.primary" dense color="light-green" />
           </template>
           <template v-else-if="col.name === 'isNullable'">
-            <q-checkbox v-model="props.row.isNullable" dense color="light-green" />
+            <q-checkbox
+              v-model="props.row.isNullable"
+              dense
+              color="light-green"
+            />
           </template>
 
           <template v-else-if="col.name === 'actions'">
             <!-- Show action buttons for all rows except the last one -->
-            <!-- <template v-if="props.row !== rows[rows.length - 1]"> -->
-              <q-btn
+            <q-btn
               v-if="isSettingShow"
-                icon="img:/icons/setting-2.svg"
-                flat
-                dense
-                class="filter-custom-dark"
-                @click="onSettingsClick(props.row)"
-              />
-              <q-btn
-               v-if="props.row !== rows[rows.length - 1]"
-                icon="img:/icons/close-square.svg"
-                flat
-                dense
-                class="q-ml-sm"
-                @click="removeRow(props.row)"
-              />
-              <q-btn
+              icon="img:/icons/setting-2.svg"
+              flat
+              dense
+              class="filter-custom-dark"
+              @click="onSettingsClick(props.row)"
+            />
+            <q-btn
+              v-if="props.row !== rows[rows.length - 1]"
+              icon="img:/icons/close-square.svg"
+              flat
+              dense
+              class="q-ml-sm"
+              @click="removeRow(props.row)"
+            />
+            <q-btn
               v-if="props.row === rows[rows.length - 1]"
-                unelevated
-                icon="add"
-                color="light-green"
-                @click="addRow"
-                style="width: 28px; min-height: 28px"
-                class="rounded-10 q-pa-none text-custom-dark-color q-ml-sm"
-              />
-            <!-- </template> -->
-            <!-- <template v-else>
-              <q-btn
-                icon="img:/icons/setting-2.svg"
-                flat
-                dense
-                class="filter-custom-dark"
-                @click="onSettingsClick(props.row)"
-              />
-             
-            </template> -->
+              unelevated
+              icon="add"
+              color="light-green"
+              @click="addRow"
+              style="width: 28px; min-height: 28px"
+              class="rounded-10 q-pa-none text-custom-dark-color q-ml-sm"
+            />
           </template>
         </q-td>
       </q-tr>
@@ -124,11 +116,11 @@ export default defineComponent({
     isSettingShow: {
       type: Boolean,
       required: false,
-      default: true
+      default: true,
     },
     isMultiSelect: {
       type: Boolean,
-      default: false
+      default: false,
     },
   },
   methods: {

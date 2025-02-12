@@ -141,35 +141,6 @@
           />
         </q-card-section>
         <q-separator />
-        <!-- <q-card-section class="q-py-lg px-28">
-        <div class="flex justify-between items-center q-mb-sm">
-          <p class="text-custom-text-secondary text-subtitle1 fw-600">
-            Foreign Keys
-          </p>
-          <div>
-            <q-tooltip anchor="center left" self="center end">
-              Foreign Key Docs
-            </q-tooltip>
-            <q-btn
-              flat
-              icon="img:/icons/export.svg"
-              size="md"
-              class="filter-light-green"
-              :ripple="false"
-            />
-          </div>
-        </div>
-        <div class="flex justify-between q-pa-md foreign-key rounded-10">
-          <span class="text-custom-gray-dark">No Foreign Keys</span>
-          <q-btn
-            unelevated
-            color="light-green"
-            icon="add"
-            style="width: 30px; min-height: 30px"
-            class="rounded-10 q-pa-none text-custom-dark-color"
-          />
-        </div>
-      </q-card-section> -->
         <q-separator />
         <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
           <q-btn
@@ -387,12 +358,6 @@ export default defineComponent({
           align: "center",
           field: "primary",
         },
-        // {
-        //   name: "isNullable",
-        //   label: "Nullable",
-        //   align: "center",
-        //   field: "isNullable",
-        // },
         { name: "actions", label: "Actions", align: "center" },
       ],
       dataTypeOptions: [
@@ -528,10 +493,6 @@ export default defineComponent({
         .filter((x) => x.name)
         .map((field) => {
           let columnDef = `${field.name} ${field.type.toUpperCase()}`;
-
-          // if (!field.isNullable) {
-          //   columnDef += ` NOT NULL `;
-          // }
 
           if (field.defaultValue) {
             columnDef += ` DEFAULT '${field.defaultValue}'`;

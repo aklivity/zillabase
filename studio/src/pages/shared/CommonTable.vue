@@ -473,7 +473,7 @@ export default defineComponent({
       selectedRows: [],
       pagination: {
         page: 1,
-        rowsPerPage: 5, // Show 5 rows per page
+        rowsPerPage: 5,
       },
     };
   },

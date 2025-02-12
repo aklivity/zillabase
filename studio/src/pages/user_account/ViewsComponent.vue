@@ -65,25 +65,6 @@
               />
             </div>
           </div>
-          <!-- <div class="row items-start q-mt-lg">
-            <div class="col-3">
-              <span
-                class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Description</span
-              >
-            </div>
-            <div class="col-9">
-              <q-input
-                outlined
-                type="textarea"
-                placeholder="View Description..."
-                rows="8"
-                v-model="viewInfo.description"
-                autogrow
-                class="rounded-10 self-center text-weight-light rounded-input"
-              />
-            </div>
-          </div> -->
           <div class="row items-start q-mt-lg">
             <div class="col-3">
               <span
@@ -277,12 +258,6 @@ export default defineComponent({
       },
       tableColumns: [
         { name: "name", label: "View Name", align: "left", field: "name" },
-        // {
-        //   name: "description",
-        //   label: "Description",
-        //   align: "left",
-        //   field: "description",
-        // },
         {
           name: "zview",
           label: "ZView",
