@@ -37,17 +37,13 @@
           </template>
           <!-- Right text -->
           <template v-slot:append>
-            <span class="text-h6">{{
-              card.requestCount
-            }}</span>
+            <span class="text-h6">{{ card.requestCount }}</span>
           </template>
         </q-input>
       </q-card-section>
 
       <!-- chart Section -->
-      <q-card-section>
-        <!-- <highcharts :options="chartOptions"></highcharts> -->
-      </q-card-section>
+      <q-card-section> </q-card-section>
 
       <!-- Stats and Button Section -->
       <q-card-section>
@@ -127,24 +123,24 @@ export default defineComponent({
       ],
       chartOptions: {
         chart: {
-          type: "column", // Set chart type to "column"
+          type: "column",
         },
         title: {
-          text: "Dynamic Column Chart Example", // Chart title
+          text: "Dynamic Column Chart Example",
         },
         xAxis: {
-          categories: ["2023", "2024"], // X-axis categories (years)
+          categories: ["2023", "2024"],
           title: {
-            text: "Year", // X-axis title
+            text: "Year",
           },
         },
         yAxis: {
           min: 0,
           title: {
-            text: "Units", // Y-axis title
+            text: "Units",
           },
         },
-        series: [], // Series will be populated dynamically
+        series: [],
       },
     };
   },

@@ -56,7 +56,7 @@
             class="rounded-10"
           />
           <p class="text-custom-text-secondary text-h6 fw-600">
-            Create {{ hasUserInfoValues ? 'Edit' : 'New' }} User
+            Create {{ hasUserInfoValues ? "Edit" : "New" }} User
           </p>
         </div>
         <q-icon
@@ -68,113 +68,118 @@
       <q-separator />
       <q-form @submit="addUser" @reset="resetUser" ref="addUserForm">
         <q-card-section class="q-py-xl px-28">
-        <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >First Name</span
-            >
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >First Name</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                v-model="userInfo.firstName"
+                outlined
+                placeholder="First Name"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-          <div class="col-9">
-            <q-input
-              dense
-              v-model="userInfo.firstName"
-              outlined
-              placeholder="First Name"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Last Name</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                v-model="userInfo.lastName"
+                outlined
+                placeholder="Last Name"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-        </div>
-        <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Last Name</span
-            >
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Username</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                v-model="userInfo.username"
+                outlined
+                placeholder="User Name"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-          <div class="col-9">
-            <q-input
-              dense
-              v-model="userInfo.lastName"
-              outlined
-              placeholder="Last Name"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Email</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="userInfo.email"
+                placeholder="User Email"
+                type="email"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-        </div>
-        <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Username</span
-            >
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Password</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="userInfo.password"
+                placeholder="Password"
+                type="password"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-          <div class="col-9">
-            <q-input
-              dense
-              v-model="userInfo.username"
-              outlined
-              placeholder="User Name"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-        <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Email</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              v-model="userInfo.email"
-              placeholder="User Email"
-              type="email"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-        <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Password</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              v-model="userInfo.password"
-              placeholder="Password"
-              type="password"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-      </q-card-section>
-      <q-separator />
-      <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
-        <q-btn
-          unelevated
-          label="Cancel"
-          :ripple="false"
-          color="dark"
-          @click="closeUserDialog"
-          class="text-capitalize rounded-10 highlighted-border"
-        />
-        <q-btn
-          unelevated
-          label="Add User"
-          icon="add"
-          :ripple="false"
-          type="submit"
-          class="bg-light-green rounded-10 text-white text-capitalize self-center"
-        />
-      </q-card-section>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
+          <q-btn
+            unelevated
+            label="Cancel"
+            :ripple="false"
+            color="dark"
+            @click="closeUserDialog"
+            class="text-capitalize rounded-10 highlighted-border"
+          />
+          <q-btn
+            unelevated
+            label="Add User"
+            icon="add"
+            :ripple="false"
+            type="submit"
+            class="bg-light-green rounded-10 text-white text-capitalize self-center"
+          />
+        </q-card-section>
       </q-form>
     </q-card>
   </q-dialog>
@@ -200,7 +205,7 @@
             class="rounded-10"
           />
           <p class="text-custom-text-secondary text-h6 fw-600">
-            {{ hasProviderInfoValues ? 'Edit' : 'Add'  }} A Provider
+            {{ hasProviderInfoValues ? "Edit" : "Add" }} A Provider
           </p>
         </div>
         <q-icon
@@ -210,114 +215,84 @@
         />
       </q-card-section>
       <q-separator />
-      <q-form @submit="addSSOProvider" @reset="resetSSOProvider" ref="addSSOProviderForm">
+      <q-form
+        @submit="addSSOProvider"
+        @reset="resetSSOProvider"
+        ref="addSSOProviderForm"
+      >
         <q-card-section class="q-py-xl px-28">
-        <div class="row items-start">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Provider</span
-            >
+          <div class="row items-start">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Provider</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                placeholder="e.g Google"
+                v-model="providerInfo.providerId"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              placeholder="e.g Google"
-              v-model="providerInfo.providerId"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Alias</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="providerInfo.alias"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-        </div>
-        <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Alias</span
-            >
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Client</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="providerInfo.clientId"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
           </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              v-model="providerInfo.alias"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-        <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Client</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              v-model="providerInfo.clientId"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-        <!-- <div class="row items-start q-mt-sm q-pt-md">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Secret</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              v-model="providerInfo.secret"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div> -->
-        <!-- <div class="row items-center q-mt-sm q-pt-md">
-          <div class="col-3 flex items-center">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Enabled</span
-            >
-            <q-icon
-              name="img:icons/question-circle.svg"
-              class="fs-lg filter-gray-dark q-ml-sm"
-            />
-            <q-tooltip anchor="bottom middle" self="top middle">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </q-tooltip>
-          </div>
-          <div class="col-9">
-            <q-checkbox
-              dense
-              v-model="providerInfo.enabled"
-              color="light-green"
-            />
-          </div>
-        </div> -->
-      </q-card-section>
-      <q-separator />
-      <q-card-section class="flex justify-end q-gutter-x-lg q-pa-lg">
-        <q-btn
-          unelevated
-          label="Cancel"
-          :ripple="false"
-          color="dark"
-          @click="closeProviderDialog"
-          class="text-capitalize rounded-10 highlighted-border"
-        />
-        <q-btn
-          unelevated
-          label="Add Provider"
-          icon="add"
-          :ripple="false"
-          type="submit"
-          class="bg-light-green rounded-10 text-white text-capitalize"
-        />
-      </q-card-section>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="flex justify-end q-gutter-x-lg q-pa-lg">
+          <q-btn
+            unelevated
+            label="Cancel"
+            :ripple="false"
+            color="dark"
+            @click="closeProviderDialog"
+            class="text-capitalize rounded-10 highlighted-border"
+          />
+          <q-btn
+            unelevated
+            label="Add Provider"
+            icon="add"
+            :ripple="false"
+            type="submit"
+            class="bg-light-green rounded-10 text-white text-capitalize"
+          />
+        </q-card-section>
       </q-form>
     </q-card>
   </q-dialog>
@@ -440,18 +415,18 @@ export default defineComponent({
       addNewUser: false,
       addNewProvider: false,
       providerInfo: {
-        providerId: '',
-        alias: '',
-        clientId: '',
-        secret: '',
+        providerId: "",
+        alias: "",
+        clientId: "",
+        secret: "",
         enabled: false,
       },
       userInfo: {
-        firstName: '',
-        lastName: '',
-        username: '',
-        email: '',
-        password: '',
+        firstName: "",
+        lastName: "",
+        username: "",
+        email: "",
+        password: "",
       },
       isEnabled: true,
       userTableColumns: [
@@ -512,20 +487,20 @@ export default defineComponent({
         .then(({ data }) => {
           this.getUsers();
         })
-        .catch((err) => {
-        }).finally(() => {
+        .catch((err) => {})
+        .finally(() => {
           this.addNewUser = false;
         });
-        this.$refs.addUserForm.reset();
+      this.$refs.addUserForm.reset();
     },
     resetUser() {
       this.userInfo = {
-        firstName: '',
-        lastName: '',
-        username: '',
-        email: '',
-        password: '',
-      }
+        firstName: "",
+        lastName: "",
+        username: "",
+        email: "",
+        password: "",
+      };
     },
     getUsers() {
       appGetUsers()
@@ -560,20 +535,20 @@ export default defineComponent({
         .then(({ data }) => {
           this.getSSOProvider();
         })
-        .catch((err) => {
-        }).finally(() => {
+        .catch((err) => {})
+        .finally(() => {
           this.addNewProvider = false;
         });
-        this.$refs.addSSOProviderForm.reset();
+      this.$refs.addSSOProviderForm.reset();
     },
     resetSSOProvider() {
       this.providerInfo = {
-        providerId: '',
-        alias: '',
-        clientId: '',
-        secret: '',
+        providerId: "",
+        alias: "",
+        clientId: "",
+        secret: "",
         enabled: false,
-      }
+      };
     },
     getSSOProvider() {
       appGetSSOProviders()
@@ -586,7 +561,7 @@ export default defineComponent({
       appGetSSOProvidersById(user.alias)
         .then(({ data }) => {
           this.providerInfo = data;
-          this.providerInfo.clientId = data.config?.clientId
+          this.providerInfo.clientId = data.config?.clientId;
           this.addNewProvider = true;
         })
         .catch((err) => {
@@ -608,11 +583,11 @@ export default defineComponent({
   },
   computed: {
     hasUserInfoValues() {
-      return Object.values(this.userInfo).some(value => value);
+      return Object.values(this.userInfo).some((value) => value);
     },
     hasProviderInfoValues() {
-      return Object.values(this.providerInfo).some(value => value);
+      return Object.values(this.providerInfo).some((value) => value);
     },
-  }
+  },
 });
 </script>

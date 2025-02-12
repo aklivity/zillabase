@@ -7,9 +7,11 @@
       :rows="tableData"
       buttonLabel="Add function"
       searchInputPlaceholder="Functions"
+      @edit-row="openEditDialog"
+      @view-row="openEditDialog"
       @delete-row="openDeleteDialog"
       @add-new="openFunctionDialog"
-      :tableName="'function-table'"
+      :isShowEdit="false"
     />
   </div>
 
@@ -23,205 +25,266 @@
     class="add-new-dialog"
   >
     <q-card class="full-height">
-      <q-form @submit="addFunction" @reset="resetFunction" ref="addFunctionForm">
-      <q-card-section class="flex justify-between items-center q-pa-lg">
-        <div class="flex q-gutter-lg">
+      <q-form
+        @submit="addFunction"
+        @reset="resetFunction"
+        ref="addFunctionForm"
+      >
+        <q-card-section class="flex justify-between items-center q-pa-lg">
+          <div class="flex q-gutter-lg">
+            <q-btn
+              unelevated
+              color="light-green"
+              :icon="addNewFunction ? 'chevron_left' : 'chevron_right'"
+              style="width: 30px; min-height: 30px"
+              @click="addNewFunction = !addNewFunction"
+              class="rounded-10"
+            />
+            <p class="text-custom-text-secondary text-h6 fw-600">
+              Create New Function
+            </p>
+          </div>
+          <q-icon
+            name="img:/icons/function.svg"
+            class="fs-30 filter-custom-dark"
+            style="min-height: 30px"
+          />
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="q-py-lg px-28">
+          <div class="row items-center">
+            <div class="col-3 flex items-center">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Embedded</span
+              >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              </q-tooltip>
+            </div>
+            <div class="col-9">
+              <q-radio
+                dense
+                v-model="functionInfo.functionType"
+                val="embedded"
+                color="light-green"
+              />
+            </div>
+          </div>
+          <div class="row items-center q-mt-md">
+            <div class="col-3 flex items-center">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >External</span
+              >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              </q-tooltip>
+            </div>
+            <div class="col-9">
+              <q-radio
+                dense
+                v-model="functionInfo.functionType"
+                val="external"
+                color="light-green"
+              />
+            </div>
+          </div>
+          <div class="row items-center q-mt-md">
+            <div class="col-3 flex items-center">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >ZFunction</span
+              >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              </q-tooltip>
+            </div>
+            <div class="col-9">
+              <q-radio
+                dense
+                v-model="functionInfo.functionType"
+                val="zfunction"
+                color="light-green"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section
+          v-if="
+            functionInfo.functionType == 'embedded' ||
+            functionInfo.functionType == 'zfunction'
+          "
+          class="q-py-sm"
+        >
+          <div class="row items-start">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Body</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                outlined
+                v-model="functionInfo.body"
+                type="textarea"
+                placeholder="Write function..."
+                rows="8"
+                autogrow
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[
+                  (val) =>
+                    functionInfo.functionType !== 'external' ||
+                    !!val ||
+                    'Body is required',
+                ]"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-section class="q-pb-xl">
+          <div class="row items-start">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Name</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="functionInfo.name"
+                placeholder="Function Name"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
+          </div>
+          <div class="row items-start">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Language</span
+              >
+            </div>
+            <div class="col-9">
+              <q-select
+                v-model="functionInfo.language"
+                :options="filteredLanguageOptions"
+                outlined
+                dense
+                placeholder="Select Language"
+                dropdown-icon="keyboard_arrow_down"
+                class="rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              />
+            </div>
+          </div>
+          <div
+            v-if="functionInfo.functionType === 'zfunction'"
+            class="row items-start"
+          >
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Event Name</span
+              >
+            </div>
+            <div class="col-9">
+              <q-select
+                v-model="functionInfo.eventName"
+                :options="eventTables"
+                outlined
+                dense
+                placeholder="Select Event"
+                dropdown-icon="keyboard_arrow_down"
+                class="rounded-input"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="q-py-lg px-28">
+          <div class="flex justify-between items-center q-mb-sm">
+            <p class="text-custom-text-secondary text-subtitle1 fw-600">
+              Return Type
+            </p>
+          </div>
+          <data-type-table
+            :columns="functionParamTypeColumns"
+            :rows="functionParmaTypeRow"
+            :typeOptions="functionTypeOptions"
+            @add-row="addReturnRow"
+            ref="dataReturnTypeTable"
+            @remove-row="removeReturnRow"
+            :isSettingShow="false"
+            :isMultiSelect="isMultiSelect"
+          />
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="q-py-lg px-28">
+          <div class="flex justify-between items-center q-mb-sm">
+            <p class="text-custom-text-secondary text-subtitle1 fw-600">
+              Parameters
+            </p>
+            <div>
+              <q-tooltip anchor="center left" self="center end">
+                Functions Docs
+              </q-tooltip>
+              <q-btn
+                flat
+                icon="img:/icons/export.svg"
+                size="md"
+                class="filter-light-green"
+                :ripple="false"
+              />
+            </div>
+          </div>
+          <data-type-table
+            :columns="functionTypeColumns"
+            :rows="functionTypeRow"
+            :typeOptions="functionTypeOptions"
+            @add-row="addRow"
+            ref="dataTypeTable"
+            @remove-row="removeRow"
+            :isSettingShow="false"
+          />
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
           <q-btn
             unelevated
-            color="light-green"
-            :icon="addNewFunction ? 'chevron_left' : 'chevron_right'"
-            style="width: 30px; min-height: 30px"
-            @click="addNewFunction = !addNewFunction"
-            class="rounded-10"
+            label="Cancel"
+            :ripple="false"
+            color="dark"
+            @click="addNewFunction = false"
+            class="text-capitalize rounded-10 highlighted-border"
           />
-          <p class="text-custom-text-secondary text-h6 fw-600">
-            Create New Function
-          </p>
-        </div>
-        <q-icon
-          name="img:/icons/function.svg"
-          class="fs-30 filter-custom-dark"
-          style="min-height: 30px"
-        />
-      </q-card-section>
-      <q-separator />
-      <q-card-section class="q-py-xl px-28">
-        <div class="row items-start">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Name</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              v-model="functionInfo.name"
-              placeholder="Function Name"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-        <div class="row items-start q-mt-lg">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Return Type</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              dense
-              outlined
-              v-model="functionInfo.returnType"
-              placeholder="Function Return Type"
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-        <div class="row items-start q-mt-lg">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Language</span
-            >
-          </div>
-          <div class="col-9">
-            <q-select
-              v-model="functionInfo.language"
-              :options="languageOptions"
-              outlined
-              dense
-              placeholder="Select Language"
-              dropdown-icon="keyboard_arrow_down"
-              class="rounded-input"
-              :rules="[ val => !!val || 'Field is required']"
-            />
-          </div>
-        </div>
-      </q-card-section>
-      <q-separator />
-      <q-card-section class="q-py-lg px-28">
-        <div class="flex justify-between items-center q-mb-sm">
-          <p class="text-custom-text-secondary text-subtitle1 fw-600">
-            Parameters
-          </p>
-          <div>
-            <q-tooltip anchor="center left" self="center end">
-              Functions Docs
-            </q-tooltip>
-            <q-btn
-              flat
-              icon="img:/icons/export.svg"
-              size="md"
-              class="filter-light-green"
-              :ripple="false"
-            />
-          </div>
-        </div>
-        <data-type-table
-          :columns="functionTypeColumns"
-          :rows="functionTypeRow"
-          :typeOptions="functionTypeOptions"
-          @add-row="addRow"
-          ref="dataTypeTable"
-          @remove-row="removeRow"
-        />
-      </q-card-section>
-      <q-separator />
-      <q-card-section class="q-py-lg px-28">
-        <div class="row items-center">
-          <div class="col-3 flex items-center">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Embedded</span
-            >
-            <q-icon
-              name="img:icons/question-circle.svg"
-              class="fs-lg filter-gray-dark q-ml-sm"
-            />
-            <q-tooltip anchor="bottom middle" self="top middle">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </q-tooltip>
-          </div>
-          <div class="col-9">
-            <q-radio
-              dense
-              v-model="functionInfo.functionType"
-              val="embedded"
-              color="light-green"
-            />
-          </div>
-        </div>
-        <div class="row items-center q-mt-md">
-          <div class="col-3 flex items-center">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >External</span
-            >
-            <q-icon
-              name="img:icons/question-circle.svg"
-              class="fs-lg filter-gray-dark q-ml-sm"
-            />
-            <q-tooltip anchor="bottom middle" self="top middle">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </q-tooltip>
-          </div>
-          <div class="col-9">
-            <q-radio
-              dense
-              v-model="functionInfo.functionType"
-              val="external"
-              color="light-green"
-            />
-          </div>
-        </div>
-      </q-card-section>
-      <q-separator v-if="functionInfo.functionType == 'external'" />
-      <q-card-section
-        v-if="functionInfo.functionType == 'external'"
-        class="q-py-lg px-28"
-      >
-        <div class="row items-start">
-          <div class="col-3">
-            <span class="text-custom-gray-dark text-subtitle1 text-weight-light"
-              >Body</span
-            >
-          </div>
-          <div class="col-9">
-            <q-input
-              outlined
-              v-model="functionInfo.body"
-              type="textarea"
-              placeholder="Write function..."
-              rows="8"
-              autogrow
-              class="rounded-10 self-center text-weight-light rounded-input"
-              :rules="[
-                val => (functionInfo.functionType !== 'external' || !!val) || 'Body is required'
-              ]"
-            />
-          </div>
-        </div>
-      </q-card-section>
-      <q-separator />
-      <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
-        <q-btn
-          unelevated
-          label="Cancel"
-          :ripple="false"
-          color="dark"
-          @click="addNewFunction = false"
-          class="text-capitalize rounded-10 highlighted-border"
-        />
-        <q-btn
-          unelevated
-          label="Add Function"
-          icon="add"
-          :ripple="false"
-          type="submit"
-          class="bg-light-green rounded-10 text-white text-capitalize self-center"
-        />
-      </q-card-section>
-    </q-form>
+          <q-btn
+            unelevated
+            label="Add Function"
+            icon="add"
+            :ripple="false"
+            type="submit"
+            class="bg-light-green rounded-10 text-white text-capitalize self-center"
+          />
+        </q-card-section>
+      </q-form>
     </q-card>
   </q-dialog>
   <!-- Delete Dialog -->
@@ -295,7 +358,11 @@ export default defineComponent({
         functionType: "embedded",
         body: "",
       },
-      languageOptions: ["plpgsql"],
+      allOptions: {
+        embedded: ["python", "javascript", "rust"],
+        external: ["python", "java"],
+        zfunction: ["sql"],
+      },
       tableColumns: [
         { name: "name", label: "Name", align: "left", field: "name" },
         {
@@ -303,7 +370,7 @@ export default defineComponent({
           label: "Parameters",
           align: "left",
           field: "parameters",
-          width: '200px'
+          width: "200px",
         },
         {
           name: "returnType",
@@ -329,9 +396,9 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
-      functionTypeRow: [
-        { name: "", type: "", defaultValue: "" }  
-      ],
+      eventTables: [],
+      functionTypeRow: [{ name: "", type: "" }],
+      functionParmaTypeRow: [{ type: "" }],
       functionTypeColumns: [
         {
           name: "name",
@@ -341,74 +408,39 @@ export default defineComponent({
           field: "name",
         },
         { name: "type", label: "Type", align: "left", field: "type" },
-        {
-          name: "defaultValue",
-          label: "Default Value",
-          align: "left",
-          field: "defaultValue",
-        },
         { name: "actions", label: "Actions", align: "center" },
       ],
       functionTypeOptions: [
+        "boolean",
         "smallint",
         "integer",
         "bigint",
-        "decimal",
         "numeric",
         "real",
         "double precision",
-        "serial",
-        "bigserial",
-        "money",
-        "character varying",
         "varchar",
-        "character",
-        "char",
-        "text",
         "bytea",
-        "boolean",
         "date",
-        "timestamp",
-        "timestamp with time zone",
-        "timestamp without time zone",
-        "time",
-        "time with time zone",
         "time without time zone",
+        "timestamp without time zone",
+        "timestamp with time zone",
         "interval",
-        "uuid",
-        "json",
-        "jsonb",
-        "xml",
+        "struct",
         "array",
-        "cidr",
-        "inet",
-        "macaddr",
-        "macaddr8",
-        "point",
-        "line",
-        "lseg",
-        "box",
-        "path",
-        "polygon",
-        "circle",
-        "tsvector",
-        "tsquery",
-        "uuid",
-        "bit",
-        "bit varying",
-        "hstore",
-        "range types (int4range, int8range, numrange, tsrange, tstzrange, daterange)",
-        "composite types",
-        "custom types",
+        "map",
+        "JSONB",
       ],
     };
   },
   mounted() {
-    window.functionThat = this;
     this.$ws.connect(() => {
       this.getFunctionInformations();
+      this.$ws.sendMessage(`show tables;`, "get_table");
     });
     this.$ws.addMessageHandler((data) => {
+      if (data.type == "get_function_name") {
+        console.log(data.data);
+      }
       if (data.type == "get_function") {
         this.tableData = data.data.map((x, i) => ({
           id: i + 1,
@@ -417,8 +449,28 @@ export default defineComponent({
           returnType: x["Return Type"],
           language: x.Language,
           rows: x.total_rows,
-          ztable: false,
+          zfunction: false,
+          type: x.Link ? "External" : "Embedded",
         }));
+      }
+      if (data.type == "get_table") {
+        this.eventTables = data.data.map((x) => x.Name);
+      }
+      if (data.type == "get_zfunction") {
+        this.tableData = this.tableData.filter((x) => !x.zfunction);
+        this.tableData = [
+          ...this.tableData,
+          ...data.data.map((x, i) => ({
+            id: i + 1,
+            name: x.Name,
+            parameters: x.Arguments,
+            returnType: x["Return Type"],
+            language: x.Language,
+            rows: x.total_rows,
+            zfunction: true,
+            type: "Z Function",
+          })),
+        ];
       }
       if (data.type == "create_function" || data.type == "drop_function") {
         this.getFunctionInformations();
@@ -438,7 +490,7 @@ export default defineComponent({
         this.$q.notify({
           type: "negative",
           message: "Please fill in at least one row.",
-          position: "top-right"
+          position: "top-right",
         });
         return;
       }
@@ -446,6 +498,8 @@ export default defineComponent({
       const query =
         this.functionInfo.functionType == "external"
           ? this.generateExternalFunction()
+          : this.functionInfo.functionType == "zfunction"
+          ? this.generateZFunction()
           : this.generateEmbeddedFunction();
       this.$ws.sendMessage(query, "create_function");
       this.addNewFunction = false;
@@ -460,23 +514,59 @@ export default defineComponent({
         body: "",
       };
 
-      this.functionTypeRow = [
-        { name: "", type: "", defaultValue: "" },
-        { name: "", type: "", defaultValue: "" },
-        { name: "", type: "", defaultValue: "" },
-      ]
+      this.functionTypeRow = [{ name: "", type: "", defaultValue: "" }];
+      this.functionParmaTypeRow = [{ type: "" }];
+      this.$nextTick(() => {
+        if (this.$refs.dataTypeTable) {
+          this.$refs.dataTypeTable.rows = this.functionTypeRow;
+        }
+        if (this.$refs.dataReturnTypeTable) {
+          this.$refs.dataReturnTypeTable.rows = this.functionParmaTypeRow;
+        }
+      });
     },
     dropFunction() {
-      this.$ws.sendMessage(
-        `DROP FUNCTION \"${this.selectedRow.name}\";`,
-        "drop_function"
-      );
+      if (this.selectedRow.zfunction) {
+        this.$ws.sendMessage(
+          `DROP ZFUNCTION ${this.selectedRow.name};`,
+          "drop_function"
+        );
+      } else {
+        this.$ws.sendMessage(
+          `DROP FUNCTION ${this.selectedRow.name};`,
+          "drop_function"
+        );
+      }
     },
     getFunctionInformations() {
-      this.$ws.sendMessage(
-        `SHOW FUNCTIONS;`,
-        "get_function"
-      );
+      this.$ws.sendMessage(`SHOW FUNCTIONS;`, "get_function");
+      this.$ws.sendMessage(`SHOW ZFUNCTIONS;`, "get_zfunction");
+    },
+    generateZFunction() {
+      const params = this.$refs.dataTypeTable.rows
+        .filter((x) => x.name && x.type)
+        .map((param) => {
+          const { name, type, defaultValue } = param;
+          return defaultValue
+            ? `${name} ${type} DEFAULT ${defaultValue}`
+            : `${name} ${type}`;
+        })
+        .join(", ");
+
+      return `
+      CREATE ZFUNCTION ${
+        this.functionInfo.name
+      }(${params}) RETURNS TABLE(${this.functionParmaTypeRow
+        .filter((x) => x.type && x.name)
+        .map((x) => `${x.name} ${x.type}`)
+        .join(", ")})
+      LANGUAGE ${this.functionInfo.language} 
+      AS $$
+        ${this.functionInfo.body}
+      $$
+      WITH (
+        EVENTS = '${this.functionInfo.eventName}'
+      );`;
     },
     generateExternalFunction() {
       const params = this.$refs.dataTypeTable.rows
@@ -486,17 +576,18 @@ export default defineComponent({
           return defaultValue
             ? `${name} ${type} DEFAULT ${defaultValue}`
             : `${name} ${type}`;
-        })  
+        })
         .join(", ");
 
       return `
-      CREATE FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
+      CREATE FUNCTION ${
+        this.functionInfo.name
+      }(${params}) RETURNS struct<${this.functionParmaTypeRow
+        .filter((x) => x.type && x.name)
+        .map((x) => `${x.name} ${x.type}`)
+        .join(", ")}>
       LANGUAGE ${this.functionInfo.language} 
-      AS $$
-      BEGIN
-          RETURN '${this.functionInfo.body}'
-      END;
-      $$;`;
+      AS '${this.functionInfo.name}';`;
     },
     generateEmbeddedFunction() {
       const params = this.$refs.dataTypeTable.rows
@@ -510,13 +601,36 @@ export default defineComponent({
         .join(", ");
 
       return `
-      CREATE FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${this.functionInfo.returnType}
-      LANGUAGE ${this.functionInfo.language} 
+      CREATE FUNCTION ${
+        this.functionInfo.name
+      }(${params}) RETURNS ${this.functionParmaTypeRow
+        .filter((x) => x.type)
+        .map((x) => x.type)
+        .join(", ")}
+        LANGUAGE ${this.functionInfo.language} 
       AS $$
-      BEGIN
-          RETURN NULL;
-      END;
+        ${this.functionInfo.body}
       $$;`;
+    },
+    openEditDialog(row) {
+      this.functionInfo = {
+        name: row.name,
+        returnType: row.returnType,
+        language: row.language,
+        functionType: row.link ? "external" : "embedded",
+        body: row.link,
+      };
+      this.functionTypeRow = [{ name: "", type: "", defaultValue: "" }];
+      const parameters = row.parameters?.split(",");
+      if (parameters?.length) {
+        this.functionTypeRow = parameters.map((x) => ({
+          name: "",
+          type: x.trim(),
+          defaultValue: "",
+        }));
+      }
+
+      this.addNewFunction = true;
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
@@ -529,12 +643,78 @@ export default defineComponent({
     },
     openFunctionDialog() {
       this.addNewFunction = !this.addNewFunction;
+      this.resetFunction();
     },
     addRow() {
       this.functionTypeRow.push({ name: "", type: "", defaultValue: "" });
     },
     removeRow(row) {
       this.functionTypeRow = this.functionTypeRow.filter((r) => r !== row);
+    },
+    addReturnRow() {
+      const row = this.isMultiSelect ? { type: [], name: "" } : { type: "" };
+      this.functionParmaTypeRow.push(row);
+    },
+    removeReturnRow(row) {
+      this.functionParmaTypeRow = this.functionParmaTypeRow.filter(
+        (r) => r !== row
+      );
+    },
+  },
+  computed: {
+    filteredLanguageOptions() {
+      return this.functionInfo.functionType
+        ? this.allOptions[this.functionInfo.functionType]
+        : [];
+    },
+    isMultiSelect() {
+      return (
+        this.functionInfo.functionType === "external" ||
+        this.functionInfo.functionType === "zfunction"
+      );
+    },
+    functionParamTypeColumns() {
+      const baseColumns = [
+        { name: "type", label: "Type", align: "left", field: "type" },
+      ];
+      if (this.isMultiSelect) {
+        baseColumns.splice(0, 0, {
+          name: "name",
+          label: "Name",
+          align: "left",
+          field: "name",
+        });
+        baseColumns.push({
+          name: "actions",
+          label: "Actions",
+          align: "center",
+        });
+      }
+      return baseColumns;
+    },
+  },
+  watch: {
+    "functionInfo.functionType"(newVal, oldVal) {
+      this.functionInfo.language = "";
+      this.functionInfo.body = "";
+    },
+    isMultiSelect(newVal) {
+      this.functionParmaTypeRow = this.functionParmaTypeRow.map((row) => {
+        if (newVal) {
+          return {
+            ...row,
+            type: Array.isArray(row.type)
+              ? row.type
+              : [row.type].filter(Boolean),
+            name: row.name || "",
+          };
+        } else {
+          return {
+            ...row,
+            type: Array.isArray(row.type) ? row.type[0] || "" : row.type,
+          };
+        }
+      });
     },
   },
 });

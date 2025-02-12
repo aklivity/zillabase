@@ -23,6 +23,18 @@ const appGetUsers = () => {
     })
 }
 
+const appApiDocs = id => {
+    return new Promise((resolve, reject) => {
+        axios.get(`${app.apiEndpoint}/asyncapis/${id}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+
 const appGetUserById = id => {
     return new Promise((resolve, reject) => {
         axios.get(`${app.apiEndpoint}/auth/users/${id}`)
@@ -178,6 +190,7 @@ const appDeleteStorageObject = (bucketName, fileName) => {
 }
 
 export {
+    appApiDocs,
     appUpdateStorageObject,
     appDeleteStorageObject,
     appAddStorageObject,

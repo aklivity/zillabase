@@ -206,6 +206,7 @@
                 props.row.type === 'External' || props.row.type === 'Active',
               'bg-custom-dark':
                 props.row.type === 'Embedded' ||
+                props.row.zfunction === true ||
                 props.row.type === 'Real-time Synced',
             }"
           >
@@ -237,13 +238,15 @@
       <template v-slot:body-cell-actions="props">
         <q-td :props="props">
           <q-btn
-          v-if="tableName === 'function-table'"
+            v-if="tableName === 'function-table'"
             flat
             dense
             icon="img:/icons/eye.svg"
             class="icon-outline text-default-light-green q-mr-md"
+            @click="viewRow(props.row)"
           />
           <q-btn
+            v-if="isShowEdit"
             flat
             dense
             icon="img:/icons/edit.svg"
@@ -458,6 +461,10 @@ export default defineComponent({
       type: String,
       default: "",
     },
+    isShowEdit: {
+      type: Boolean,
+      default: true,
+    },
   },
   data() {
     return {
@@ -466,7 +473,7 @@ export default defineComponent({
       selectedRows: [],
       pagination: {
         page: 1,
-        rowsPerPage: 5, // Show 5 rows per page
+        rowsPerPage: 5,
       },
     };
   },
@@ -494,6 +501,9 @@ export default defineComponent({
     },
   },
   methods: {
+    viewRow(row) {
+      this.$emit("view-row", row);
+    },
     editRow(row) {
       this.$emit("edit-row", row);
     },

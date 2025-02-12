@@ -6,6 +6,7 @@
       :columns="tableColumns"
       :rows="tableData"
       buttonLabel="Add Table"
+      @edit-row="openEditDialog"
       @delete-row="openDeleteDialog"
       @add-new="openTableDialog"
     />
@@ -136,38 +137,10 @@
             @add-row="addRow"
             @remove-row="removeRow"
             @setting-row="openRowSettingDialog"
+            :isSettingShow="tableInfo.zTableVal"
           />
         </q-card-section>
         <q-separator />
-        <!-- <q-card-section class="q-py-lg px-28">
-        <div class="flex justify-between items-center q-mb-sm">
-          <p class="text-custom-text-secondary text-subtitle1 fw-600">
-            Foreign Keys
-          </p>
-          <div>
-            <q-tooltip anchor="center left" self="center end">
-              Foreign Key Docs
-            </q-tooltip>
-            <q-btn
-              flat
-              icon="img:/icons/export.svg"
-              size="md"
-              class="filter-light-green"
-              :ripple="false"
-            />
-          </div>
-        </div>
-        <div class="flex justify-between q-pa-md foreign-key rounded-10">
-          <span class="text-custom-gray-dark">No Foreign Keys</span>
-          <q-btn
-            unelevated
-            color="light-green"
-            icon="add"
-            style="width: 30px; min-height: 30px"
-            class="rounded-10 q-pa-none text-custom-dark-color"
-          />
-        </div>
-      </q-card-section> -->
         <q-separator />
         <q-card-section class="flex justify-end q-gutter-lg q-pa-lg">
           <q-btn
@@ -247,40 +220,62 @@
     @update:model-value="closeSettings"
   >
     <q-card class="highlighted-border">
-      <q-card-section class="flex justify-between items-center q-pa-lg">
-        <div class="flex items-center q-gutter-md">
+      <q-card-section class="q-px-lg q-pt-lg">
+        <div class="flex justify-between items-center no-wrap">
+          <div class="flex items-center no-wrap q-gutter-md">
+            <q-icon
+              size="sm"
+              name="img:/icons/setting-2.svg"
+              class="filter-custom-white-dark"
+            />
+            <p class="text-custom-text-secondary fw-600 text-subtitle1">
+              Constraints
+            </p>
+          </div>
           <q-icon
-            size="sm"
-            name="img:/icons/setting-2.svg"
-            class="filter-custom-white-dark"
+            name="close"
+            class="cursor-pointer fs-20"
+            @click="
+              isRowSettingDialogOpen = false;
+              closeSettings();
+            "
           />
-          <p class="text-custom-text-secondary fw-600 text-subtitle1">
-            Row Settings
-          </p>
         </div>
-        <q-icon
-          name="close"
-          class="cursor-pointer fs-20"
-          @click="
-            isRowSettingDialogOpen = false;
-            closeSettings();
-          "
-        />
       </q-card-section>
       <q-separator />
       <q-card-section>
-        <div
-          v-for="setting in rowSettingData"
-          :key="setting.id"
-          class="flex items-start q-gutter-md q-pa-sm"
+        <p
+          class="text-custom-text-secondary fw-600 text-subtitle1 q-pb-sm q-pl-sm"
         >
-          <q-checkbox v-model="setting.primary" dense color="light-green" />
+          Generated Always As:
+        </p>
+        <div class="flex items-start q-gutter-md q-pa-sm">
+          <q-radio
+            v-model="selectedRow.constraints"
+            val="identity"
+            dense
+            color="light-green"
+          />
           <div>
             <p class="text-custom-text-secondary text-weight-medium">
-              {{ setting.label }}
+              Identity
             </p>
             <p class="text-custom-gray-dark text-weight-light q-mt-xs">
-              {{ setting.description }}
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-start q-gutter-md q-pa-sm">
+          <q-radio
+            v-model="selectedRow.constraints"
+            val="now"
+            dense
+            color="light-green"
+          />
+          <div>
+            <p class="text-custom-text-secondary text-weight-medium">Now</p>
+            <p class="text-custom-gray-dark text-weight-light q-mt-xs">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             </p>
           </div>
         </div>
@@ -292,6 +287,7 @@
 import { defineComponent } from "vue";
 import CommonTable from "../shared/CommonTable.vue";
 import DataTypeTable from "../shared/DataTypeTable.vue";
+import { showError } from "./../../services/notification";
 export default defineComponent({
   name: "TableComponent",
   components: {
@@ -320,8 +316,6 @@ export default defineComponent({
           field: "description",
         },
         { name: "ztable", label: "ZTable", align: "center", field: "ztable" },
-        { name: "rows", label: "Rows", align: "right", field: "rows" },
-        { name: "columns", label: "Columns", align: "right", field: "columns" },
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
@@ -367,67 +361,37 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       dataTypeOptions: [
+        "boolean",
         "smallint",
         "integer",
         "bigint",
-        "decimal",
         "numeric",
         "real",
         "double precision",
-        "serial",
-        "bigserial",
-        "money",
-        "character varying",
         "varchar",
-        "character",
-        "char",
-        "text",
         "bytea",
-        "timestamp",
+        "date",
+        "time without time zone",
         "timestamp without time zone",
         "timestamp with time zone",
-        "date",
-        "time",
-        "time without time zone",
-        "time with time zone",
         "interval",
-        "boolean",
-        "enum",
-        "point",
-        "line",
-        "lseg",
-        "box",
-        "path",
-        "polygon",
-        "circle",
-        "cidr",
-        "inet",
-        "macaddr",
-        "macaddr8",
-        "json",
-        "jsonb",
-        "uuid",
-        "xml",
+        "struct",
+        "array",
+        "map",
+        "JSONB",
       ],
       rowSettingData: [
         {
           id: 1,
           primary: true,
-          label: "IsUnique()",
+          label: "Identity",
           description:
             "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         },
         {
           id: 2,
           primary: false,
-          label: "IsNullable()",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        },
-        {
-          id: 3,
-          primary: false,
-          label: "IsIdentity()",
+          label: "Now",
           description:
             "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         },
@@ -439,6 +403,9 @@ export default defineComponent({
       this.getTableInformations();
     });
     this.$ws.addMessageHandler((data) => {
+      if (data.type == "get_table_name") {
+        this.setEditTableInfo(data.data);
+      }
       if (data.type == "get_table") {
         this.tableData = data.data.map((x, i) => ({
           id: i + 1,
@@ -455,7 +422,7 @@ export default defineComponent({
           .filter((x) => x.Name)
           .forEach((item) => {
             const itemData = this.tableData.find(
-              (x) => `ztable_${x.name.toLowerCase()}` == item.Name.toLowerCase()
+              (x) => x.name.toLowerCase() == item.Name.toLowerCase()
             );
             if (itemData) {
               itemData.ztable = true;
@@ -475,7 +442,34 @@ export default defineComponent({
     this.$ws.removeAll();
   },
   methods: {
+    setEditTableInfo(data) {
+      this.addNewTable = true;
+      this.tableInfo = {
+        name: data.find((x) => x.Name == "table description")?.Type,
+        description: data.find((x) => x.Name == "table description")
+          ?.Description,
+        zTableVal: this.selectedRow.ztable,
+      };
+      const excludeIds = [
+        "primary key",
+        "distribution key",
+        "table description",
+      ];
+      this.dataTypeRow = [];
+      data
+        .filter((x) => !excludeIds.includes(x.Name))
+        .forEach((item, index) => {
+          this.dataTypeRow.push({
+            name: item.Name,
+            type: item.Type,
+            defaultValue: "",
+            primary: data.some((x) => x.Type == item.Name),
+            id: index + 1,
+          });
+        });
+    },
     getTableInformations() {
+      this.tableData = [];
       this.$ws.sendMessage(`show tables;`, "get_table");
     },
     getZTables() {
@@ -500,36 +494,41 @@ export default defineComponent({
         .map((field) => {
           let columnDef = `${field.name} ${field.type.toUpperCase()}`;
 
-          // if (!field.nullable) {
-          //   columnDef += " NOT NULL";
-          // }
-
           if (field.defaultValue) {
             columnDef += ` DEFAULT '${field.defaultValue}'`;
           }
 
-          // if (field.identity) {
-          //   columnDef += " GENERATED ALWAYS AS IDENTITY";
-          // }
+          if (field.constraints == "identity") {
+            columnDef += " GENERATED ALWAYS AS IDENTITY";
+          }
 
           return columnDef;
         });
-
+      if (
+        this.tableInfo.zTableVal &&
+        this.$refs.dataTypeTable.rows.some(
+          (field) => field.constraints == "identity" && field.type == "integer"
+        )
+      ) {
+        showError("Integer is not allowed for Identity Column");
+        return;
+      }
       const primaryKey = this.$refs.dataTypeTable.rows
         .filter((field) => field.primary)
         .map((field) => field.name);
       if (primaryKey.length > 0) {
         columns.push(`PRIMARY KEY (${primaryKey.join(", ")})`);
       }
-      const query = `CREATE TABLE \"${this.tableInfo.name}\" (${columns.join(
-        ",\n    "
-      )});`;
-      this.$ws.sendMessage(query, "create_table");
       if (this.tableInfo.zTableVal) {
-        const zTableQuery = `CREATE ZTABLE \"ztable_${
+        const zTableQuery = `CREATE ZTABLE ${
           this.tableInfo.name
-        }\" (${columns.join(",\n    ")});`;
+        } (${columns.join(",\n    ")});`;
         this.$ws.sendMessage(zTableQuery, "create_ztable");
+      } else {
+        const query = `CREATE TABLE ${this.tableInfo.name} (${columns.join(
+          ",\n    "
+        )});`;
+        this.$ws.sendMessage(query, "create_table");
       }
       this.addNewTable = false;
       this.$refs.addTableForm.reset();
@@ -542,11 +541,24 @@ export default defineComponent({
       };
 
       this.dataTypeRow = [
-        { name: "", type: "", defaultValue: "", primary: false, id: 1 },
-        { name: "", type: "", defaultValue: "", primary: false, id: 2 },
-        { name: "", type: "", defaultValue: "", primary: false, id: 3 },
-        { name: "", type: "", defaultValue: "", primary: false, id: 4 },
+        {
+          name: "",
+          type: "",
+          defaultValue: "",
+          primary: false,
+          isNullable: true,
+          id: 1,
+        },
       ];
+      this.$nextTick(() => {
+        if (this.$refs.dataTypeTable) {
+          this.$refs.dataTypeTable.rows = this.dataTypeRow;
+        }
+      });
+    },
+    openEditDialog(row) {
+      this.selectedRow = row;
+      this.$ws.sendMessage(`describe ${row.name};`, "get_table_name");
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
@@ -556,28 +568,24 @@ export default defineComponent({
       this.isDeleteDialogOpen = false;
       if (this.selectedRow.ztable) {
         this.$ws.sendMessage(
-          `DROP ZTABLE ztable_${this.selectedRow.name};`,
+          `DROP ZTABLE ${this.selectedRow.name};`,
           "drop_ztable"
         );
+      } else {
+        this.$ws.sendMessage(
+          `DROP TABLE ${this.selectedRow.name};`,
+          "drop_table"
+        );
       }
-      this.$ws.sendMessage(
-        `DROP TABLE ${this.selectedRow.name};`,
-        "drop_table"
-      );
       this.selectedRow = null;
     },
     openTableDialog() {
       this.addNewTable = !this.addNewTable;
+      this.resetTable();
     },
     openRowSettingDialog(row) {
-      this.activeRowSetting = this.dataTypeRow.find((x) => x.id == row.id);
+      this.selectedRow = row;
       this.isRowSettingDialogOpen = !this.isRowSettingDialogOpen;
-      this.rowSettingData.find((x) => x.id == 1).primary =
-        this.activeRowSetting.unique || false;
-      this.rowSettingData.find((x) => x.id == 2).primary =
-        this.activeRowSetting.nullable || true;
-      this.rowSettingData.find((x) => x.id == 3).primary =
-        this.activeRowSetting.identity || false;
     },
     closeSettings() {
       this.activeRowSetting.unique =
@@ -594,6 +602,7 @@ export default defineComponent({
         type: "",
         defaultValue: "",
         primary: false,
+        isNullable: true,
       });
     },
     removeRow(row) {

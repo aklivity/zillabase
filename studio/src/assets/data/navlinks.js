@@ -28,11 +28,6 @@ const NavLinks = [
         href: "/views",
       },
       {
-        title: "Streams",
-        icon: "/icons/stream.svg",
-        href: "/streams",
-      },
-      {
         title: "Auth",
         icon: "/icons/auth.svg",
         href: "/auth",

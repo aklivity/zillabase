@@ -7,8 +7,10 @@
       :rows="tableData"
       buttonLabel="Add View"
       searchInputPlaceholder="Views"
+      @edit-row="openEditDialog"
       @delete-row="openDeleteDialog"
       @add-new="openTableDialog"
+      :isShowEdit="false"
     />
   </div>
   <!-- add Dialog -->
@@ -44,7 +46,7 @@
       </q-card-section>
       <q-separator />
       <q-form @submit="createViews" @reset="resetViews" ref="addViewsForm">
-        <q-card-section class="-py-xl px-28">
+        <q-card-section class="q-py-xl px-28">
           <div class="row items-start">
             <div class="col-3">
               <span
@@ -60,25 +62,6 @@
                 v-model="viewInfo.name"
                 class="rounded-10 self-center text-weight-light rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
-              />
-            </div>
-          </div>
-          <div class="row items-start q-mt-lg">
-            <div class="col-3">
-              <span
-                class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Description</span
-              >
-            </div>
-            <div class="col-9">
-              <q-input
-                outlined
-                type="textarea"
-                placeholder="View Description..."
-                rows="8"
-                v-model="viewInfo.description"
-                autogrow
-                class="rounded-10 self-center text-weight-light rounded-input"
               />
             </div>
           </div>
@@ -126,7 +109,7 @@
               <q-radio
                 dense
                 v-model="viewInfo.selectionType"
-                val="view"
+                val="zview"
                 color="light-green"
               />
             </div>
@@ -153,6 +136,31 @@
                 color="light-green"
                 v-model="viewInfo.selectionType"
                 val="material"
+              />
+            </div>
+          </div>
+          <div class="row items-center q-mt-md">
+            <div class="col-3 flex items-center">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Views</span
+              >
+              <div>
+                <q-icon
+                  name="img:icons/question-circle.svg"
+                  class="fs-lg filter-gray-dark q-ml-sm"
+                />
+                <q-tooltip anchor="bottom middle" self="top middle">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </q-tooltip>
+              </div>
+            </div>
+            <div class="col-9">
+              <q-radio
+                dense
+                color="light-green"
+                v-model="viewInfo.selectionType"
+                val="views"
               />
             </div>
           </div>
@@ -246,15 +254,10 @@ export default defineComponent({
         description: "",
         body: "",
         selectionType: "",
+        views: "",
       },
       tableColumns: [
         { name: "name", label: "View Name", align: "left", field: "name" },
-        {
-          name: "description",
-          label: "Description",
-          align: "left",
-          field: "description",
-        },
         {
           name: "zview",
           label: "ZView",
@@ -279,6 +282,9 @@ export default defineComponent({
       this.getViews();
     });
     this.$ws.addMessageHandler((data) => {
+      if (data.type == "get_view_name") {
+        console.log(data.data);
+      }
       if (data.type == "get_views") {
         data.data.forEach((item) => {
           this.tableData.push({
@@ -315,11 +321,14 @@ export default defineComponent({
       }
     });
   },
+  beforeUnmount() {
+    this.$ws.removeAll();
+  },
   methods: {
     createViews() {
       if (this.viewInfo.selectionType == "material") {
         this.createMaterializedView();
-      } else if (this.viewInfo.selectionType == "view") {
+      } else if (this.viewInfo.selectionType == "zview") {
         this.createZView();
       } else {
         this.createView();
@@ -336,25 +345,19 @@ export default defineComponent({
       };
     },
     createMaterializedView() {
-      this.$ws.sendMessage(
-        `CREATE MATERIALIZED VIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`,
-        "create_materialized_view"
-      );
+      const query = `CREATE MATERIALIZED VIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`;
+      this.$ws.sendMessage(query, "create_materialized_view");
     },
     createZView() {
-      this.$ws.sendMessage(
-        `CREATE ZVIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`,
-        "create_zview"
-      );
+      const query = `CREATE ZVIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`;
+      this.$ws.sendMessage(query, "create_zview");
     },
     createView() {
-      this.$ws.sendMessage(
-        `CREATE VIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`,
-        "create_view"
-      );
+      const query = `CREATE VIEW ${this.viewInfo.name} AS ${this.viewInfo.body};`;
+      this.$ws.sendMessage(query, "create_view");
     },
     getViews() {
-      this.tableData = []
+      this.tableData = [];
       this.$ws.sendMessage(`show views;`, "get_views");
       this.getMaterializedViews();
     },
@@ -367,6 +370,9 @@ export default defineComponent({
     },
     getZViews() {
       this.$ws.sendMessage(`show zviews;`, "get_z_views");
+    },
+    openEditDialog(row) {
+      this.$ws.sendMessage(`describe ${row.name};`, "get_view_name");
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
@@ -394,6 +400,7 @@ export default defineComponent({
     },
     openTableDialog() {
       this.addNewView = !this.addNewView;
+      this.resetViews();
     },
   },
 });

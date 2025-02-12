@@ -46,7 +46,6 @@
             :key="tab.name.path"
             :name="tab.name.path"
           >
-            <!-- <div class="row q-pl-sm justify-between items-center"> -->
             <!-- Tab name on the left -->
             <span
               class="text-custom-gray-dark text-capitalize text-weight-light"
@@ -71,7 +70,6 @@
                 size="14px"
               />
             </div>
-            <!-- </div> -->
           </q-tab>
         </q-tabs>
       </template>
@@ -571,7 +569,6 @@ export default defineComponent({
       isMovingRow: false,
       isRenameRow: false,
       selectedRow: null,
-      // addNewBucket: false,
       addNewBucketObject: false,
       addEditBucketDialog: {
         isOpen: false,
