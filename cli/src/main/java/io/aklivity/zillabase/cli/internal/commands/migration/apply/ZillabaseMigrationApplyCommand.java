@@ -12,39 +12,24 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.migration.add;
+package io.aklivity.zillabase.cli.internal.commands.migration.apply;
 
-import java.io.IOException;
 import java.util.List;
 
-import com.github.rvesse.airline.annotations.Arguments;
 import com.github.rvesse.airline.annotations.Command;
-import com.github.rvesse.airline.annotations.restrictions.Required;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 @Command(
-    name = "add",
-    description = "Creates a new migration file locally")
-public final class ZillabaseMigrationAddCommand extends ZillabaseMigrationCommand
+    name = "apply",
+    description = "Applies new migrations files")
+public final class ZillabaseMigrationApplyCommand extends ZillabaseMigrationCommand
 {
-    @Arguments(title = { "name" })
-    @Required
-    public List<String> args;
-
     @Override
     protected void invoke()
     {
-        try
-        {
-            String name = args.get(0);
-            String fileName = service.newEmptyMigrationFile(name);
-            System.out.printf("Created migration: %s%n", fileName);
-
-        }
-        catch (IOException ex)
-        {
-            ex.printStackTrace(System.err);
-        }
+        List<ZillabaseMigrationFile> unappliedFiles = service.unappliedFiles();
+        applier.apply(unappliedFiles);
     }
 }

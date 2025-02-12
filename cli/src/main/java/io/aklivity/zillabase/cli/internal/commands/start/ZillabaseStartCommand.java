@@ -110,6 +110,7 @@ import com.github.dockerjava.api.model.ResponseItem;
 import com.github.dockerjava.api.model.Volume;
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseAdminConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
@@ -118,7 +119,9 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationApplier;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationService;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 @Command(
     name = "start",
@@ -300,13 +303,23 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 CREATE SCHEMA zb_catalog AUTHORIZATION postgres;
                 CREATE TABLE zb_catalog.zviews(
                     name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
+                    sql VARCHAR
+                );
                 CREATE TABLE zb_catalog.ztables(
                     name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
+                    sql VARCHAR
+                );
                 CREATE TABLE zb_catalog.zfunctions(
                     name VARCHAR PRIMARY KEY,
-                    sql VARCHAR);
+                    sql VARCHAR
+                );
+                CREATE TABLE zb_catalog.schema_version(
+                    version VARCHAR PRIMARY KEY,
+                    description VARCHAR,
+                    script_name VARCHAR,
+                    checksum VARCHAR,
+                    applied_on TIMESTAMP
+                );
                 """);
         }
     }
@@ -339,16 +352,16 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         if (pgsql.connected)
         {
-            ZillabaseMigrationsHelper migrations = new ZillabaseMigrationsHelper();
+            final int port = ZillabaseAdminConfig.DEFAULT_ADMIN_PGSQL_PORT;
+            final String db = config.risingwave.db;
 
-            migrations.list()
-                .filter(m -> pgsql.connected)
-                .forEach(pgsql::process);
+            ZillabaseMigrationService migrationService = new ZillabaseMigrationService(port, db);
+            List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
 
-            if (pgsql.connected)
-            {
-                pgsql.process(seedSqlPath);
-            }
+            ZillabaseMigrationApplier applier = new ZillabaseMigrationApplier(port, db);
+            applier.apply(unappliedFiles);
+
+            pgsql.process(seedSqlPath);
         }
     }
 
@@ -1284,7 +1297,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withTest(List.of("CMD-SHELL", "pg_isready -U postgres")));
         }
     }
-
 
     private static final class CreateMinioFactory extends CreateContainerFactory
     {

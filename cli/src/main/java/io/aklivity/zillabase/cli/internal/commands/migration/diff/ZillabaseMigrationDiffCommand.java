@@ -12,37 +12,30 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.internal.commands.migration.add;
+package io.aklivity.zillabase.cli.internal.commands.migration.diff;
 
-import java.io.IOException;
-import java.util.List;
-
-import com.github.rvesse.airline.annotations.Arguments;
 import com.github.rvesse.airline.annotations.Command;
-import com.github.rvesse.airline.annotations.restrictions.Required;
 
 import io.aklivity.zillabase.cli.internal.commands.migration.ZillabaseMigrationCommand;
 
 @Command(
-    name = "add",
-    description = "Creates a new migration file locally")
-public final class ZillabaseMigrationAddCommand extends ZillabaseMigrationCommand
+    name = "diff",
+    description = "Shows delta of SQL commands between explicit migrations and current state.")
+public final class ZillabaseMigrationDiffCommand extends ZillabaseMigrationCommand
 {
-    @Arguments(title = { "name" })
-    @Required
-    public List<String> args;
-
     @Override
     protected void invoke()
     {
         try
         {
-            String name = args.get(0);
-            String fileName = service.newEmptyMigrationFile(name);
-            System.out.printf("Created migration: %s%n", fileName);
+            System.out.println("Unapplied migrations:");
+            service.unappliedFiles().forEach(file ->
+                System.out.println(file.scriptName()));
 
+            String diffScript = service.databaseDiff();
+            System.out.println("Database diff:\n" + diffScript);
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             ex.printStackTrace(System.err);
         }
