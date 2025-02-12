@@ -25,7 +25,7 @@ import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseDatabaseSche
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationMetadata;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseSchemaDiff;
-import io.aklivity.zillabase.cli.internal.migrations.parser.SchemaParser;
+import io.aklivity.zillabase.cli.internal.migrations.parser.ZillabaseSchemaParser;
 import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseDatabaseSchemaRepository;
 import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseMigrationFileRepository;
 import io.aklivity.zillabase.cli.internal.migrations.repository.ZillabaseMigrationMetadataRepository;
@@ -34,21 +34,21 @@ public final class ZillabaseMigrationService
 {
     private static final Path MIGRATIONS_PATH = ZillabaseCommand.ZILLABASE_PATH.resolve("migrations");
 
-    private final ZillabaseDatabaseSchemaRepository zillabaseDatabaseSchemaRepository;
+    private final ZillabaseDatabaseSchemaRepository databaseSchemaRepository;
     private final ZillabaseMigrationMetadataRepository metadataRepository;
     private final ZillabaseMigrationFileRepository fileRepository;
-    private final SchemaParser schemaParser;
+    private final ZillabaseSchemaParser schemaParser;
     private final ZillabaseSchemaComparator schemaComparator;
 
     public ZillabaseMigrationService(
         int port,
         String db)
     {
-        this.zillabaseDatabaseSchemaRepository = new ZillabaseDatabaseSchemaRepository(port, db);
+        this.databaseSchemaRepository = new ZillabaseDatabaseSchemaRepository(port, db);
         this.metadataRepository = new ZillabaseMigrationMetadataRepository(port, db);
 
         this.fileRepository = new ZillabaseMigrationFileRepository(MIGRATIONS_PATH);
-        this.schemaParser = new SchemaParser();
+        this.schemaParser = new ZillabaseSchemaParser();
         this.schemaComparator = new ZillabaseSchemaComparator();
     }
 
@@ -100,7 +100,7 @@ public final class ZillabaseMigrationService
 
     public String databaseDiff()
     {
-        ZillabaseDatabaseSchema from = zillabaseDatabaseSchemaRepository.loadActualSchema();
+        ZillabaseDatabaseSchema from = databaseSchemaRepository.loadActualSchema();
         ZillabaseDatabaseSchema to = buildExpectedSchema();
 
         ZillabaseSchemaDiff diff = schemaComparator.compareSchemas(from, to);

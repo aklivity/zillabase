@@ -14,8 +14,8 @@
  */
 package io.aklivity.zillabase.cli.internal.migrations.repository;
 
-import static io.aklivity.zillabase.cli.internal.migrations.parser.SchemaParser.removeSqlComments;
-import static io.aklivity.zillabase.cli.internal.migrations.parser.SchemaParser.splitSQL;
+import static io.aklivity.zillabase.cli.internal.migrations.parser.ZillabaseSchemaParser.removeSqlComments;
+import static io.aklivity.zillabase.cli.internal.migrations.parser.ZillabaseSchemaParser.splitSQL;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

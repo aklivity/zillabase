@@ -26,7 +26,7 @@ import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZfunction;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZtable;
 import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseZview;
 
-public final class SchemaParser
+public final class ZillabaseSchemaParser
 {
     private static final Pattern CREATE_QUERY_PATTERN = Pattern.compile(
         "(?i)^\\s*CREATE\\s+" +
