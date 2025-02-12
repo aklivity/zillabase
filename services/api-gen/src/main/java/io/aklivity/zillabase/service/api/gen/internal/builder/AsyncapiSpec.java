@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.generator;
+package io.aklivity.zillabase.service.api.gen.internal.builder;
 
 import java.util.Map;
 
@@ -23,7 +23,7 @@ public class AsyncapiSpec
 {
     public transient int id;
 
-    public final String asyncapi; // e.g. "3.0.0"
+    public final String version;
     public final Info info;
     public final Map<String, Object> servers;
     public final Components components;
@@ -31,14 +31,14 @@ public class AsyncapiSpec
     public final Map<String, Object> operations;
 
     AsyncapiSpec(
-        String asyncapi,
+        String version,
         Info info,
         Map<String, Object> servers,
         Components components,
         Map<String, Object> channels,
         Map<String, Object> operations)
     {
-        this.asyncapi = asyncapi;
+        this.version = version;
         this.info = info;
         this.servers = servers;
         this.components = components;

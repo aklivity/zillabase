@@ -12,18 +12,13 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.generator;
-
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+package io.aklivity.zillabase.service.api.gen.internal.builder;
 
 import java.util.Map;
 import java.util.function.Function;
 
-import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBuilder<T>>
 {
@@ -103,14 +98,5 @@ public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBui
         );
 
         return mapper.apply(spec);
-    }
-
-    public String buildYaml() throws Exception
-    {
-        AsyncAPI asyncAPI = (AsyncAPI) build();
-        ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-        yamlMapper.setSerializationInclusion(NON_NULL);
-
-        return yamlMapper.writeValueAsString(asyncAPI);
     }
 }

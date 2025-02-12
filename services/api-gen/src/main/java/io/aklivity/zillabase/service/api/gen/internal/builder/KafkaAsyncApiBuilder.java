@@ -12,7 +12,9 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.generator;
+package io.aklivity.zillabase.service.api.gen.internal.builder;
+
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +27,7 @@ import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolic
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguration;
 import com.asyncapi.bindings.kafka.v0._4_0.server.KafkaServerBinding;
 import com.asyncapi.schemas.asyncapi.Reference;
+import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.channel.message.Message;
 import com.asyncapi.v3._0_0.model.component.Components;
@@ -38,6 +41,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
@@ -67,7 +71,9 @@ public class KafkaAsyncApiBuilder
             .inject(ctx -> createChannels(ctx, schemaRecords))
             .inject(ctx -> createOperations(ctx, schemaRecords));
 
-        return builder.buildYaml();
+        AsyncapiSpec spec = builder.build();
+
+        return buildYaml(spec);
     }
 
     private <C> AsyncapiSpecBuilder<C> createInfo(
@@ -284,5 +290,22 @@ public class KafkaAsyncApiBuilder
                 new Reference("#/channels/" + channelName + "/messages/" + messageName))
             )
             .build();
+    }
+
+    private String buildYaml(
+        AsyncapiSpec spec) throws Exception
+    {
+        AsyncAPI asyncAPI = AsyncAPI.builder()
+            .asyncapi(spec.version)
+            .info(spec.info)
+            .servers(spec.servers)
+            .components(spec.components)
+            .channels(spec.channels)
+            .operations(spec.operations)
+            .build();
+        ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+        yamlMapper.setSerializationInclusion(NON_NULL);
+
+        return yamlMapper.writeValueAsString(asyncAPI);
     }
 }
