@@ -1,16 +1,29 @@
-package io.aklivity.zillabase.service.api.gen.internal.spec;
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
+import java.util.Map;
+import java.util.function.Function;
 
 import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
-import java.util.Map;
-import java.util.function.Function;
-
 
 public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBuilder<T>>
 {
@@ -22,8 +35,6 @@ public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBui
     private Components components;
     private Map<String, Object> channels;
     private Map<String, Object> operations;
-    private Map<String, Object> messages;
-    private Map<String, Object> schemas;
 
     public AsyncapiSpecBuilder(Function<AsyncapiSpec, T> mapper)
     {
@@ -79,20 +90,6 @@ public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBui
         return this;
     }
 
-    public AsyncapiSpecBuilder<T> messages(
-        Map<String, Object> messages)
-    {
-        this.messages = messages;
-        return this;
-    }
-
-    public AsyncapiSpecBuilder<T> schemas(
-        Map<String, Object> schemas)
-    {
-        this.schemas = schemas;
-        return this;
-    }
-
     @Override
     public T build()
     {
@@ -102,9 +99,7 @@ public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBui
             servers,
             components,
             channels,
-            operations,
-            messages,
-            schemas
+            operations
         );
 
         return mapper.apply(spec);
