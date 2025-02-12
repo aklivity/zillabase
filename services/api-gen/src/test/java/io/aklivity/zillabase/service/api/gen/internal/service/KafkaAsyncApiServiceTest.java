@@ -67,7 +67,7 @@ public class KafkaAsyncApiServiceTest
         List<KafkaTopicSchemaRecord> schemaRecords = List.of(
             new KafkaTopicSchemaRecord(
                 "test-topic",
-                new String[]{"delete"},
+                List.of("delete"),
                 "TestTopic",
                 "test-topic-value",
                 "record",

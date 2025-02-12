@@ -14,6 +14,8 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.asyncapi;
 
+import java.util.List;
+
 public final class KafkaTopicSchemaRecord
 {
     public String name;
@@ -21,11 +23,11 @@ public final class KafkaTopicSchemaRecord
     public String subject;
     public String type;
     public String schema;
-    public String[] cleanupPolicies;
+    public List<String> cleanupPolicies;
 
     public KafkaTopicSchemaRecord(
         String name,
-        String[] cleanupPolicies,
+        List<String> cleanupPolicies,
         String label,
         String subject,
         String type,

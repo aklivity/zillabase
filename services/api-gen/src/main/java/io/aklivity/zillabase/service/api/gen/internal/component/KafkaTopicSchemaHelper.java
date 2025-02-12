@@ -19,6 +19,7 @@ import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +98,8 @@ public class KafkaTopicSchemaHelper
                 Map<ConfigResource, Config> configMap = result.all().get();
 
                 Config topicConfig = configMap.get(resource);
-                String[] policies = topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(",");
+                List<String> policies = Arrays.stream(topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(","))
+                    .toList();
 
                 String subject = "%s-value".formatted(topicName);
                 String schema = resolveSchema(subject);
