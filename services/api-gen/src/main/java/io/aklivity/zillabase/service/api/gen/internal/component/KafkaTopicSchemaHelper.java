@@ -151,37 +151,44 @@ public class KafkaTopicSchemaHelper
     }
 
     public String extractIdentityFieldFromSchema(
-        String schema) throws JsonProcessingException
+        String schema)
     {
         AtomicReference<String> identity = new AtomicReference<>(null);
-        ObjectMapper schemaMapper = new ObjectMapper();
-        JsonNode schemaObject = schemaMapper.readTree(schema);
-
-        if (schemaObject.has("fields"))
+        try
         {
-            JsonNode fieldsNode = schemaObject.get("fields");
-            StreamSupport.stream(fieldsNode.spliterator(), false)
-                .forEach(field ->
+            ObjectMapper schemaMapper = new ObjectMapper();
+            JsonNode schemaObject = schemaMapper.readTree(schema);
+            if (schemaObject.has("fields"))
+            {
+                JsonNode fieldsNode = schemaObject.get("fields");
+                StreamSupport.stream(fieldsNode.spliterator(), false)
+                    .forEach(field ->
+                    {
+                        String fieldName = field.has("name")
+                            ? field.get("name").asText()
+                            : fieldsNode.fieldNames().next();
+                        if (fieldName.endsWith("_identity"))
+                        {
+                            identity.set(fieldName);
+                        }
+                    });
+            }
+            else if (schemaObject.has("properties"))
+            {
+                JsonNode fieldsNode = schemaObject.get("properties");
+                fieldsNode.fieldNames().forEachRemaining(fieldName ->
                 {
-                    String fieldName = field.has("name")
-                        ? field.get("name").asText()
-                        : fieldsNode.fieldNames().next();
                     if (fieldName.endsWith("_identity"))
                     {
                         identity.set(fieldName);
                     }
                 });
+            }
+
         }
-        else if (schemaObject.has("properties"))
+        catch (Exception ex)
         {
-            JsonNode fieldsNode = schemaObject.get("properties");
-            fieldsNode.fieldNames().forEachRemaining(fieldName ->
-            {
-                if (fieldName.endsWith("_identity"))
-                {
-                    identity.set(fieldName);
-                }
-            });
+            System.err.println("Failed to parse schema: " + schema);
         }
 
         return identity.get();

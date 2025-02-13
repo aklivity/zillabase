@@ -24,7 +24,6 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.builder.KafkaAsyncApiBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
@@ -32,19 +31,15 @@ import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 @Service
 public class KafkaAsyncApiService
 {
-    private final ApiGenConfig config;
-    private final KafkaConfig
-        kafkaConfig;
+    private final KafkaConfig kafkaConfig;
     private final KafkaTopicSchemaHelper kafkaHelper;
     private final ApicurioHelper specHelper;
 
     public KafkaAsyncApiService(
-        ApiGenConfig config,
         KafkaConfig kafkaConfig,
         KafkaTopicSchemaHelper kafkaHelper,
         ApicurioHelper specHelper)
     {
-        this.config = config;
         this.kafkaConfig = kafkaConfig;
         this.kafkaHelper = kafkaHelper;
         this.specHelper = specHelper;
@@ -61,7 +56,7 @@ public class KafkaAsyncApiService
         {
             List<KafkaTopicSchemaRecord> schemaRecords = kafkaHelper.resolve();
 
-            KafkaAsyncApiBuilder builder = new KafkaAsyncApiBuilder(config, kafkaConfig);
+            KafkaAsyncApiBuilder builder = new KafkaAsyncApiBuilder(kafkaConfig);
             String kafkaSpec = builder.buildSpec(schemaRecords);
 
             if (kafkaSpec != null)

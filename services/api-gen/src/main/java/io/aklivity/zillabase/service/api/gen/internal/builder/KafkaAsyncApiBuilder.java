@@ -44,19 +44,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
 public class KafkaAsyncApiBuilder
 {
-    private final ApiGenConfig config;
     private final KafkaConfig kafkaConfig;
 
     public KafkaAsyncApiBuilder(
-        ApiGenConfig config,
         KafkaConfig kafkaConfig)
     {
-        this.config = config;
         this.kafkaConfig = kafkaConfig;
     }
 
@@ -65,18 +61,18 @@ public class KafkaAsyncApiBuilder
     {
         AsyncapiSpecBuilder<AsyncapiSpec> builder = AsyncapiSpec.builder()
             .inject(spec -> spec.asyncapi("3.0.0"))
-            .inject(this::createInfo)
-            .inject(this::createServers)
-            .inject(ctx -> createComponents(ctx, schemaRecords))
-            .inject(ctx -> createChannels(ctx, schemaRecords))
-            .inject(ctx -> createOperations(ctx, schemaRecords));
+            .inject(this::injectInfo)
+            .inject(this::injectServers)
+            .inject(a -> injectChannels(a, schemaRecords))
+            .inject(a -> injectOperations(a, schemaRecords))
+            .inject(a -> injectComponents(a, schemaRecords));
 
         AsyncapiSpec spec = builder.build();
 
         return buildYaml(spec);
     }
 
-    private <C> AsyncapiSpecBuilder<C> createInfo(
+    private <C> AsyncapiSpecBuilder<C> injectInfo(
         AsyncapiSpecBuilder<C> builder)
     {
         Info info = Info.builder()
@@ -90,7 +86,7 @@ public class KafkaAsyncApiBuilder
         return builder.info(info);
     }
 
-    private <C> AsyncapiSpecBuilder<C> createServers(
+    private <C> AsyncapiSpecBuilder<C> injectServers(
         AsyncapiSpecBuilder<C> builder)
     {
         Server server = Server.builder()
@@ -105,7 +101,7 @@ public class KafkaAsyncApiBuilder
         return builder.servers(Map.of("plain", server));
     }
 
-    private <C> AsyncapiSpecBuilder<C> createComponents(
+    private <C> AsyncapiSpecBuilder<C> injectComponents(
         AsyncapiSpecBuilder<C> builder,
         List<KafkaTopicSchemaRecord> records)
     {
@@ -163,7 +159,7 @@ public class KafkaAsyncApiBuilder
         }
     }
 
-    private <C> AsyncapiSpecBuilder<C> createChannels(
+    private <C> AsyncapiSpecBuilder<C> injectChannels(
         AsyncapiSpecBuilder<C> builder,
         List<KafkaTopicSchemaRecord> records)
     {
@@ -187,7 +183,7 @@ public class KafkaAsyncApiBuilder
         return builder;
     }
 
-    private <C> AsyncapiSpecBuilder<C> createOperations(
+    private <C> AsyncapiSpecBuilder<C> injectOperations(
         AsyncapiSpecBuilder<C> builder,
         List<KafkaTopicSchemaRecord> records)
     {

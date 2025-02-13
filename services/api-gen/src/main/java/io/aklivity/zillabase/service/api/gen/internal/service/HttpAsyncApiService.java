@@ -55,7 +55,7 @@ public class HttpAsyncApiService
             String kafkaSpec = specHelper.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
 
             HttpAsyncApiBuilder builder = new HttpAsyncApiBuilder(config, kafkaHelper);
-            String httpSpec = builder.buildYamlSpec(kafkaSpec);
+            String httpSpec = builder.buildSpec(kafkaSpec);
 
             httpSpecVersion = specHelper.publishSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 
