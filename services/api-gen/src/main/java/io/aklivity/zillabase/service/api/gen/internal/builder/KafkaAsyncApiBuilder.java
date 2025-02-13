@@ -172,10 +172,12 @@ public class KafkaAsyncApiBuilder
         for (KafkaTopicSchemaRecord record : records)
         {
             String topicName = record.name;
-            String safeName = stripDbPrefixIfNeeded(topicName);
+            String safeName = stripSchemaPrefix(topicName);
             List<String> cleanupPolicies = record.cleanupPolicies;
+            String label = record.label;
+            String messageName = "%sMessage".formatted(label);
 
-            Channel channel = createChannel(topicName, cleanupPolicies);
+            Channel channel = createChannel(topicName, messageName, cleanupPolicies);
 
             channels.put(safeName, channel);
         }
@@ -194,7 +196,7 @@ public class KafkaAsyncApiBuilder
         for (KafkaTopicSchemaRecord record : records)
         {
             String topicName = record.name;
-            String safeName = stripDbPrefixIfNeeded(topicName);
+            String safeName = stripSchemaPrefix(topicName);
             String label = record.label;
             String messageName = "%sMessage".formatted(label);
 
@@ -210,15 +212,15 @@ public class KafkaAsyncApiBuilder
         return builder;
     }
 
-    private String stripDbPrefixIfNeeded(
+    private String stripSchemaPrefix(
         String topicName)
     {
-        String prefix =  "%s.".formatted(config.risingwaveDb());
-        return topicName.startsWith(prefix) ? topicName.replace(prefix, "") : topicName;
+        return topicName.replaceAll("^[^.]+\\.", "");
     }
 
     private Channel createChannel(
         String topicName,
+        String messageName,
         List<String> cleanupPolicies)
     {
         List<KafkaChannelTopicCleanupPolicy> policies = new ArrayList<>();
@@ -236,9 +238,12 @@ public class KafkaAsyncApiBuilder
             .topicConfiguration(config)
             .build();
 
+        Reference reference = new Reference("#/components/messages/%s".formatted(messageName));
+
         return Channel.builder()
             .address(topicName)
             .bindings(Map.of("kafka", binding))
+            .messages(Map.of(messageName, reference))
             .build();
     }
 
