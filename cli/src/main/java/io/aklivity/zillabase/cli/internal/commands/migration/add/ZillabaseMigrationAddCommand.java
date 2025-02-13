@@ -15,10 +15,7 @@
 package io.aklivity.zillabase.cli.internal.commands.migration.add;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 
 import com.github.rvesse.airline.annotations.Arguments;
 import com.github.rvesse.airline.annotations.Command;
@@ -41,20 +38,9 @@ public final class ZillabaseMigrationAddCommand extends ZillabaseMigrationComman
         try
         {
             String name = args.get(0);
+            String fileName = service.newEmptyMigrationFile(name);
+            System.out.printf("Created migration: %s%n", fileName);
 
-            Optional<String> latest = listMigrations().reduce((n1, n2) -> n2);
-
-            int next = latest.isPresent() && matcher.reset(latest.get()).matches()
-                ? Integer.parseInt(matcher.group("number")) + 1
-                : 0;
-
-            String filename = MIGRATION_FILE_FORMAT.formatted(next, name);
-            Path newMigration = MIGRATIONS_PATH.resolve(filename);
-
-            Files.createDirectories(MIGRATIONS_PATH);
-            Files.createFile(newMigration);
-
-            System.out.printf("Created migration %s\n", filename);
         }
         catch (IOException ex)
         {

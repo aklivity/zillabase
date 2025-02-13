@@ -1,0 +1,11 @@
+{
+  "watch": ["connect-ws.js"],
+  "ext": "js,json",
+  "ignore": ["node_modules/**"],
+  "restartable": "rs",
+  "execMap": {
+    "js": "node --inspect" 
+  },
+  "delay": "1000",
+  "legacy-watch": true 
+}
