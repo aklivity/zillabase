@@ -73,6 +73,7 @@ public final class ZillabaseUdfServerMain
                 }
                 catch (Exception | Error ex)
                 {
+                    System.err.println("Failed to load: " + className);
                 }
             }
 

@@ -24,22 +24,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
-import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelBinding;
-import com.asyncapi.bindings.kafka.v0._5_0.channel.KafkaChannelTopicCleanupPolicy;
+import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
+import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolicy;
 import com.asyncapi.schemas.asyncapi.Reference;
+import com.asyncapi.schemas.asyncapi.multiformat.AvroFormatSchema;
 import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuth2SecurityScheme;
 import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuthFlows;
+import com.asyncapi.schemas.avro.v1._9_0.AvroSchemaRecord;
 import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.channel.Parameter;
+import com.asyncapi.v3._0_0.model.channel.message.Message;
 import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
 import com.asyncapi.v3._0_0.model.info.License;
@@ -47,8 +48,8 @@ import com.asyncapi.v3._0_0.model.operation.Operation;
 import com.asyncapi.v3._0_0.model.operation.OperationAction;
 import com.asyncapi.v3._0_0.model.server.Server;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -57,21 +58,19 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperatio
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 
 public class HttpAsyncApiBuilder
 {
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
+    private static final Pattern REFERENCE_PATTERN = Pattern.compile("ref=([^)]*)");
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
-    private final ApiGenConfig config;
+    private final Matcher referenceMatcher = REFERENCE_PATTERN.matcher("");
     private final KafkaTopicSchemaHelper kafkaHelper;
     private final List<String> scopes;
 
     public HttpAsyncApiBuilder(
-        ApiGenConfig config,
         KafkaTopicSchemaHelper kafkaHelper)
     {
-        this.config = config;
         this.kafkaHelper = kafkaHelper;
         this.scopes = new ArrayList<>();
     }
@@ -80,18 +79,23 @@ public class HttpAsyncApiBuilder
         String kafkaSpec) throws Exception
     {
         AsyncAPI kafkaApi = deserializeAsyncapi(kafkaSpec);
+        String httpSpec = null;
 
-        AsyncapiSpecBuilder<AsyncapiSpec> builder = AsyncapiSpec.builder()
-            .inject(spec -> spec.asyncapi("3.0.0"))
-            .inject(this::injectInfo)
-            .inject(this::injectServers)
-            .inject(ctx -> injectChannels(ctx, kafkaApi))
-            .inject(ctx -> createOperations(ctx, kafkaApi))
-            .inject(this::injectComponents);
+        if (kafkaApi != null)
+        {
+            AsyncapiSpecBuilder<AsyncapiSpec> builder = AsyncapiSpec.builder()
+                .inject(spec -> spec.asyncapi("3.0.0"))
+                .inject(this::injectInfo)
+                .inject(this::injectServers)
+                .inject(spec -> injectChannels(spec, kafkaApi))
+                .inject(spec -> injectOperations(spec, kafkaApi))
+                .inject(spec -> injectComponents(spec, kafkaApi));
 
-        AsyncapiSpec spec = builder.build();
+            AsyncapiSpec spec = builder.build();
+            httpSpec = buildYaml(spec);
+        }
 
-        return buildYaml(spec);
+        return httpSpec;
     }
 
     private <C> AsyncapiSpecBuilder<C> injectInfo(
@@ -131,7 +135,7 @@ public class HttpAsyncApiBuilder
             String channelName = entry.getKey();
             if (!channelName.endsWith("_replies"))
             {
-                injectChannel(builder, channelName, (Channel) entry.getValue());
+                injectChannel(builder, channelName);
             }
         }
 
@@ -139,7 +143,112 @@ public class HttpAsyncApiBuilder
     }
 
     private <C> AsyncapiSpecBuilder<C> injectComponents(
-        AsyncapiSpecBuilder<C> builder)
+        AsyncapiSpecBuilder<C> builder,
+        AsyncAPI kafkaApi)
+    {
+        Components.ComponentsBuilder componentsBuilder = Components.builder();
+
+        Components components = kafkaApi.getComponents();
+        if (components != null)
+        {
+            injectSchemas(componentsBuilder, components.getSchemas());
+            injectMessages(componentsBuilder, components.getMessages());
+        }
+
+        injectOauthSecurity(componentsBuilder);
+
+        builder.components(componentsBuilder.build());
+
+        return builder;
+    }
+
+    private void injectSchemas(
+        Components.ComponentsBuilder builder,
+        Map<String, Object> schemas)
+    {
+        ObjectMapper mapper = new ObjectMapper();
+
+        builder.schemas(schemas.entrySet().stream()
+            .flatMap(entry -> {
+                String originalName = entry.getKey();
+                AvroFormatSchema originalSchema = (AvroFormatSchema) entry.getValue();
+
+                // Convert schema into array schema format
+                AvroFormatSchema newSchema = convertToAvroArraySchema(mapper, originalSchema);
+                String newSchemaName = originalName.replace("-value", "-values");
+
+                return Stream.of(
+                    Map.entry(originalName, originalSchema),
+                    Map.entry(newSchemaName, newSchema)
+                );
+            })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+        );
+    }
+
+    private AvroFormatSchema convertToAvroArraySchema(
+        ObjectMapper mapper,
+        AvroFormatSchema originalSchema)
+    {
+        AvroSchemaRecord originalSchemaRecord = (AvroSchemaRecord) originalSchema.getSchema();
+
+        ObjectNode recordNode = mapper.createObjectNode()
+            .put("type", "record")
+            .put("name", originalSchemaRecord.getName())
+            .put("namespace", originalSchemaRecord.getNamespace());
+
+        ArrayNode fieldsNode = mapper.createArrayNode();
+        originalSchemaRecord.getFields().forEach(f ->
+        {
+            ObjectNode fieldNode = mapper.createObjectNode();
+            fieldNode.put("name", f.getName());
+            fieldNode.set("type", mapper.valueToTree(f.getType()));
+            fieldsNode.add(fieldNode);
+        });
+        recordNode.set("fields", fieldsNode);
+
+        return new AvroFormatSchema(
+            mapper.createObjectNode()
+                .put("type", "array")
+                .set("items", recordNode)
+        );
+    }
+
+    private void injectMessages(
+        Components.ComponentsBuilder builder,
+        Map<String, Object> messages)
+    {
+        builder.messages(messages.entrySet().stream()
+            .flatMap(entry ->
+            {
+                String originalName = entry.getKey();
+                Message originalMessage =  (Message) entry.getValue();
+
+                Map.Entry<String, Message> originalEntry = Map.entry(originalName, originalMessage);
+
+                String newName = originalName.replace("Message", "Messages");
+                String reference = originalEntry.getValue().getPayload().toString();
+                referenceMatcher.reset(reference);
+                Reference newReference = referenceMatcher.find()
+                    ? new Reference(referenceMatcher.group(1).replace("-value", "-values"))
+                    : null;
+
+                Message newMessage = Message.builder()
+                    .name(newName)
+                    .contentType(originalMessage.getContentType())
+                    .payload(newReference)
+                    .build();
+
+                Map.Entry<String, Message> newEntry = Map.entry(newName, newMessage);
+
+                return Stream.of(originalEntry, newEntry);
+            })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+        );
+    }
+
+    private void injectOauthSecurity(
+        Components.ComponentsBuilder builder)
     {
         if (!scopes.isEmpty())
         {
@@ -148,70 +257,50 @@ public class HttpAsyncApiBuilder
                 .scopes(scopes)
                 .build();
             Map<String, Object> security = Map.of("httpOauth", scheme);
-            builder.components(Components.builder()
-                .securitySchemes(security)
-                .build());
-        }
-
-        return builder;
-    }
-
-    private void createChannels(
-        String name,
-        String label,
-        JsonValue val) throws JsonProcessingException
-    {
-        Map<String, Object> messagesRef = new HashMap<>();
-        Map<String, Object> itemMessagesRef = new HashMap<>();
-
-        populateMessageReferences(val, messagesRef, itemMessagesRef);
-
-        Channel channel = new Channel();
-        channel.setAddress("/" + name);
-        channel.setMessages(messagesRef);
-        ctx.channels.put(name, channel);
-
-        channel = new Channel();
-        channel.setAddress("/" + name + "/{id}");
-        Parameter p = new Parameter();
-        p.setDescription("Id of the item.");
-        channel.setParameters(Map.of("id", p));
-        channel.setMessages(itemMessagesRef);
-        ctx.channels.put(name + "-item", channel);
-
-        channel = new Channel();
-        channel.setAddress("/" + name + "-stream");
-        channel.setMessages(itemMessagesRef);
-        ctx.channels.put(name + "-stream", channel);
-
-        channel = new Channel();
-        channel.setAddress("/" + name + "-stream-identity");
-        channel.setMessages(itemMessagesRef);
-        ctx.channels.put(name + "-stream-identity", channel);
-    }
-
-    private void parseMessagesAndSchemas(
-        BuildContext context) throws JsonProcessingException
-    {
-        JsonObject componentsJson = context.kafkaJson.getJsonObject("components");
-        if (componentsJson != null)
-        {
-            JsonObject msgs = componentsJson.getJsonObject("messages");
-            JsonObject schs = componentsJson.getJsonObject("schemas");
-            buildMessagesAndSchemas(msgs, schs, context);
+            builder.securitySchemes(security);
         }
     }
 
     private <C> AsyncapiSpecBuilder<C> injectChannel(
         AsyncapiSpecBuilder<C> builder,
-        String channelName,
-        Channel channel)
+        String channelName)
     {
         String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
         String label = name.toUpperCase();
 
         addReadWriteScopes(label);
-        createChannels(name, label, channel, ctx);
+
+        Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
+        Reference messages = new Reference("#/components/messages/%sMessages".formatted(label));
+
+        String messageRef = "%sMessage".formatted(label);
+        String messagesRef = "%sMessages".formatted(label);
+
+        builder.addChannel(name, Channel.builder()
+            .address("/" + name)
+            .messages(Map.of(
+                messageRef, message,
+                messagesRef, messages
+            ))
+            .build());
+
+        builder.addChannel(name + "-item", Channel.builder()
+            .address("/" + name + "/{id}")
+            .parameters(Map.of("id", Parameter.builder()
+                .description("Id of the item.")
+                .build()))
+            .messages(Map.of(messageRef, message))
+            .build());
+
+        builder.addChannel(name + "-stream", Channel.builder()
+            .address("/" + name + "-stream")
+            .messages(Map.of(messageRef, message))
+            .build());
+
+        builder.addChannel(name + "-stream-identity", Channel.builder()
+            .address("/" + name + "-stream-identity")
+            .messages(Map.of(messageRef, message))
+            .build());
 
         return builder;
     }
@@ -220,9 +309,18 @@ public class HttpAsyncApiBuilder
         AsyncapiSpecBuilder<C> builder,
         AsyncAPI kafkaApi)
     {
-        boolean compact = isTopicCompact(channel);
+        Map<String, Object> channels = kafkaApi.getChannels();
+        for (Map.Entry<String, Object> entry : channels.entrySet())
+        {
+            Channel channel = (Channel) entry.getValue();
 
-        injectHttpOperations(builder, name, label, compact);
+            String channelName = entry.getKey();
+            boolean compact = isTopicCompact(channel);
+            String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
+            String label = name.toUpperCase();
+
+            injectHttpOperations(builder, name, label, compact);
+        }
 
         return builder;
     }
@@ -233,28 +331,6 @@ public class HttpAsyncApiBuilder
         String base = label.toLowerCase();
         scopes.add(base + ":read");
         scopes.add(base + ":write");
-    }
-
-    private void populateMessageReferences(
-        JsonValue val,
-        Map<String, Object> messagesRef,
-        Map<String, Object> itemMessagesRef) throws JsonProcessingException
-    {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonObject obj = val.asJsonObject();
-        JsonObject kafkaMsgs = obj.getJsonObject("messages");
-        if (kafkaMsgs != null)
-        {
-            for (Map.Entry<String, JsonValue> e : kafkaMsgs.entrySet())
-            {
-                JsonNode msgNode = mapper.readTree(e.getValue().toString());
-                messagesRef.put(e.getKey(), msgNode);
-                itemMessagesRef.put(e.getKey(), msgNode);
-                JsonNode arrayMsg = msgNode.deepCopy();
-                ((ObjectNode) arrayMsg).put("$ref", "#/components/messages/" + e.getKey() + "s");
-                messagesRef.put(e.getKey() + "s", arrayMsg);
-            }
-        }
     }
 
     private boolean isTopicCompact(
@@ -273,7 +349,8 @@ public class HttpAsyncApiBuilder
                 .getTopicConfiguration()
                 .getCleanupPolicy();
 
-            compact = cleanupPolicy != null && cleanupPolicy.stream().anyMatch("compact"::equals);
+            compact = cleanupPolicy != null && cleanupPolicy.stream()
+                .anyMatch(p -> "compact".equalsIgnoreCase(p.name()));
         }
 
         return compact;
@@ -286,15 +363,16 @@ public class HttpAsyncApiBuilder
         boolean compact)
     {
         String identity = resolveIdentityField(label);
+
         injectPostOperation(builder, name, label, compact);
 
         if (compact)
         {
-            injectPutOperation(ctx, name, label);
+            injectPutOperation(builder, name, label);
         }
 
-        injectGetOperations(ctx, name, label, identity);
-        injectSseOperations(ctx, name, label, identity);
+        injectGetOperations(builder, name, label, identity);
+        injectSseOperations(builder, name, label, identity);
 
         return builder;
     }
@@ -364,7 +442,7 @@ public class HttpAsyncApiBuilder
             .action(OperationAction.SEND)
             .channel(new Reference("#/channels/%s-item".formatted(name)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/%s-item/messages/%sMessage".formatted(name, label + "Message"))))
+                new Reference("#/channels/%s-item/messages/%sMessage".formatted(name, label))))
             .build();
 
         HTTPOperationBinding put = HTTPOperationBinding.builder()
@@ -462,7 +540,7 @@ public class HttpAsyncApiBuilder
             .action(OperationAction.RECEIVE)
             .channel(new Reference("#/channels/%s-stream".formatted(name)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/%s-stream/messages/%sMessages".formatted(name, label))))
+                new Reference("#/channels/%s-stream/messages/%sMessage".formatted(name, label))))
             .build();
 
         Map<String, Object> ab = new HashMap<>();
@@ -482,55 +560,21 @@ public class HttpAsyncApiBuilder
         return builder;
     }
 
-    private void buildMessagesAndSchemas(
-        JsonObject msgs,
-        JsonObject schs) throws JsonProcessingException
-    {
-        ObjectMapper m = new ObjectMapper();
-        if (msgs != null)
-        {
-            for (Map.Entry<String, JsonValue> e : msgs.entrySet())
-            {
-                JsonNode om = m.readTree(e.getValue().toString());
-                String k = e.getKey();
-                ctx.messages.put(k, om);
-                String ct = om.has("contentType") ? om.get("contentType").asText() : "application/json";
-                String arrKey = k + "s";
-                ObjectNode arrMsg = m.createObjectNode();
-                arrMsg.put("name", arrKey);
-                arrMsg.put("contentType", ct);
-                String ref = om.path("payload").path("$ref").asText();
-                ObjectNode pay = m.createObjectNode();
-                pay.put("$ref", ref + "s");
-                arrMsg.set("payload", pay);
-                ctx.messages.put(arrKey, arrMsg);
-            }
-        }
-        if (schs != null)
-        {
-            for (Map.Entry<String, JsonValue> e : schs.entrySet())
-            {
-                String k = e.getKey();
-                JsonNode os = m.readTree(e.getValue().toString());
-                ctx.schemas.put(k, os);
-                String arrK = k + "s";
-                ObjectNode arrS = m.createObjectNode();
-                arrS.put("type", "array");
-                ObjectNode it = m.createObjectNode();
-                it.put("$ref", "#/components/schemas/" + k);
-                arrS.set("items", it);
-                arrS.put("name", arrK.replace(config.risingwaveDb() + ".", ""));
-                arrS.put("namespace", config.risingwaveDb());
-                ctx.schemas.put(arrK, arrS);
-            }
-        }
-    }
-
     private AsyncAPI deserializeAsyncapi(
-        String yaml) throws Exception
+        String yaml)
     {
-        ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-        return yamlMapper.readValue(yaml, AsyncAPI.class);
+        AsyncAPI spec = null;
+        try
+        {
+            ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+            spec = yamlMapper.readValue(yaml, AsyncAPI.class);
+        }
+        catch (JsonProcessingException e)
+        {
+            System.out.println("Failed to deserialize asyncapi: " + yaml);
+        }
+
+        return spec;
     }
 
     private String buildYaml(

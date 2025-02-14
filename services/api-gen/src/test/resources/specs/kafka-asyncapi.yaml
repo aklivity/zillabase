@@ -104,44 +104,50 @@ operations:
 components:
   schemas:
     public.petstore_verified_customers-value:
-      fields:
-      - name: id
-        type:
-        - 'null'
-        - type: string
-      - name: points
-        type:
-        - 'null'
-        - type: string
-      name: petstore_verified_customers
-      namespace: public
-      type: object
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        fields:
+        - name: id
+          type:
+          - 'null'
+          - type: string
+        - name: points
+          type:
+          - 'null'
+          - type: string
+        name: petstore_verified_customers
+        namespace: public
+        type: record
     public.petstore_customers-value:
-      fields:
-      - name: name
-        type:
-        - 'null'
-        - type: string
-      - name: status
-        type:
-        - 'null'
-        - type: string
-      name: petstore_customers
-      namespace: public
-      type: object
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        fields:
+        - name: name
+          type:
+          - 'null'
+          - type: string
+        - name: status
+          type:
+          - 'null'
+          - type: string
+        name: petstore_customers
+        namespace: public
+        type: record
     public.petstore_pets-value:
-      fields:
-      - name: id
-        type:
-        - 'null'
-        - type: string
-      - name: breed
-        type:
-        - 'null'
-        - type: string
-      name: petstore_pets
-      namespace: public
-      type: object
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        fields:
+        - name: id
+          type:
+          - 'null'
+          - type: string
+        - name: breed
+          type:
+          - 'null'
+          - type: string
+        name: petstore_pets
+        namespace: public
+        type: record
   messages:
     PETSTORE_PETSMessage:
       payload:

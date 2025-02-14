@@ -281,63 +281,103 @@ operations:
     - "$ref": "#/channels/petstore_verified_customers-stream-identity/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
 components:
   schemas:
-    public.petstore_pets-values:
-      type: array
-      items:
-        "$ref": "#/components/schemas/public.petstore_pets-value"
-      name: public.petstore_pets-values
-      namespace: dev
     public.petstore_verified_customers-value:
-      fields:
-      - name: id
-        type:
-        - 'null'
-        - type: string
-      - name: points
-        type:
-        - 'null'
-        - type: string
-      name: petstore_verified_customers
-      namespace: public
-      type: object
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        fields:
+        - name: id
+          type:
+          - 'null'
+          - type: string
+        - name: points
+          type:
+          - 'null'
+          - type: string
+        name: petstore_verified_customers
+        namespace: public
+        type: record
     public.petstore_verified_customers-values:
-      type: array
-      items:
-        "$ref": "#/components/schemas/public.petstore_verified_customers-value"
-      name: public.petstore_verified_customers-values
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        type: array
+        items:
+          fields:
+            - name: name
+              type:
+                - 'null'
+                - type: string
+            - name: status
+              type:
+                - 'null'
+                - type: string
+          name: petstore_customers
+          namespace: public
+          type: record
       namespace: dev
     public.petstore_customers-value:
-      fields:
-      - name: name
-        type:
-        - 'null'
-        - type: string
-      - name: status
-        type:
-        - 'null'
-        - type: string
-      name: petstore_customers
-      namespace: public
-      type: object
-    public.petstore_pets-value:
-      fields:
-      - name: id
-        type:
-        - 'null'
-        - type: string
-      - name: breed
-        type:
-        - 'null'
-        - type: string
-      name: petstore_pets
-      namespace: public
-      type: object
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        fields:
+        - name: name
+          type:
+          - 'null'
+          - type: string
+        - name: status
+          type:
+          - 'null'
+          - type: string
+        name: petstore_customers
+        namespace: public
+        type: record
     public.petstore_customers-values:
-      type: array
-      items:
-        "$ref": "#/components/schemas/public.petstore_customers-value"
-      name: public.petstore_customers-values
-      namespace: dev
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        type: array
+        items:
+          fields:
+            - name: id
+              type:
+                - 'null'
+                - type: string
+            - name: breed
+              type:
+                - 'null'
+                - type: string
+          name: petstore_pets
+          namespace: public
+          type: record
+    public.petstore_pets-value:
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      schema:
+        fields:
+          - name: id
+            type:
+              - 'null'
+              - type: string
+          - name: breed
+            type:
+              - 'null'
+              - type: string
+        name: petstore_pets
+        namespace: public
+        type: record
+      public.petstore_pets-values:
+        schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+        schema:
+          type: array
+          items:
+            fields:
+              - name: id
+                type:
+                  - 'null'
+                  - type: string
+              - name: breed
+                type:
+                  - 'null'
+                  - type: string
+            name: petstore_pets
+            namespace: public
+            type: record
   messages:
     PETSTORE_PETSMessage:
       payload:

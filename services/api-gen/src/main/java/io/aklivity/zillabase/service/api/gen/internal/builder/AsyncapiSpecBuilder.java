@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
 import com.asyncapi.v3._0_0.model.operation.Operation;
@@ -84,6 +85,20 @@ public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBui
         Map<String, Object> operations)
     {
         this.operations = operations;
+        return this;
+    }
+
+    public AsyncapiSpecBuilder<T> addChannel(
+        String name,
+        Channel channel)
+    {
+        if (channels == null)
+        {
+            channels = new HashMap<>();
+        }
+
+        channels.put(name, channel);
+
         return this;
     }
 
