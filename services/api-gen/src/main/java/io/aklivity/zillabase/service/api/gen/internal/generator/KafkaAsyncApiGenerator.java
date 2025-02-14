@@ -125,18 +125,10 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         Map<String, Object> schemas,
         KafkaTopicSchemaRecord record)
     {
-        String topicName = record.name;
         String subject = record.subject;
 
-        try
-        {
-            JsonNode schemaObject = buildPayloadSchema(record.schema);
-            schemas.put(subject, schemaObject);
-        }
-        catch (JsonProcessingException e)
-        {
-            System.out.println("Failed to build schema for " + topicName);
-        }
+        JsonNode schemaObject = buildPayloadSchema(record.schema);
+        schemas.put(subject, schemaObject);
     }
 
     private <C> AsyncapiSpecBuilder<C> injectChannels(
