@@ -1,4 +1,4 @@
-package io.aklivity.zillabase.service.api.gen.internal.builder;
+package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,7 +21,8 @@ import org.mockito.MockitoAnnotations;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
-public class HttpAsyncApiBuilderTest {
+public class HttpAsyncApiGeneratorTest
+{
 
     @Mock
     private ApiGenConfig config;
@@ -30,7 +31,7 @@ public class HttpAsyncApiBuilderTest {
     private KafkaConfig kafkaConfig;
 
     @InjectMocks
-    private HttpAsyncApiBuilder specBuilder;
+    private HttpAsyncApiGenerator specBuilder;
 
     private String kafkaSpec;
 

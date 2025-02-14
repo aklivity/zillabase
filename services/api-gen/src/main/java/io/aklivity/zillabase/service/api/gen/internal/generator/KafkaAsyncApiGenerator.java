@@ -12,9 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.builder;
-
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,12 +25,9 @@ import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolic
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguration;
 import com.asyncapi.bindings.kafka.v0._4_0.server.KafkaServerBinding;
 import com.asyncapi.schemas.asyncapi.Reference;
-import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.channel.message.Message;
 import com.asyncapi.v3._0_0.model.component.Components;
-import com.asyncapi.v3._0_0.model.info.Info;
-import com.asyncapi.v3._0_0.model.info.License;
 import com.asyncapi.v3._0_0.model.operation.Operation;
 import com.asyncapi.v3._0_0.model.operation.OperationAction;
 import com.asyncapi.v3._0_0.model.operation.reply.OperationReply;
@@ -41,16 +36,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
-public class KafkaAsyncApiBuilder
+public class KafkaAsyncApiGenerator extends AsyncApiGenerator
 {
     private final KafkaConfig kafkaConfig;
 
-    public KafkaAsyncApiBuilder(
+    public KafkaAsyncApiGenerator(
         KafkaConfig kafkaConfig)
     {
         this.kafkaConfig = kafkaConfig;
@@ -61,29 +55,15 @@ public class KafkaAsyncApiBuilder
     {
         AsyncapiSpecBuilder<AsyncapiSpec> builder = AsyncapiSpec.builder()
             .inject(spec -> spec.asyncapi("3.0.0"))
-            .inject(this::injectInfo)
+            .inject(spec -> injectInfo(spec, "Kafka Cluster"))
             .inject(this::injectServers)
-            .inject(a -> injectChannels(a, schemaRecords))
-            .inject(a -> injectOperations(a, schemaRecords))
-            .inject(a -> injectComponents(a, schemaRecords));
+            .inject(spec -> injectChannels(spec, schemaRecords))
+            .inject(spec -> injectOperations(spec, schemaRecords))
+            .inject(spec -> injectComponents(spec, schemaRecords));
 
         AsyncapiSpec spec = builder.build();
 
         return buildYaml(spec);
-    }
-
-    private <C> AsyncapiSpecBuilder<C> injectInfo(
-        AsyncapiSpecBuilder<C> builder)
-    {
-        Info info = Info.builder()
-            .title("API Document for Kafka Cluster")
-            .version("1.0.0")
-            .license(new License(
-                "Aklivity Community License",
-                "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
-            ))
-            .build();
-        return builder.info(info);
     }
 
     private <C> AsyncapiSpecBuilder<C> injectServers(
@@ -291,22 +271,5 @@ public class KafkaAsyncApiBuilder
                 new Reference("#/channels/" + channelName + "/messages/" + messageName))
             )
             .build();
-    }
-
-    private String buildYaml(
-        AsyncapiSpec spec) throws Exception
-    {
-        AsyncAPI asyncAPI = AsyncAPI.builder()
-            .asyncapi(spec.version)
-            .info(spec.info)
-            .servers(spec.servers)
-            .components(spec.components)
-            .channels(spec.channels)
-            .operations(spec.operations)
-            .build();
-        ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-        yamlMapper.setSerializationInclusion(NON_NULL);
-
-        return yamlMapper.writeValueAsString(asyncAPI);
     }
 }

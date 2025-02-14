@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.builder;
+package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import java.util.Map;
 

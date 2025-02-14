@@ -21,7 +21,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.builder.KafkaAsyncApiBuilder;
+import io.aklivity.zillabase.service.api.gen.internal.generator.KafkaAsyncApiGenerator;
 import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
@@ -56,7 +56,7 @@ public class KafkaAsyncApiService
         {
             List<KafkaTopicSchemaRecord> schemaRecords = kafkaHelper.resolve();
 
-            KafkaAsyncApiBuilder builder = new KafkaAsyncApiBuilder(kafkaConfig);
+            KafkaAsyncApiGenerator builder = new KafkaAsyncApiGenerator(kafkaConfig);
             String kafkaSpec = builder.buildSpec(schemaRecords);
 
             if (kafkaSpec != null)

@@ -12,12 +12,11 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.builder;
+package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,8 +41,6 @@ import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.channel.Parameter;
 import com.asyncapi.v3._0_0.model.channel.message.Message;
 import com.asyncapi.v3._0_0.model.component.Components;
-import com.asyncapi.v3._0_0.model.info.Info;
-import com.asyncapi.v3._0_0.model.info.License;
 import com.asyncapi.v3._0_0.model.operation.Operation;
 import com.asyncapi.v3._0_0.model.operation.OperationAction;
 import com.asyncapi.v3._0_0.model.server.Server;
@@ -59,7 +56,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOper
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 
-public class HttpAsyncApiBuilder
+public class HttpAsyncApiGenerator extends AsyncApiGenerator
 {
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
     private static final Pattern REFERENCE_PATTERN = Pattern.compile("ref=([^)]*)");
@@ -68,7 +65,7 @@ public class HttpAsyncApiBuilder
     private final KafkaTopicSchemaHelper kafkaHelper;
     private final List<String> scopes;
 
-    public HttpAsyncApiBuilder(
+    public HttpAsyncApiGenerator(
         KafkaTopicSchemaHelper kafkaHelper)
     {
         this.kafkaHelper = kafkaHelper;
@@ -85,7 +82,7 @@ public class HttpAsyncApiBuilder
         {
             AsyncapiSpecBuilder<AsyncapiSpec> builder = AsyncapiSpec.builder()
                 .inject(spec -> spec.asyncapi("3.0.0"))
-                .inject(this::injectInfo)
+                .inject(spec -> injectInfo(spec, "REST APIs"))
                 .inject(this::injectServers)
                 .inject(spec -> injectChannels(spec, kafkaApi))
                 .inject(spec -> injectOperations(spec, kafkaApi))
@@ -96,20 +93,6 @@ public class HttpAsyncApiBuilder
         }
 
         return httpSpec;
-    }
-
-    private <C> AsyncapiSpecBuilder<C> injectInfo(
-        AsyncapiSpecBuilder<C> builder)
-    {
-        Info info = Info.builder()
-            .title("API Document for REST APIs")
-            .version("1.0.0")
-            .license(new License(
-                "Aklivity Community License",
-                "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
-            ))
-            .build();
-        return builder.info(info);
     }
 
     private <C> AsyncapiSpecBuilder<C> injectServers(
@@ -169,11 +152,11 @@ public class HttpAsyncApiBuilder
         ObjectMapper mapper = new ObjectMapper();
 
         builder.schemas(schemas.entrySet().stream()
-            .flatMap(entry -> {
+            .flatMap(entry ->
+            {
                 String originalName = entry.getKey();
                 AvroFormatSchema originalSchema = (AvroFormatSchema) entry.getValue();
 
-                // Convert schema into array schema format
                 AvroFormatSchema newSchema = convertToAvroArraySchema(mapper, originalSchema);
                 String newSchemaName = originalName.replace("-value", "-values");
 
@@ -277,14 +260,14 @@ public class HttpAsyncApiBuilder
         String messagesRef = "%sMessages".formatted(label);
 
         builder.addChannel(name, Channel.builder()
-            .address("/" + name)
+            .address("/%s".formatted(name))
             .messages(Map.of(
                 messageRef, message,
                 messagesRef, messages
             ))
             .build());
 
-        builder.addChannel(name + "-item", Channel.builder()
+        builder.addChannel("%s-item".formatted(name), Channel.builder()
             .address("/" + name + "/{id}")
             .parameters(Map.of("id", Parameter.builder()
                 .description("Id of the item.")
@@ -292,13 +275,13 @@ public class HttpAsyncApiBuilder
             .messages(Map.of(messageRef, message))
             .build());
 
-        builder.addChannel(name + "-stream", Channel.builder()
-            .address("/" + name + "-stream")
+        builder.addChannel("%s-stream".formatted(name), Channel.builder()
+            .address("/%s-stream".formatted(name))
             .messages(Map.of(messageRef, message))
             .build());
 
-        builder.addChannel(name + "-stream-identity", Channel.builder()
-            .address("/" + name + "-stream-identity")
+        builder.addChannel("%s-stream-identity".formatted(name), Channel.builder()
+            .address("/%s-stream-identity".formatted(name))
             .messages(Map.of(messageRef, message))
             .build());
 
@@ -364,17 +347,11 @@ public class HttpAsyncApiBuilder
     {
         String identity = resolveIdentityField(label);
 
-        injectPostOperation(builder, name, label, compact);
-
-        if (compact)
-        {
-            injectPutOperation(builder, name, label);
-        }
-
-        injectGetOperations(builder, name, label, identity);
-        injectSseOperations(builder, name, label, identity);
-
-        return builder;
+        return builder
+            .inject(spec -> injectPostOperation(spec, name, label, compact))
+            .inject(spec -> injectPutOperation(spec, name, label, compact))
+            .inject(spec -> injectGetOperations(spec, name, label, identity))
+            .inject(spec -> injectSseOperations(spec, name, label, identity));
     }
 
     private String resolveIdentityField(
@@ -387,7 +364,7 @@ public class HttpAsyncApiBuilder
                 .stream()
                 .filter(r -> label.equals(r.label))
                 .findFirst()
-                .map(r -> "protobuf".equals(r.type)
+                .map(r -> "protobuf".equalsIgnoreCase(r.type)
                     ? kafkaHelper.extractIdentityFieldFromProtobufSchema(r.schema)
                     : kafkaHelper.extractIdentityFieldFromSchema(r.schema))
                 .orElse(null);
@@ -436,30 +413,34 @@ public class HttpAsyncApiBuilder
     private <C> AsyncapiSpecBuilder<C> injectPutOperation(
         AsyncapiSpecBuilder<C> builder,
         String name,
-        String label)
+        String label,
+        boolean compact)
     {
-        Operation op = Operation.builder()
-            .action(OperationAction.SEND)
-            .channel(new Reference("#/channels/%s-item".formatted(name)))
-            .messages(Collections.singletonList(
-                new Reference("#/channels/%s-item/messages/%sMessage".formatted(name, label))))
-            .build();
+        if (compact)
+        {
+            Operation op = Operation.builder()
+                .action(OperationAction.SEND)
+                .channel(new Reference("#/channels/%s-item".formatted(name)))
+                .messages(Collections.singletonList(
+                    new Reference("#/channels/%s-item/messages/%sMessage".formatted(name, label))))
+                .build();
 
-        HTTPOperationBinding put = HTTPOperationBinding.builder()
-            .method(PUT)
-            .build();
-        Map<String, Object> bindings = new HashMap<>();
-        bindings.put("http", put);
+            HTTPOperationBinding put = HTTPOperationBinding.builder()
+                .method(PUT)
+                .build();
+            Map<String, Object> bindings = new HashMap<>();
+            bindings.put("http", put);
 
-        ZillaHttpOperationBinding zilla = new ZillaHttpOperationBinding(PUT,
-            Map.of("zilla:identity", "{identity}"), null);
-        bindings.put("x-zilla-http-kafka", zilla);
-        op.setSecurity(List.of(new Reference("#/components/securitySchemes/httpOauth")));
-        op.setBindings(bindings);
+            ZillaHttpOperationBinding zilla = new ZillaHttpOperationBinding(PUT,
+                Map.of("zilla:identity", "{identity}"), null);
+            bindings.put("x-zilla-http-kafka", zilla);
+            op.setSecurity(List.of(new Reference("#/components/securitySchemes/httpOauth")));
+            op.setBindings(bindings);
 
-        String opName = "do%sUpdate".formatted(label);
+            String opName = "do%sUpdate".formatted(label);
 
-        builder.addOperation(opName, op);
+            builder.addOperation(opName, op);
+        }
 
         return builder;
     }
@@ -486,9 +467,9 @@ public class HttpAsyncApiBuilder
 
         Operation allGetOp = Operation.builder()
             .action(OperationAction.RECEIVE)
-            .channel(new Reference("#/channels/" + name))
+            .channel(new Reference("#/channels/%s".formatted(name)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/" + name + "/messages/" + label + "Messages")))
+                new Reference("#/channels/%s/messages/%sMessages".formatted(name, label))))
             .bindings(base)
             .security(List.of(new Reference("#/components/securitySchemes/httpOauth")))
             .build();
@@ -498,9 +479,9 @@ public class HttpAsyncApiBuilder
 
         Operation item = Operation.builder()
             .action(OperationAction.RECEIVE)
-            .channel(new Reference("#/channels/" + name + "-item"))
+            .channel(new Reference("#/channels/%s-item".formatted(name)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/" + name + "-item/messages/" + label + "Message")))
+                new Reference("#/channels/%s-item/messages/%sMessage".formatted(name, label))))
             .bindings(base)
             .security(List.of(new Reference("#/components/securitySchemes/httpOauth")))
             .build();
@@ -575,22 +556,5 @@ public class HttpAsyncApiBuilder
         }
 
         return spec;
-    }
-
-    private String buildYaml(
-        AsyncapiSpec spec) throws Exception
-    {
-        AsyncAPI asyncAPI = AsyncAPI.builder()
-            .asyncapi(spec.version)
-            .info(spec.info)
-            .servers(spec.servers)
-            .components(spec.components)
-            .channels(spec.channels)
-            .operations(spec.operations)
-            .build();
-        ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-        yamlMapper.setSerializationInclusion(NON_NULL);
-
-        return yamlMapper.writeValueAsString(asyncAPI);
     }
 }
