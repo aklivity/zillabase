@@ -115,7 +115,7 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         Message message = Message.builder()
             .name(messageName)
             .contentType("application/" + record.type)
-            .payload(new Reference("#/components/schemas/" + subject))
+            .payload(new Reference("#/components/schemas/%s".formatted(subject)))
             .build();
 
         messages.put(messageName, message);
@@ -224,14 +224,22 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
     }
 
     private JsonNode buildPayloadSchema(
-        String rawSchema) throws JsonProcessingException
+        String rawSchema)
     {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(rawSchema);
-
-        if (node.has("type") && "record".equals(node.get("type").asText()))
+        JsonNode node = null;
+        try
         {
-            ((ObjectNode) node).put("type", "object");
+            ObjectMapper mapper = new ObjectMapper();
+            node = mapper.readTree(rawSchema);
+
+            if (node.has("type") && "record".equals(node.get("type").asText()))
+            {
+                ((ObjectNode) node).put("type", "object");
+            }
+        }
+        catch (JsonProcessingException e)
+        {
+            System.out.println("Failed to parse schema: " + rawSchema);
         }
 
         return node;
@@ -244,16 +252,16 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
     {
         Operation.OperationBuilder op = Operation.builder()
             .action(OperationAction.SEND)
-            .channel(new Reference("#/channels/" + channelName))
+            .channel(new Reference("#/channels/%s".formatted(channelName)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/" + channelName + "/messages/" + messageName))
+                new Reference("#/channels/%s/messages/%s".formatted(channelName, messageName)))
             );
 
         if (originalTopicName.endsWith("_commands"))
         {
             String replyTopic = channelName.replace("_commands", "_replies");
             op.reply(OperationReply.builder()
-                .channel(new Reference("#/channels/" + replyTopic))
+                .channel(new Reference("#/channels/%s".formatted(replyTopic)))
                 .build());
         }
 
@@ -266,9 +274,9 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
     {
         return Operation.builder()
             .action(OperationAction.RECEIVE)
-            .channel(new Reference("#/channels/" + channelName))
+            .channel(new Reference("#/channels/%s".formatted(channelName)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/" + channelName + "/messages/" + messageName))
+                new Reference("#/channels/%s/messages/%s".formatted(channelName, messageName)))
             )
             .build();
     }
