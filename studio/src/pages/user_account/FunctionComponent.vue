@@ -521,6 +521,12 @@ export default defineComponent({
         appGetExternalFunctionDetails(this.functionInfo.language).then(
           ({ data }) => {
             this.functionDetails = data;
+            const existingFunctions = this.tableData
+              .filter((x) => x.type == "External")
+              .map((x) => x.name);
+            this.functionDetails = this.functionDetails.filter(
+              (x) => !existingFunctions.some((y) => y == x.name)
+            );
           }
         );
       }
@@ -635,7 +641,12 @@ export default defineComponent({
           .join(", ");
 
         return `
-      CREATE FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${functions.result_type[0].type?.replaceAll('string', 'varchar').replaceAll('double', 'double precision').replaceAll(': ', ' ')}
+      CREATE FUNCTION ${
+        this.functionInfo.name
+      }(${params}) RETURNS ${functions.result_type[0].type
+          ?.replaceAll("string", "varchar")
+          .replaceAll("double", "double precision")
+          .replaceAll(": ", " ")}
       LANGUAGE ${this.functionInfo.language} 
       AS '${this.functionInfo.name}';`;
       }
