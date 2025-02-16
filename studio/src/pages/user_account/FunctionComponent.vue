@@ -22,7 +22,7 @@
     maximized
     position="right"
     backdrop-filter="blur(4px)"
-    class="add-new-dialog"
+    class="add-new-dialog function-add-new-dialog"
   >
     <q-card class="full-height">
       <q-form
@@ -161,6 +161,30 @@
             <div class="col-3">
               <span
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Language</span
+              >
+            </div>
+            <div class="col-9">
+              <q-select
+                v-model="functionInfo.language"
+                :options="filteredLanguageOptions"
+                outlined
+                dense
+                placeholder="Select Language"
+                dropdown-icon="keyboard_arrow_down"
+                class="rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+                @update:model-value="getExternalFunction"
+              />
+            </div>
+          </div>
+          <div
+            v-if="functionInfo.functionType !== 'external'"
+            class="row items-start"
+          >
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Name</span
               >
             </div>
@@ -175,20 +199,23 @@
               />
             </div>
           </div>
-          <div class="row items-start">
+          <div
+            v-if="functionInfo.functionType === 'external'"
+            class="row items-start"
+          >
             <div class="col-3">
               <span
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Language</span
+                >Name</span
               >
             </div>
             <div class="col-9">
               <q-select
-                v-model="functionInfo.language"
-                :options="filteredLanguageOptions"
+                v-model="functionInfo.name"
+                :options="externalFunctionName"
                 outlined
                 dense
-                placeholder="Select Language"
+                placeholder="Select Function Name"
                 dropdown-icon="keyboard_arrow_down"
                 class="rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
@@ -218,8 +245,11 @@
             </div>
           </div>
         </q-card-section>
-        <q-separator />
-        <q-card-section class="q-py-lg px-28">
+        <q-separator v-if="functionInfo.functionType !== 'external'" />
+        <q-card-section
+          v-if="functionInfo.functionType !== 'external'"
+          class="q-py-lg px-28"
+        >
           <div class="flex justify-between items-center q-mb-sm">
             <p class="text-custom-text-secondary text-subtitle1 fw-600">
               Return Type
@@ -236,8 +266,11 @@
             :isMultiSelect="isMultiSelect"
           />
         </q-card-section>
-        <q-separator />
-        <q-card-section class="q-py-lg px-28">
+        <q-separator v-if="functionInfo.functionType !== 'external'" />
+        <q-card-section
+          v-if="functionInfo.functionType !== 'external'"
+          class="q-py-lg px-28"
+        >
           <div class="flex justify-between items-center q-mb-sm">
             <p class="text-custom-text-secondary text-subtitle1 fw-600">
               Parameters
@@ -336,6 +369,7 @@
   </q-dialog>
 </template>
 <script>
+import { appGetExternalFunctionDetails } from "src/services/api";
 import { defineComponent } from "vue";
 import CommonTable from "../shared/CommonTable.vue";
 import DataTypeTable from "../shared/DataTypeTable.vue";
@@ -399,6 +433,7 @@ export default defineComponent({
       eventTables: [],
       functionTypeRow: [{ name: "", type: "" }],
       functionParmaTypeRow: [{ type: "" }],
+      functionDetails: [],
       functionTypeColumns: [
         {
           name: "name",
@@ -481,12 +516,21 @@ export default defineComponent({
     this.$ws.removeAll();
   },
   methods: {
+    getExternalFunction() {
+      if (this.functionInfo.functionType == "external") {
+        appGetExternalFunctionDetails(this.functionInfo.language).then(
+          ({ data }) => {
+            this.functionDetails = data;
+          }
+        );
+      }
+    },
     addFunction() {
       const hasValidData = this.functionTypeRow.some(
         (row) => row.name.trim() && row.type.trim()
       );
 
-      if (!hasValidData) {
+      if (!hasValidData && this.functionInfo.functionType != "external") {
         this.$q.notify({
           type: "negative",
           message: "Please fill in at least one row.",
@@ -569,25 +613,32 @@ export default defineComponent({
       );`;
     },
     generateExternalFunction() {
-      const params = this.$refs.dataTypeTable.rows
-        .filter((x) => x.name && x.type)
-        .map((param) => {
-          const { name, type, defaultValue } = param;
-          return defaultValue
-            ? `${name} ${type} DEFAULT ${defaultValue}`
-            : `${name} ${type}`;
-        })
-        .join(", ");
+      const functions = this.functionDetails.find(
+        (x) => x.name == this.functionInfo.name
+      );
+      if (functions) {
+        const rows = functions.input_type.map((x) => ({
+          name: x.name,
+          type:
+            x.type == "string"
+              ? "varchar"
+              : x.type == "double"
+              ? "double precision"
+              : x.type,
+        }));
+        const params = rows
+          .filter((x) => x.type)
+          .map((param) => {
+            const { name, type } = param;
+            return type;
+          })
+          .join(", ");
 
-      return `
-      CREATE FUNCTION ${
-        this.functionInfo.name
-      }(${params}) RETURNS struct<${this.functionParmaTypeRow
-        .filter((x) => x.type && x.name)
-        .map((x) => `${x.name} ${x.type}`)
-        .join(", ")}>
+        return `
+      CREATE FUNCTION ${this.functionInfo.name}(${params}) RETURNS ${functions.result_type[0].type?.replaceAll('string', 'varchar').replaceAll('double', 'double precision').replaceAll(': ', ' ')}
       LANGUAGE ${this.functionInfo.language} 
       AS '${this.functionInfo.name}';`;
+      }
     },
     generateEmbeddedFunction() {
       const params = this.$refs.dataTypeTable.rows
@@ -662,6 +713,9 @@ export default defineComponent({
     },
   },
   computed: {
+    externalFunctionName() {
+      return this.functionDetails.map((x) => x.name);
+    },
     filteredLanguageOptions() {
       return this.functionInfo.functionType
         ? this.allOptions[this.functionInfo.functionType]

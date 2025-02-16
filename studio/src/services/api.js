@@ -34,6 +34,16 @@ const appApiDocs = id => {
     })
 }
 
+const appGetExternalFunctionDetails = type => {
+    return new Promise((resolve, reject) => {
+        axios.get(`${app.apiEndpoint}/udf/${type}`)
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
 
 const appGetUserById = id => {
     return new Promise((resolve, reject) => {
@@ -206,5 +216,6 @@ export {
     appAddSSOProviders,
     appGetSSOProviders,
     appGetSSOProvidersById,
-    appDeleteSSOProvidersById
+    appDeleteSSOProvidersById,
+    appGetExternalFunctionDetails
 }
