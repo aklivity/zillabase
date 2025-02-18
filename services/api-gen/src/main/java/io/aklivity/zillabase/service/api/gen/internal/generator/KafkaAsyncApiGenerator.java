@@ -140,14 +140,13 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         for (KafkaTopicSchemaRecord record : records)
         {
             String topicName = record.name;
-            String safeName = stripSchemaPrefix(topicName);
             List<String> cleanupPolicies = record.cleanupPolicies;
             String label = record.label;
             String messageName = "%sMessage".formatted(label);
 
             Channel channel = createChannel(topicName, messageName, cleanupPolicies);
 
-            channels.put(safeName, channel);
+            channels.put(topicName, channel);
         }
 
         builder.channels(channels);
@@ -164,12 +163,11 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         for (KafkaTopicSchemaRecord record : records)
         {
             String topicName = record.name;
-            String safeName = stripSchemaPrefix(topicName);
             String label = record.label;
             String messageName = "%sMessage".formatted(label);
 
-            Operation sendOperation = createSendOperation(safeName, messageName, topicName);
-            Operation receiveOperation = createReceiveOperation(safeName, messageName);
+            Operation sendOperation = createSendOperation(topicName, messageName);
+            Operation receiveOperation = createReceiveOperation(topicName, messageName);
 
             operations.put("do%s".formatted(label), sendOperation);
             operations.put("on%s".formatted(label), receiveOperation);
@@ -178,12 +176,6 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         builder.operations(operations);
 
         return builder;
-    }
-
-    private String stripSchemaPrefix(
-        String topicName)
-    {
-        return topicName.replaceAll("^[^.]+\\.", "");
     }
 
     private Channel createChannel(
@@ -238,20 +230,19 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
     }
 
     private Operation createSendOperation(
-        String channelName,
-        String messageName,
-        String originalTopicName)
+        String topicName,
+        String messageName)
     {
         Operation.OperationBuilder op = Operation.builder()
             .action(OperationAction.SEND)
-            .channel(new Reference("#/channels/%s".formatted(channelName)))
+            .channel(new Reference("#/channels/%s".formatted(topicName)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/%s/messages/%s".formatted(channelName, messageName)))
+                new Reference("#/channels/%s/messages/%s".formatted(topicName, messageName)))
             );
 
-        if (originalTopicName.endsWith("_commands"))
+        if (topicName.endsWith("_commands"))
         {
-            String replyTopic = channelName.replace("_commands", "_replies");
+            String replyTopic = topicName.replace("_commands", "_replies");
             op.reply(OperationReply.builder()
                 .channel(new Reference("#/channels/%s".formatted(replyTopic)))
                 .build());

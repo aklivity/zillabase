@@ -74,7 +74,7 @@ public class KafkaAsyncApiBuilderTest
     {
         List<KafkaTopicSchemaRecord> schemaRecords = List.of(
             new KafkaTopicSchemaRecord(
-                "test-topic-1",
+                "public.test-topic-1",
                 List.of("delete"),
                 "TestTopic1",
                 "test-topic-value-1",
@@ -82,7 +82,7 @@ public class KafkaAsyncApiBuilderTest
                 "{\"type\":\"record\",\"name\":\"User1\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"}," +
                 " {\"name\":\"name\",\"type\":\"string\"}]}"),
             new KafkaTopicSchemaRecord(
-                "test-topic-2",
+                "public.test-topic-2",
                 List.of("delete"),
                 "TestTopic2",
                 "test-topic-value-2",
@@ -93,9 +93,9 @@ public class KafkaAsyncApiBuilderTest
 
         String result = kafkaAsyncApiGenerator.buildSpec(schemaRecords);
 
-        assertTrue(result.contains("test-topic-1"));
+        assertTrue(result.contains("public.test-topic-1"));
         assertTrue(result.contains("User1"));
-        assertTrue(result.contains("test-topic-2"));
+        assertTrue(result.contains("public.test-topic-2"));
         assertTrue(result.contains("User2"));
     }
 
