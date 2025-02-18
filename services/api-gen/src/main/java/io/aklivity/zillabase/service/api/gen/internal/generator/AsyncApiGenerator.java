@@ -16,35 +16,11 @@ package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
-import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolicy;
-import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguration;
-import com.asyncapi.bindings.kafka.v0._4_0.server.KafkaServerBinding;
-import com.asyncapi.schemas.asyncapi.Reference;
 import com.asyncapi.v3._0_0.model.AsyncAPI;
-import com.asyncapi.v3._0_0.model.channel.Channel;
-import com.asyncapi.v3._0_0.model.channel.message.Message;
-import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
 import com.asyncapi.v3._0_0.model.info.License;
-import com.asyncapi.v3._0_0.model.operation.Operation;
-import com.asyncapi.v3._0_0.model.operation.OperationAction;
-import com.asyncapi.v3._0_0.model.operation.reply.OperationReply;
-import com.asyncapi.v3._0_0.model.server.Server;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
-import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
 public abstract class AsyncApiGenerator
 {
