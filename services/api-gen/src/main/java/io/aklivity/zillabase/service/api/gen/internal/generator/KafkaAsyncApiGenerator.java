@@ -214,12 +214,19 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         try
         {
             ObjectMapper mapper = new ObjectMapper();
-            node = mapper.readTree(rawSchema);
+            JsonNode schema = mapper.readTree(rawSchema);
 
-            if (node.has("type") && "record".equals(node.get("type").asText()))
+            ObjectNode root = mapper.createObjectNode();
+
+            root.put("schemaFormat", "application/vnd.apache.avro;version=1.9.0");
+
+            if (schema.has("type") &&
+                "record".equals(schema.get("type").asText()))
             {
-                ((ObjectNode) node).put("type", "object");
+                root.put("schema", schema);
             }
+
+            node = root;
         }
         catch (JsonProcessingException e)
         {

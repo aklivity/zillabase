@@ -228,6 +228,8 @@
                   <exclude>src/conf/**</exclude>
                   <exclude>src/test/**/asyncapi.yaml</exclude>
                   <exclude>src/test/**/seed-kafka.yaml</exclude>
+                  <exclude>src/test/**/kafka-asyncapi.yaml</exclude>
+                  <exclude>src/test/**/http-asyncapi.yaml</exclude>
                 </excludes>
               </licenseSet>
             </licenseSets>
