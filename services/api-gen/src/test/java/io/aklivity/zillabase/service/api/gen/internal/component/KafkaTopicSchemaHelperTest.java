@@ -130,16 +130,16 @@ public class KafkaTopicSchemaHelperTest
     public void testExtractIdentityFieldFromProtobufSchema()
     {
         String schema = "syntax = \"proto3\"; message TestMessage { int32 id = 1; string name_identity = 2; }";
-        String identityField = kafkaTopicSchemaHelper.extractIdentityFieldFromProtobufSchema(schema);
+        String identityField = kafkaTopicSchemaHelper.findIdentityFieldFromProtobuf(schema);
         assertEquals("name_identity", identityField);
     }
 
     @Test
-    public void testExtractIdentityFieldFromSchema() throws JsonProcessingException
+    public void testExtractIdentityFieldFromSchema()
     {
         String schema = "{\"fields\": [{\"name\": \"id\", \"type\": \"int\"}," +
             " {\"name\": \"name_identity\", \"type\": \"string\"}]}";
-        String identityField = kafkaTopicSchemaHelper.extractIdentityFieldFromSchema(schema);
+        String identityField = kafkaTopicSchemaHelper.findIdentityField(schema);
         assertEquals("name_identity", identityField);
     }
 }

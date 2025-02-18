@@ -253,8 +253,8 @@ public class PublishConfigService
             else
             {
                 String identity = record.type.equals("protobuf")
-                    ? kafkaService.extractIdentityFieldFromProtobufSchema(record.schema)
-                    : kafkaService.extractIdentityFieldFromSchema(record.schema);
+                    ? kafkaService.findIdentityFieldFromProtobuf(record.schema)
+                    : kafkaService.findIdentityField(record.schema);
                 if (identity != null)
                 {
                     ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =

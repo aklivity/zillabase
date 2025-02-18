@@ -293,17 +293,19 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncAPI kafkaApi)
     {
         Map<String, Object> channels = kafkaApi.getChannels();
-        for (Map.Entry<String, Object> entry : channels.entrySet())
-        {
-            Channel channel = (Channel) entry.getValue();
+        channels.entrySet().stream()
+            .filter(e -> !e.getKey().endsWith("_replies"))
+            .forEach(entry ->
+            {
+                Channel channel = (Channel) entry.getValue();
 
-            String channelName = entry.getKey();
-            boolean compact = isTopicCompact(channel);
-            String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
-            String label = name.toUpperCase();
+                String channelName = entry.getKey();
+                boolean compact = isTopicCompact(channel);
+                String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
+                String label = name.toUpperCase();
 
-            injectHttpOperations(builder, name, label, compact);
-        }
+                injectHttpOperations(builder, name, label, compact);
+            });
 
         return builder;
     }
@@ -365,8 +367,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
                 .filter(r -> label.equals(r.label))
                 .findFirst()
                 .map(r -> "protobuf".equalsIgnoreCase(r.type)
-                    ? kafkaHelper.extractIdentityFieldFromProtobufSchema(r.schema)
-                    : kafkaHelper.extractIdentityFieldFromSchema(r.schema))
+                    ? kafkaHelper.findIdentityFieldFromProtobuf(r.schema)
+                    : kafkaHelper.findIdentityField(r.schema))
                 .orElse(null);
         }
         catch (Exception e)
@@ -499,46 +501,74 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         String identity)
     {
         ZillaSseOperationBinding sse = new ZillaSseOperationBinding();
-        Operation.OperationBuilder item = Operation.builder()
-            .action(OperationAction.RECEIVE)
-            .channel(new Reference("#/channels/%s-stream-identity".formatted(name)))
-            .messages(Collections.singletonList(
-                new Reference("#/channels/%s-stream-identity/messages/%sMessage".formatted(name, label))));
-
         AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
+
         if (identity != null)
         {
             filter.key = "{identity}";
         }
-        item
-            .bindings(Map.of("x-zilla-sse", sse,
-                "x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(filter))))
-            .security(List.of(new Reference("#/components/securitySchemes/httpOauth")));
-        String itemOpName = "on%sReadItem".formatted(label);
-        builder.addOperation(itemOpName, item.build());
 
-        Operation allOp = Operation.builder()
+        Map<String, Object> bindings = createBindings(sse, filter);
+        List<Object> security = List.of(new Reference("#/components/securitySchemes/httpOauth"));
+
+        builder.addOperation(
+            "on%sRead".formatted(label),
+            createOperation(
+                identity,
+                "#/channels/%s-stream".formatted(name),
+                "#/channels/%s-stream/messages/%sMessage".formatted(name, label),
+                bindings,
+                security
+            )
+        );
+
+        builder.addOperation(
+            "on%sReadItem".formatted(label),
+            createOperation(
+                identity,
+                "#/channels/%s-stream-identity".formatted(name),
+                "#/channels/%s-stream-identity/messages/%sMessage".formatted(name, label),
+                bindings,
+                security
+            )
+        );
+
+        return builder;
+    }
+
+    private Operation createOperation(
+        String identity,
+        String channel,
+        String message,
+        Map<String, Object> bindings,
+        List<Object> security)
+    {
+        Operation.OperationBuilder item = Operation.builder()
             .action(OperationAction.RECEIVE)
-            .channel(new Reference("#/channels/%s-stream".formatted(name)))
-            .messages(Collections.singletonList(
-                new Reference("#/channels/%s-stream/messages/%sMessage".formatted(name, label))))
-            .build();
+            .channel(new Reference(channel))
+            .messages(Collections.singletonList(new Reference(message)))
+            .bindings(bindings)
+            .security(security);
 
-        Map<String, Object> ab = new HashMap<>();
-        ab.put("x-zilla-sse", sse);
         if (identity != null)
         {
             AsyncapiKafkaFilter cf = new AsyncapiKafkaFilter();
             cf.headers = Map.of("identity", "{identity}");
-            ZillaSseKafkaOperationBinding sseAll = new ZillaSseKafkaOperationBinding(List.of(cf));
-            ab.put("x-zilla-sse-kafka", sseAll);
+            bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(cf)));
         }
-        allOp.setBindings(ab);
-        allOp.setSecurity(List.of(new Reference("#/components/securitySchemes/httpOauth")));
-        String allOpName = "on%sRead".formatted(label);
-        builder.addOperation(allOpName, allOp);
 
-        return builder;
+        return item.build();
+    }
+
+    private Map<String, Object> createBindings(
+        ZillaSseOperationBinding sse,
+        AsyncapiKafkaFilter filter)
+    {
+        Map<String, Object> bindings = new HashMap<>();
+        bindings.put("x-zilla-sse", sse);
+        bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(filter)));
+
+        return bindings;
     }
 
     private AsyncAPI deserializeAsyncapi(

@@ -124,7 +124,7 @@ public class KafkaTopicSchemaHelper
         return records;
     }
 
-    public String extractIdentityFieldFromProtobufSchema(
+    public String findIdentityFieldFromProtobuf(
         String schema)
     {
         String identity = null;
@@ -136,6 +136,7 @@ public class KafkaTopicSchemaHelper
             {
                 continue;
             }
+
             String[] tokens = part.split("\\s+");
             if (tokens.length >= 2)
             {
@@ -150,7 +151,7 @@ public class KafkaTopicSchemaHelper
         return identity;
     }
 
-    public String extractIdentityFieldFromSchema(
+    public String findIdentityField(
         String schema)
     {
         AtomicReference<String> identity = new AtomicReference<>(null);
@@ -158,38 +159,27 @@ public class KafkaTopicSchemaHelper
         {
             ObjectMapper schemaMapper = new ObjectMapper();
             JsonNode schemaObject = schemaMapper.readTree(schema);
-            if (schemaObject.has("fields"))
-            {
-                JsonNode fieldsNode = schemaObject.get("fields");
-                StreamSupport.stream(fieldsNode.spliterator(), false)
-                    .forEach(field ->
-                    {
-                        String fieldName = field.has("name")
-                            ? field.get("name").asText()
-                            : fieldsNode.fieldNames().next();
-                        if (fieldName.endsWith("_identity"))
-                        {
-                            identity.set(fieldName);
-                        }
-                    });
-            }
-            else if (schemaObject.has("properties"))
-            {
-                JsonNode fieldsNode = schemaObject.get("properties");
-                fieldsNode.fieldNames().forEachRemaining(fieldName ->
-                {
-                    if (fieldName.endsWith("_identity"))
-                    {
-                        identity.set(fieldName);
-                    }
-                });
-            }
 
+            JsonNode fieldsNode = schemaObject.has("fields") ? schemaObject.get("fields") :
+                                  schemaObject.has("properties") ? schemaObject.get("properties") : null;
+
+            if (fieldsNode != null)
+            {
+                StreamSupport.stream(fieldsNode.spliterator(), false)
+                    .map(field -> field.has("name")
+                        ? field.get("name").asText()
+                        : fieldsNode.fieldNames().next())
+                    .filter(fieldName -> fieldName.endsWith("_identity"))
+                    .findFirst()
+                    .ifPresent(identity::set);
+            }
         }
         catch (Exception ex)
         {
             System.err.println("Failed to parse schema: " + schema);
         }
+
+        System.out.println("Found identity field: " + identity.get());
 
         return identity.get();
     }
