@@ -27,6 +27,8 @@ import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFK
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseStudioConfig.DEFAULT_STUDIO_HTTP_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseStudioConfig.ZILLABASE_STUDIO_ZILLA_YAML;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -189,6 +191,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         factories.add(new CreateMinioFactory(config));
         factories.add(new CreatePostgresFactory(config));
         factories.add(new CreateApiGenFactory(config));
+        factories.add(new CreateStudioFactory(config));
 
         if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
         {
@@ -1126,6 +1129,50 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
+    private static final class CreateStudioFactory extends CreateContainerFactory
+    {
+        CreateStudioFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "studio", "ghcr.io/aklivity/zillabase/zillabase-studio:%s".formatted(config.studio.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<ExposedPort> exposedPorts = List.of(ExposedPort.tcp(DEFAULT_STUDIO_HTTP_PORT));
+
+            List<PortBinding> portBindings = List.of(new PortBinding(Ports.Binding.bindPort(DEFAULT_STUDIO_HTTP_PORT),
+                ExposedPort.tcp(DEFAULT_STUDIO_HTTP_PORT)));
+
+            List<String> env = Optional.ofNullable(config.zilla.env).orElse(List.of());
+
+            CreateContainerCmd container = client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPorts)
+                .withCmd("start", "-v", "-e")
+                .withTty(true)
+                .withEnv(env)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c",
+                        "echo -n '' > /dev/tcp/127.0.0.1/%d".formatted(DEFAULT_STUDIO_HTTP_PORT))));
+
+            mountZillaConfig(container, ZILLABASE_STUDIO_ZILLA_YAML);
+
+            return container;
+        }
+    }
+
     private static final class CreateKafkaFactory extends CreateContainerFactory
     {
         CreateKafkaFactory(
@@ -1568,20 +1615,28 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withRetries(5)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184")));
 
-            try
-            {
-                File tempFile = File.createTempFile("zillabase-admin-server-zilla", ".yaml");
-                Path configPath = Paths.get(tempFile.getPath());
-                Files.writeString(configPath, ZILLABASE_ADMIN_SERVER_ZILLA_YAML);
-                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")),
-                    new Bind("/var/storage", new Volume("/var/storage")));
-                tempFile.deleteOnExit();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
-            }
+            mountZillaConfig(container, ZILLABASE_ADMIN_SERVER_ZILLA_YAML);
+
             return container;
+        }
+    }
+
+    private static void mountZillaConfig(
+        CreateContainerCmd container,
+        String content)
+    {
+        try
+        {
+            File tempFile = File.createTempFile("zillabase-zilla", ".yaml");
+            Path configPath = Paths.get(tempFile.getPath());
+            Files.writeString(configPath, content);
+            container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")),
+                new Bind("/var/storage", new Volume("/var/storage")));
+            tempFile.deleteOnExit();
+        }
+        catch (IOException ex)
+        {
+            ex.printStackTrace(System.err);
         }
     }
 
