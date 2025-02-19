@@ -14,7 +14,7 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
-import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -35,8 +35,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;

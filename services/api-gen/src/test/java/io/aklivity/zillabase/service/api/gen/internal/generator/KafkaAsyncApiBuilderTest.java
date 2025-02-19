@@ -63,7 +63,7 @@ public class KafkaAsyncApiBuilderTest
                 " {\"name\":\"name\",\"type\":\"string\"}]}")
         );
 
-        String result = kafkaAsyncApiGenerator.buildSpec(schemaRecords);
+        String result = kafkaAsyncApiGenerator.generate(schemaRecords);
 
         assertTrue(result.contains("public.test-topic"));
         assertTrue(result.contains("User"));
@@ -91,7 +91,7 @@ public class KafkaAsyncApiBuilderTest
                 " {\"name\":\"name\",\"type\":\"string\"}]}")
         );
 
-        String result = kafkaAsyncApiGenerator.buildSpec(schemaRecords);
+        String result = kafkaAsyncApiGenerator.generate(schemaRecords);
 
         assertTrue(result.contains("public.test-topic-1"));
         assertTrue(result.contains("User1"));
@@ -113,7 +113,7 @@ public class KafkaAsyncApiBuilderTest
                 " {\"name\":\"name\",\"type\":\"string\"}]}")
         );
 
-        String result = kafkaAsyncApiGenerator.buildSpec(schemaRecords);
+        String result = kafkaAsyncApiGenerator.generate(schemaRecords);
 
         assertTrue(result.contains("invalid-topic"));
     }
@@ -133,7 +133,7 @@ public class KafkaAsyncApiBuilderTest
                     "\"type\":\"int\"},{\"name\":\"address\",\"type\":\"string\"}]}}]}")
         );
 
-        String result = kafkaAsyncApiGenerator.buildSpec(schemaRecords);
+        String result = kafkaAsyncApiGenerator.generate(schemaRecords);
 
         assertTrue(result.contains("complex-topic"));
         assertTrue(result.contains("ComplexUser"));

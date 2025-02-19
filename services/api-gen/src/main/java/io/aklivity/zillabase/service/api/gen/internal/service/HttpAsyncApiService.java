@@ -14,13 +14,13 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
-import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import org.springframework.stereotype.Service;
 
-import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.generator.HttpAsyncApiGenerator;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
@@ -51,7 +51,7 @@ public class HttpAsyncApiService
             String kafkaSpec = specHelper.fetchSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, event.kafkaVersion());
 
             HttpAsyncApiGenerator builder = new HttpAsyncApiGenerator(kafkaHelper);
-            String httpSpec = builder.buildSpec(kafkaSpec);
+            String httpSpec = builder.generate(kafkaSpec);
 
             httpSpecVersion = specHelper.publishSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
 

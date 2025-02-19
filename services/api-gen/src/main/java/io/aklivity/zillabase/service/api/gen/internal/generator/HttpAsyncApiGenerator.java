@@ -17,7 +17,7 @@ package io.aklivity.zillabase.service.api.gen.internal.generator;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
-import static io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper.toCamelCase;
+import static io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper.toCamelCase;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,12 +51,15 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import org.springframework.stereotype.Component;
+
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiKafkaFilter;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;
-import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
 
+@Component
 public class HttpAsyncApiGenerator extends AsyncApiGenerator
 {
     private static final Pattern TOPIC_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)");
@@ -73,7 +76,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         this.scopes = new ArrayList<>();
     }
 
-    public String buildSpec(
+    public String generate(
         String kafkaSpec) throws Exception
     {
         AsyncAPI kafkaApi = deserializeAsyncapi(kafkaSpec);

@@ -14,14 +14,14 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
-import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
-import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper.HTTP_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
-import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
 
 @Service
 public class InitService implements CommandLineRunner

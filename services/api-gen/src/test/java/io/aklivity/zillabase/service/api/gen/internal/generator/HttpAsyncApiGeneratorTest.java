@@ -67,7 +67,7 @@ public class HttpAsyncApiGeneratorTest
     @Test
     public void shouldBuildHttpAsyncapiSpec() throws Exception
     {
-        String actualHttpSpec = specBuilder.buildSpec(kafkaSpec);
+        String actualHttpSpec = specBuilder.generate(kafkaSpec);
 
         assertEquals(expectedHttpSpec, actualHttpSpec);
     }

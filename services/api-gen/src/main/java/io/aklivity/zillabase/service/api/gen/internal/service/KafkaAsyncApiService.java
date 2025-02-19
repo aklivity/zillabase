@@ -14,15 +14,15 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
-import static io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
+import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper.KAFKA_ASYNCAPI_ARTIFACT_ID;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.generator.KafkaAsyncApiGenerator;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
@@ -57,7 +57,7 @@ public class KafkaAsyncApiService
             List<KafkaTopicSchemaRecord> schemaRecords = kafkaHelper.resolve();
 
             KafkaAsyncApiGenerator builder = new KafkaAsyncApiGenerator(kafkaConfig);
-            String kafkaSpec = builder.buildSpec(schemaRecords);
+            String kafkaSpec = builder.generate(schemaRecords);
 
             if (kafkaSpec != null)
             {
