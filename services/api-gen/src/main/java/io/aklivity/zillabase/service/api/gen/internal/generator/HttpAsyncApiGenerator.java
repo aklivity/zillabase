@@ -17,6 +17,7 @@ package io.aklivity.zillabase.service.api.gen.internal.generator;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
+import static io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper.toCamelCase;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -249,7 +250,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         String channelName)
     {
         String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
-        String label = name.toUpperCase();
+        String label = toCamelCase(name);
 
         addReadWriteScopes(label);
 
@@ -302,7 +303,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
                 String channelName = entry.getKey();
                 boolean compact = isTopicCompact(channel);
                 String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
-                String label = name.toUpperCase();
+                String label = toCamelCase(name);
 
                 injectHttpOperations(builder, name, label, compact);
             });

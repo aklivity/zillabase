@@ -112,9 +112,10 @@ public class KafkaTopicSchemaHelper
                     {
                         String schemaStr = object.getString("schema");
                         String type = resolveType(schemaStr);
+                        String label = matcher.reset(topicName).replaceAll(match -> match.group(2).toUpperCase());
+                        label = toCamelCase(label);
                         records.add(new KafkaTopicSchemaRecord(topicName, policies,
-                            matcher.reset(topicName.replace("%s.".formatted(config.risingwaveDb()), ""))
-                                .replaceAll(match -> match.group(2).toUpperCase()),
+                            label,
                             subject, type, schemaStr));
                     }
                 }
@@ -180,6 +181,31 @@ public class KafkaTopicSchemaHelper
         }
 
         return identity.get();
+    }
+
+    public static String toCamelCase(
+        String str)
+    {
+        String[] words = str.split("[._-]+");
+        StringBuilder camelCaseString = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++)
+        {
+            if (!words[i].isEmpty())
+            {
+                if (i == 0)
+                {
+                    camelCaseString.append(words[i].toLowerCase());
+                }
+                else
+                {
+                    camelCaseString.append(words[i].substring(0, 1).toUpperCase())
+                                   .append(words[i].substring(1).toLowerCase());
+                }
+            }
+        }
+
+        return camelCaseString.toString();
     }
 
     private String resolveType(
