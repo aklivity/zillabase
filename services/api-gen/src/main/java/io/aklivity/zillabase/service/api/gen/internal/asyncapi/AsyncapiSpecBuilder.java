@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.generator;
+package io.aklivity.zillabase.service.api.gen.internal.asyncapi;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +23,7 @@ import com.asyncapi.v3._0_0.model.component.Components;
 import com.asyncapi.v3._0_0.model.info.Info;
 import com.asyncapi.v3._0_0.model.operation.Operation;
 
-public final class AsyncapiSpecBuilder<T> extends SpecBuilder<T, AsyncapiSpecBuilder<T>>
+public final class AsyncapiSpecBuilder<T> extends Builder<T, AsyncapiSpecBuilder<T>>
 {
     private final Function<AsyncapiSpec, T> mapper;
 

@@ -54,6 +54,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.springframework.stereotype.Component;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiKafkaFilter;
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpec;
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaHttpOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseKafkaOperationBinding;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.ZillaSseOperationBinding;

@@ -12,11 +12,11 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.generator;
+package io.aklivity.zillabase.service.api.gen.internal.asyncapi;
 
 import java.util.function.Function;
 
-public abstract class SpecBuilder<T, B extends SpecBuilder<T, B>>
+public abstract class Builder<T, B extends Builder<T, B>>
 {
     protected abstract Class<B> thisType();
 

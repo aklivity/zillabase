@@ -22,6 +22,9 @@ import com.asyncapi.v3._0_0.model.info.License;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpec;
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecBuilder;
+
 public abstract class AsyncApiGenerator
 {
     protected <C> AsyncapiSpecBuilder<C> injectInfo(

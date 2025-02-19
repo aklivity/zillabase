@@ -86,9 +86,6 @@ public class PublishConfigService
     }
 
 
-
-
-
     private void createAndAssignScope(
         List<String> channels)
     {

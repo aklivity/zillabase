@@ -39,6 +39,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.springframework.stereotype.Component;
 
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpec;
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 

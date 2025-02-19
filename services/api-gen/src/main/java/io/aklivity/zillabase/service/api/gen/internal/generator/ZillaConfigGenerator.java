@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -22,6 +21,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindin
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingRouteConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfigBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
@@ -31,6 +31,8 @@ import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHel
 @Component
 public class ZillaConfigGenerator
 {
+    private static final String AUTH_JWT = "jwt0";
+
     private final ApiGenConfig config;
     private final KeycloakConfig keycloakConfig;
     private final KafkaConfig kafkaConfig;
@@ -54,35 +56,85 @@ public class ZillaConfigGenerator
         String zillaConfig = null;
         try
         {
-            List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
-                "Get", "GetItem");
+            ZillaAsyncApiConfig zilla = ZillaAsyncApiConfig.builder()
+                .name("zilla-http-kafka-asyncapi")
+                .inject(this::injectCatalog)
+                .inject(this::injectGuard)
+                .inject(this::injectTelemetry)
+                .inject(config -> injectBinding(config, operations))
+                .build();
 
-            ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
-            ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
-            apicurioCatalog.type = "apicurio";
-            apicurioCatalog.options = Map.of(
-                "url", config.apicurioUrl(),
-                "group-id", config.apicurioGroupId());
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+                .setSerializationInclusion(NON_NULL);
 
-            ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
-            karapaceCatalog.type = "karapace";
-            karapaceCatalog.options = Map.of("url", kafkaConfig.karapaceUrl());
+            zillaConfig = mapper.writeValueAsString(zilla);
+            zillaConfig = zillaConfig.replaceAll("(:status|zilla:correlation-id)", "'$1'");
+        }
+        catch (Exception e)
+        {
+            System.out.println("Failed to generate zilla config: " + e.getMessage());
+        }
 
-            String realm = keycloakConfig.realm();
-            String authnJwt = "jwt0";
-            if (realm != null)
-            {
-                ZillaGuardConfig guard = new ZillaGuardConfig();
-                guard.type = "jwt";
-                guard.options.issuer = "%s/realms/%s".formatted(keycloakConfig.issuer(), realm);
-                guard.options.audience = keycloakConfig.audience();
-                guard.options.keys = keycloakConfig.jwksUrl().formatted(realm);
-                guard.options.identity = "preferred_username";
+        return zillaConfig;
+    }
 
-                zilla.guards = Map.of(authnJwt, guard);
-            }
+    private <C> ZillaAsyncApiConfigBuilder<C> injectCatalog(
+        ZillaAsyncApiConfigBuilder<C> builder)
+    {
+        ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
+        apicurioCatalog.type = "apicurio";
+        apicurioCatalog.options = Map.of(
+            "url", config.apicurioUrl(),
+            "group-id", config.apicurioGroupId());
 
-            Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
+        ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
+        karapaceCatalog.type = "karapace";
+        karapaceCatalog.options = Map.of("url", kafkaConfig.karapaceUrl());
+
+        builder.catalogs(Map.of(
+            "apicurio_catalog", apicurioCatalog,
+            "karapace_catalog", karapaceCatalog));
+
+        return builder;
+    }
+
+    private <T> ZillaAsyncApiConfigBuilder<T> injectGuard(
+        ZillaAsyncApiConfigBuilder<T> builder)
+    {
+        String realm = keycloakConfig.realm();
+
+        if (realm != null)
+        {
+            ZillaGuardConfig guard = new ZillaGuardConfig();
+            guard.type = "jwt";
+            guard.options.issuer = "%s/realms/%s".formatted(keycloakConfig.issuer(), realm);
+            guard.options.audience = keycloakConfig.audience();
+            guard.options.keys = keycloakConfig.jwksUrl().formatted(realm);
+            guard.options.identity = "preferred_username";
+
+            builder.guards(Map.of(AUTH_JWT, guard));
+        }
+
+        return builder;
+    }
+
+    private <T> ZillaAsyncApiConfigBuilder<T> injectTelemetry(
+        ZillaAsyncApiConfigBuilder<T> builder)
+    {
+        builder.telemetry(Map.of("exporters",
+            Map.of("stdout_logs_exporter", Map.of("type", "stdout"))));
+
+        return builder;
+    }
+
+    private <T> ZillaAsyncApiConfigBuilder<T> injectBinding(
+        ZillaAsyncApiConfigBuilder<T> builder,
+        List<String> operations)
+    {
+        List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
+            "Get", "GetItem");
+
+        Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
                 "catalog", Map.of("apicurio_catalog", Map.of("subject", HTTP_ASYNCAPI_ARTIFACT_ID,
                     "version", "latest")));
             Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
@@ -115,15 +167,19 @@ public class ZillaConfigGenerator
             northHttpServer.kind = "server";
             ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
             optionsConfig.specs = Map.of("http_api", httpApi);
+
+            String realm = keycloakConfig.realm();
+
             if (realm != null)
             {
                 optionsConfig.http = new ZillaBindingOptionsConfig.HttpAuthorizationOptionsConfig();
-                optionsConfig.http.authorization = Map.of(authnJwt,
+                optionsConfig.http.authorization = Map.of(AUTH_JWT,
                     Map.of("credentials",
                         Map.of("headers",
                             Map.of("authorization", "Bearer {credentials}"),
                             "query", Map.of("access_token", "{credentials}"))));
             }
+
             northHttpServer.options = optionsConfig;
             northHttpServer.exit = "south_kafka_proxy";
             bindings.put("north_http_server", northHttpServer);
@@ -152,31 +208,15 @@ public class ZillaConfigGenerator
             southKafkaClient.options = optionsConfig;
             bindings.put("south_kafka_client", southKafkaClient);
 
-            zilla.name = "zilla-http-kafka-asyncapi";
-            zilla.catalogs = Map.of(
-                "apicurio_catalog", apicurioCatalog,
-                "karapace_catalog", karapaceCatalog);
-            zilla.bindings = bindings;
-            zilla.telemetry = Map.of("exporters", Map.of("stdout_logs_exporter", Map.of("type", "stdout")));
+            builder.bindings(bindings);
 
-            ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
-                .setSerializationInclusion(NON_NULL);
-
-            zillaConfig = mapper.writeValueAsString(zilla);
-            zillaConfig = zillaConfig.replaceAll("(:status|zilla:correlation-id)", "'$1'");
-        }
-        catch (Exception e)
-        {
-            System.out.println("Failed to generate zilla config: " + e.getMessage());
-        }
-
-        return zillaConfig;
+            return builder;
     }
 
-    private void extractedHeaders(
+   private void extractedHeaders(
         List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig)
     {
-        List<KafkaTopicSchemaRecord> records = null;
+        List<KafkaTopicSchemaRecord> records;
         try
         {
             records = kafkaService.resolve();
@@ -228,6 +268,5 @@ public class ZillaConfigGenerator
         {
             System.out.println("Failed to resolve Kafka topics");
         }
-
     }
 }
