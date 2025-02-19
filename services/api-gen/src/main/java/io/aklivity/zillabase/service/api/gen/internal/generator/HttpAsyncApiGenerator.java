@@ -500,75 +500,76 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         String label,
         String identity)
     {
-        ZillaSseOperationBinding sse = new ZillaSseOperationBinding();
-        AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
 
-        if (identity != null)
-        {
-            filter.key = "{identity}";
-        }
-
-        Map<String, Object> bindings = createBindings(sse, filter);
         List<Object> security = List.of(new Reference("#/components/securitySchemes/httpOauth"));
 
-        builder.addOperation(
-            "on%sRead".formatted(label),
-            createOperation(
-                identity,
-                "#/channels/%s-stream".formatted(name),
-                "#/channels/%s-stream/messages/%sMessage".formatted(name, label),
-                bindings,
-                security
-            )
-        );
-
-        builder.addOperation(
-            "on%sReadItem".formatted(label),
-            createOperation(
-                identity,
-                "#/channels/%s-stream-identity".formatted(name),
-                "#/channels/%s-stream-identity/messages/%sMessage".formatted(name, label),
-                bindings,
-                security
-            )
-        );
+        builder
+            .inject(spec -> injectSseStreamOperations(spec, name, label, security, identity))
+            .inject(spec -> injectSseIdentityOperations(spec, name, label, security));
 
         return builder;
     }
 
-    private Operation createOperation(
-        String identity,
-        String channel,
-        String message,
-        Map<String, Object> bindings,
+    private <C> AsyncapiSpecBuilder<C> injectSseIdentityOperations(
+        AsyncapiSpecBuilder<C> builder,
+        String name,
+        String label,
         List<Object> security)
     {
-        Operation.OperationBuilder item = Operation.builder()
-            .action(OperationAction.RECEIVE)
-            .channel(new Reference(channel))
-            .messages(Collections.singletonList(new Reference(message)))
-            .bindings(bindings)
-            .security(security);
+        ZillaSseOperationBinding sse = new ZillaSseOperationBinding();
+
+        Map<String, Object> bindings = new HashMap<>();
+        bindings.put("x-zilla-sse", sse);
+
+        AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
+        filter.key = "{identity}";
+        bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(filter)));
+
+        builder.addOperation(
+            "on%sReadItem".formatted(label),
+            Operation.builder()
+                .action(OperationAction.RECEIVE)
+                .channel(new Reference("#/channels/%s-stream-identity".formatted(name)))
+                .messages(Collections.singletonList(
+                    new Reference("#/channels/%s-stream-identity/messages/%sMessage".formatted(name, label))))
+                .bindings(bindings)
+                .security(security)
+                .build());
+
+        return builder;
+    }
+
+    private <C> AsyncapiSpecBuilder<C> injectSseStreamOperations(
+        AsyncapiSpecBuilder<C> builder,
+        String name,
+        String label,
+        List<Object> security,
+        String identity)
+    {
+        Map<String, Object> bindings = new HashMap<>();
+
+        ZillaSseOperationBinding sse = new ZillaSseOperationBinding();
+        bindings.put("x-zilla-sse", sse);
 
         if (identity != null)
         {
-            AsyncapiKafkaFilter cf = new AsyncapiKafkaFilter();
-            cf.headers = Map.of("identity", "{identity}");
-            bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(cf)));
+            AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
+            filter.headers = Map.of("identity", "{identity}");
+            bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(filter)));
         }
 
-        return item.build();
-    }
+        builder.addOperation(
+            "on%sRead".formatted(label),
+            Operation.builder()
+                .action(OperationAction.RECEIVE)
+                .channel(new Reference("#/channels/%s-stream".formatted(name)))
+                .messages(Collections.singletonList(
+                    new Reference("#/channels/%s-stream/messages/%sMessage".formatted(name, label))))
+                .bindings(bindings)
+                .security(security)
+                .build());
 
-    private Map<String, Object> createBindings(
-        ZillaSseOperationBinding sse,
-        AsyncapiKafkaFilter filter)
-    {
-        Map<String, Object> bindings = new HashMap<>();
-        bindings.put("x-zilla-sse", sse);
-        bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(filter)));
-
-        return bindings;
+        return builder;
     }
 
     private AsyncAPI deserializeAsyncapi(

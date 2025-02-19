@@ -179,8 +179,6 @@ public class KafkaTopicSchemaHelper
             System.err.println("Failed to parse schema: " + schema);
         }
 
-        System.out.println("Found identity field: " + identity.get());
-
         return identity.get();
     }
 
