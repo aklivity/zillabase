@@ -22,7 +22,7 @@ public final class ZillabaseStudioConfig
     public static final int DEFAULT_STUDIO_HTTP_PORT = 7194;
 
     public String tag = DEFAULT_STUDIO_TAG;
-    public int port;
+    public int port = DEFAULT_STUDIO_HTTP_PORT;
 
     public static final String ZILLABASE_STUDIO_ZILLA_YAML = """
         ---

@@ -176,6 +176,27 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         processSql(config);
 
         processSystemSql(config);
+
+        printExposedEndpoints(config);
+
+    }
+
+    private void printExposedEndpoints(
+        ZillabaseConfig config)
+    {
+        int studioPort = config.studio.port;
+        int pgsqlPort = config.admin.pgsqlPort;
+
+        String studioUrl = "Studio UI: http://localhost:%d".formatted(studioPort);
+        String psqlUrl = "Psql: localhost:%d".formatted(pgsqlPort);
+
+        int maxLength = Math.max(studioUrl.length(), psqlUrl.length());
+        String border = "#".repeat(maxLength + 4);
+
+        System.out.println(border);
+        System.out.printf("# %-" + maxLength + "s #\n", studioUrl);
+        System.out.printf("# %-" + maxLength + "s #\n", psqlUrl);
+        System.out.println(border);
     }
 
     private void startContainers(
