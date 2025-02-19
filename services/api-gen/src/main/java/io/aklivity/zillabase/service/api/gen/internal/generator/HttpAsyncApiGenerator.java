@@ -457,34 +457,57 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             .method(GET)
             .build();
 
-        Map<String, Object> base = new HashMap<>();
-        base.put("http", get);
+        Map<String, Object> bindings = new HashMap<>();
+        bindings.put("http", get);
+
         if (identity != null)
         {
             AsyncapiKafkaFilter f = new AsyncapiKafkaFilter();
             f.headers = Map.of("identity", "{identity}");
             ZillaHttpOperationBinding zh = new ZillaHttpOperationBinding(GET, null, List.of(f));
-            base.put("x-zilla-http-kafka", zh);
+            bindings.put("x-zilla-http-kafka", zh);
         }
 
+        builder
+            .inject(spec -> injectGetItemOperation(spec, bindings, name, label))
+            .inject(spec -> injectGetOperation(spec, bindings, name, label));
+
+        return builder;
+    }
+
+    private <C> AsyncapiSpecBuilder<C> injectGetOperation(
+        AsyncapiSpecBuilder<C> builder,
+        Map<String, Object> bindings,
+        String name,
+        String label)
+    {
         Operation allGetOp = Operation.builder()
             .action(OperationAction.RECEIVE)
             .channel(new Reference("#/channels/%s".formatted(name)))
             .messages(Collections.singletonList(
                 new Reference("#/channels/%s/messages/%sMessages".formatted(name, label))))
-            .bindings(base)
+            .bindings(bindings)
             .security(List.of(new Reference("#/components/securitySchemes/httpOauth")))
             .build();
 
         String allOpName = "on%sGet".formatted(label);
         builder.addOperation(allOpName, allGetOp);
 
+        return builder;
+    }
+
+    private <C> AsyncapiSpecBuilder<C> injectGetItemOperation(
+        AsyncapiSpecBuilder<C> builder,
+        Map<String, Object> bindings,
+        String name,
+        String label)
+    {
         Operation item = Operation.builder()
             .action(OperationAction.RECEIVE)
             .channel(new Reference("#/channels/%s-item".formatted(name)))
             .messages(Collections.singletonList(
                 new Reference("#/channels/%s-item/messages/%sMessage".formatted(name, label))))
-            .bindings(base)
+            .bindings(bindings)
             .security(List.of(new Reference("#/components/securitySchemes/httpOauth")))
             .build();
 
