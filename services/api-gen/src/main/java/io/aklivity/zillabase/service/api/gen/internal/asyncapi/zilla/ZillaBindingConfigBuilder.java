@@ -35,7 +35,7 @@ public class ZillaBindingConfigBuilder<T> extends Builder<T, ZillaBindingConfigB
         this.mapper = mapper;
     }
 
-        @Override
+    @Override
     @SuppressWarnings("unchecked")
     protected Class<ZillaBindingConfigBuilder<T>> thisType()
     {

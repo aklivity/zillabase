@@ -1,3 +1,17 @@
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
@@ -6,23 +20,22 @@ import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelp
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import org.springframework.stereotype.Component;
-
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfig;
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfigBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingConfigBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingRouteConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
-import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfigBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
@@ -276,57 +289,71 @@ public class ZillaConfigGenerator
     private void extractedHeaders(
         List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig)
     {
-        List<KafkaTopicSchemaRecord> records;
         try
         {
-            records = kafkaService.resolve();
-
-            for (KafkaTopicSchemaRecord record : records)
-            {
-                if (record.name.endsWith("_replies"))
+            kafkaService.resolve()
+                .forEach(record ->
                 {
                     ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
                         new ZillaBindingOptionsConfig.KafkaTopicConfig();
+
                     topicConfig.name = record.name;
-                    ZillaBindingOptionsConfig.TransformConfig transforms =
-                        new ZillaBindingOptionsConfig.TransformConfig();
-                    transforms.headers = Map.of(":status", "${message.value.status}",
-                        "zilla:correlation-id", "${message.value.correlation_id}");
-                    ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
-                    value.model = record.type;
-                    value.catalog = Map.of("catalog0",
-                        List.of(Map.of("subject", record.subject, "version", "latest")));
-                    topicConfig.value = value;
-                    topicConfig.transforms = List.of(transforms);
-                    topicsConfig.add(topicConfig);
-                }
-                else
-                {
-                    String identity = record.type.equals("protobuf")
-                        ? kafkaService.findIdentityFieldFromProtobuf(record.schema)
-                        : kafkaService.findIdentityField(record.schema);
-                    if (identity != null)
+
+                    if (record.name.endsWith("_replies"))
                     {
-                        ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
-                            new ZillaBindingOptionsConfig.KafkaTopicConfig();
-                        topicConfig.name = record.name;
-                        ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
-                        value.model = record.type;
-                        value.catalog = Map.of("catalog0",
-                            List.of(Map.of("subject", record.subject, "version", "latest")));
-                        topicConfig.value = value;
-                        ZillaBindingOptionsConfig.TransformConfig transforms =
-                            new ZillaBindingOptionsConfig.TransformConfig();
-                        transforms.headers = Map.of("identity", "${message.value.%s}".formatted(identity));
-                        topicConfig.transforms = List.of(transforms);
-                        topicsConfig.add(topicConfig);
+                        extractRepliesHeader(topicConfig, record);
                     }
-                }
-            }
+                    else
+                    {
+                        extractHeader(topicConfig, record);
+                    }
+
+                    topicsConfig.add(topicConfig);
+                });
         }
         catch (Exception e)
         {
             System.out.println("Failed to resolve Kafka topics");
         }
+    }
+
+    private void extractHeader(
+        ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig,
+        KafkaTopicSchemaRecord record)
+    {
+        String identity = record.type.equals("protobuf")
+            ? kafkaService.findIdentityFieldFromProtobuf(record.schema)
+            : kafkaService.findIdentityField(record.schema);
+
+        if (identity != null)
+        {
+            ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
+            value.model = record.type;
+            value.catalog = Map.of("catalog0",
+                List.of(Map.of("subject", record.subject, "version", "latest")));
+
+            ZillaBindingOptionsConfig.TransformConfig transforms =
+                new ZillaBindingOptionsConfig.TransformConfig();
+            transforms.headers = Map.of("identity", "${message.value.%s}".formatted(identity));
+            topicConfig.value = value;
+            topicConfig.transforms = List.of(transforms);
+        }
+    }
+
+    private void extractRepliesHeader(
+        ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig,
+        KafkaTopicSchemaRecord record)
+    {
+        ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
+        value.model = record.type;
+        value.catalog = Map.of("catalog0",
+            List.of(Map.of("subject", record.subject, "version", "latest")));
+
+        ZillaBindingOptionsConfig.TransformConfig transforms =
+            new ZillaBindingOptionsConfig.TransformConfig();
+        transforms.headers = Map.of(":status", "${message.value.status}",
+            "zilla:correlation-id", "${message.value.correlation_id}");
+        topicConfig.value = value;
+        topicConfig.transforms = List.of(transforms);
     }
 }

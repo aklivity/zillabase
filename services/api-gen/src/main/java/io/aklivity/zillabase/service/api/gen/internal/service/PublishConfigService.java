@@ -15,23 +15,13 @@
 package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
 import io.aklivity.zillabase.service.api.gen.internal.generator.ZillaConfigGenerator;
 import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
-import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.helper.KeycloakHelper;
 import io.aklivity.zillabase.service.api.gen.internal.helper.ZillaConfigHelper;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
-import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
-import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 

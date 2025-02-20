@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolicy;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguration;
@@ -36,8 +38,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import org.springframework.stereotype.Component;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpec;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.AsyncapiSpecBuilder;

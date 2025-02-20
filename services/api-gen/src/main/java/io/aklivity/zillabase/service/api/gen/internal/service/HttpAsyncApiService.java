@@ -19,9 +19,9 @@ import static io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelp
 
 import org.springframework.stereotype.Service;
 
+import io.aklivity.zillabase.service.api.gen.internal.generator.HttpAsyncApiGenerator;
 import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
-import io.aklivity.zillabase.service.api.gen.internal.generator.HttpAsyncApiGenerator;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
