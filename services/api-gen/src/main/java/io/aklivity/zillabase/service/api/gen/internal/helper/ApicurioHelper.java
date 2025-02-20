@@ -95,7 +95,7 @@ public class ApicurioHelper
         }
         catch (Exception e)
         {
-            // ignore
+            System.out.println("Failed to register spec: " + e.getMessage());
         }
 
         return newVersion;

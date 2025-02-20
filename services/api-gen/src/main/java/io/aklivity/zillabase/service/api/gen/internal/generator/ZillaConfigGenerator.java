@@ -219,18 +219,8 @@ public class ZillaConfigGenerator
     private <C> ZillaBindingConfigBuilder<C> injectSouthKafkaProxyOption(
         ZillaBindingConfigBuilder<C> builder)
     {
-        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig = new ArrayList<>();
-        extractedHeaders(topicsConfig);
-
-        ZillaBindingOptionsConfig.KafkaOptionsConfig kafkaOptionsConfig =
-            new ZillaBindingOptionsConfig.KafkaOptionsConfig();
-        kafkaOptionsConfig.topics = topicsConfig;
-
         ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
         optionsConfig.specs = Map.of("http_api", httpApi, "kafka_api", kafkaApi);
-
-        builder.options(optionsConfig);
-        optionsConfig.kafka = kafkaOptionsConfig;
 
         builder.options(optionsConfig);
 
@@ -280,6 +270,13 @@ public class ZillaConfigGenerator
     {
         ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
         optionsConfig.specs = Map.of("kafka_api", kafkaApi);
+        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig = new ArrayList<>();
+        extractedHeaders(topicsConfig);
+
+        ZillaBindingOptionsConfig.KafkaOptionsConfig kafkaOptionsConfig =
+            new ZillaBindingOptionsConfig.KafkaOptionsConfig();
+        kafkaOptionsConfig.topics = topicsConfig;
+        optionsConfig.kafka = kafkaOptionsConfig;
 
         builder.options(optionsConfig);
 
@@ -294,21 +291,16 @@ public class ZillaConfigGenerator
             kafkaService.resolve()
                 .forEach(record ->
                 {
-                    ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
-                        new ZillaBindingOptionsConfig.KafkaTopicConfig();
-
-                    topicConfig.name = record.name;
 
                     if (record.name.endsWith("_replies"))
                     {
-                        extractRepliesHeader(topicConfig, record);
+                        extractRepliesHeader(topicsConfig, record);
                     }
                     else
                     {
-                        extractHeader(topicConfig, record);
+                        extractHeader(topicsConfig, record);
                     }
 
-                    topicsConfig.add(topicConfig);
                 });
         }
         catch (Exception e)
@@ -318,7 +310,7 @@ public class ZillaConfigGenerator
     }
 
     private void extractHeader(
-        ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig,
+        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig,
         KafkaTopicSchemaRecord record)
     {
         String identity = record.type.equals("protobuf")
@@ -327,6 +319,10 @@ public class ZillaConfigGenerator
 
         if (identity != null)
         {
+            ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
+                            new ZillaBindingOptionsConfig.KafkaTopicConfig();
+            topicConfig.name = record.name;
+
             ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
             value.model = record.type;
             value.catalog = Map.of("catalog0",
@@ -337,13 +333,19 @@ public class ZillaConfigGenerator
             transforms.headers = Map.of("identity", "${message.value.%s}".formatted(identity));
             topicConfig.value = value;
             topicConfig.transforms = List.of(transforms);
+
+            topicsConfig.add(topicConfig);
         }
     }
 
     private void extractRepliesHeader(
-        ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig,
+        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig,
         KafkaTopicSchemaRecord record)
     {
+        ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
+                            new ZillaBindingOptionsConfig.KafkaTopicConfig();
+        topicConfig.name = record.name;
+
         ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
         value.model = record.type;
         value.catalog = Map.of("catalog0",
@@ -355,5 +357,7 @@ public class ZillaConfigGenerator
             "zilla:correlation-id", "${message.value.correlation_id}");
         topicConfig.value = value;
         topicConfig.transforms = List.of(transforms);
+
+        topicsConfig.add(topicConfig);
     }
 }

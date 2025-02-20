@@ -254,7 +254,7 @@ public class KafkaTopicSchemaHelper
         }
         catch (Exception e)
         {
-            // ignore
+            System.err.println("Failed to resolve schema for subject: " + subject);
         }
 
         return schema;
