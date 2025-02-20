@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaAsyncApiConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingConfig;
+import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingConfigBuilder;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaBindingRouteConfig;
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla.ZillaCatalogConfig;
@@ -32,6 +33,15 @@ import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHel
 public class ZillaConfigGenerator
 {
     private static final String AUTH_JWT = "jwt0";
+
+    private final List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
+            "Get", "GetItem");
+    private final Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
+            "catalog", Map.of("apicurio_catalog", Map.of("subject", HTTP_ASYNCAPI_ARTIFACT_ID,
+                "version", "latest")));
+    private final Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
+        "catalog", Map.of("apicurio_catalog", Map.of("subject", KAFKA_ASYNCAPI_ARTIFACT_ID,
+            "version", "latest")));
 
     private final ApiGenConfig config;
     private final KeycloakConfig keycloakConfig;
@@ -61,7 +71,7 @@ public class ZillaConfigGenerator
                 .inject(this::injectCatalog)
                 .inject(this::injectGuard)
                 .inject(this::injectTelemetry)
-                .inject(config -> injectBinding(config, operations))
+                .inject(config -> injectBindings(config, operations))
                 .build();
 
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
@@ -98,8 +108,8 @@ public class ZillaConfigGenerator
         return builder;
     }
 
-    private <T> ZillaAsyncApiConfigBuilder<T> injectGuard(
-        ZillaAsyncApiConfigBuilder<T> builder)
+    private <C> ZillaAsyncApiConfigBuilder<C> injectGuard(
+        ZillaAsyncApiConfigBuilder<C> builder)
     {
         String realm = keycloakConfig.realm();
 
@@ -118,8 +128,8 @@ public class ZillaConfigGenerator
         return builder;
     }
 
-    private <T> ZillaAsyncApiConfigBuilder<T> injectTelemetry(
-        ZillaAsyncApiConfigBuilder<T> builder)
+    private <C> ZillaAsyncApiConfigBuilder<C> injectTelemetry(
+        ZillaAsyncApiConfigBuilder<C> builder)
     {
         builder.telemetry(Map.of("exporters",
             Map.of("stdout_logs_exporter", Map.of("type", "stdout"))));
@@ -127,93 +137,143 @@ public class ZillaConfigGenerator
         return builder;
     }
 
-    private <T> ZillaAsyncApiConfigBuilder<T> injectBinding(
-        ZillaAsyncApiConfigBuilder<T> builder,
+    private <C> ZillaAsyncApiConfigBuilder<C> injectBindings(
+        ZillaAsyncApiConfigBuilder<C> builder,
         List<String> operations)
     {
-        List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
-            "Get", "GetItem");
+        builder
+            .inject(this::injectNorthHttpServerBinding)
+            .inject(b -> injectSouthKafkaProxyBinding(b, operations))
+            .inject(this::injectSouthKafkaClientBinding);
 
-        Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
-                "catalog", Map.of("apicurio_catalog", Map.of("subject", HTTP_ASYNCAPI_ARTIFACT_ID,
-                    "version", "latest")));
-            Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
-                "catalog", Map.of("apicurio_catalog", Map.of("subject", KAFKA_ASYNCAPI_ARTIFACT_ID,
-                    "version", "latest")));
-
-            List<ZillaBindingRouteConfig> routes = new ArrayList<>();
-
-            for (String operation : operations)
-            {
-                if (operation.endsWith("Replies"))
-                {
-                    continue;
-                }
-                ZillaBindingRouteConfig route = new ZillaBindingRouteConfig();
-                route.when = List.of(Map.of("api-id", "http_api", "operation-id", operation));
-                route.with = Map.of("api-id", "kafka_api", "operation-id", suffixes.stream()
-                    .filter(operation::endsWith)
-                    .map(suffix -> operation.substring(0, operation.length() - suffix.length()))
-                    .findFirst()
-                    .orElse(operation));
-                route.exit = "south_kafka_client";
-                routes.add(route);
-            }
-
-            Map<String, ZillaBindingConfig> bindings = new HashMap<>();
-
-            ZillaBindingConfig northHttpServer = new ZillaBindingConfig();
-            northHttpServer.type = "asyncapi";
-            northHttpServer.kind = "server";
-            ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
-            optionsConfig.specs = Map.of("http_api", httpApi);
-
-            String realm = keycloakConfig.realm();
-
-            if (realm != null)
-            {
-                optionsConfig.http = new ZillaBindingOptionsConfig.HttpAuthorizationOptionsConfig();
-                optionsConfig.http.authorization = Map.of(AUTH_JWT,
-                    Map.of("credentials",
-                        Map.of("headers",
-                            Map.of("authorization", "Bearer {credentials}"),
-                            "query", Map.of("access_token", "{credentials}"))));
-            }
-
-            northHttpServer.options = optionsConfig;
-            northHttpServer.exit = "south_kafka_proxy";
-            bindings.put("north_http_server", northHttpServer);
-
-            ZillaBindingConfig southKafkaProxy = new ZillaBindingConfig();
-            southKafkaProxy.type = "asyncapi";
-            southKafkaProxy.kind = "proxy";
-            optionsConfig = new ZillaBindingOptionsConfig();
-            optionsConfig.specs = Map.of("http_api", httpApi, "kafka_api", kafkaApi);
-            southKafkaProxy.options = optionsConfig;
-            southKafkaProxy.routes = routes;
-            bindings.put("south_kafka_proxy", southKafkaProxy);
-
-            ZillaBindingConfig southKafkaClient = new ZillaBindingConfig();
-            southKafkaClient.type = "asyncapi";
-            southKafkaClient.kind = "client";
-            optionsConfig = new ZillaBindingOptionsConfig();
-            optionsConfig.specs = Map.of("kafka_api", kafkaApi);
-            List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig = new ArrayList<>();
-            extractedHeaders(topicsConfig);
-
-            ZillaBindingOptionsConfig.KafkaOptionsConfig kafkaOptionsConfig =
-                new ZillaBindingOptionsConfig.KafkaOptionsConfig();
-            kafkaOptionsConfig.topics = topicsConfig;
-            optionsConfig.kafka = kafkaOptionsConfig;
-            southKafkaClient.options = optionsConfig;
-            bindings.put("south_kafka_client", southKafkaClient);
-
-            builder.bindings(bindings);
-
-            return builder;
+        return builder;
     }
 
-   private void extractedHeaders(
+    private <C> ZillaAsyncApiConfigBuilder<C> injectNorthHttpServerBinding(
+        ZillaAsyncApiConfigBuilder<C> builder)
+    {
+        ZillaBindingConfig northHttpServer = ZillaBindingConfig.builder()
+            .type("asyncapi")
+            .kind("server")
+            .inject(this::injectNorthHttpServerOption)
+            .exit("south_kafka_proxy")
+            .build();
+
+        builder.addBinding("north_http_server", northHttpServer);
+
+        return builder;
+    }
+
+    private <C> ZillaBindingConfigBuilder<C> injectNorthHttpServerOption(
+        ZillaBindingConfigBuilder<C> builder)
+    {
+        ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
+        optionsConfig.specs = Map.of("http_api", httpApi);
+
+        String realm = keycloakConfig.realm();
+
+        if (realm != null)
+        {
+            optionsConfig.http = new ZillaBindingOptionsConfig.HttpAuthorizationOptionsConfig();
+            optionsConfig.http.authorization = Map.of(AUTH_JWT,
+                Map.of("credentials",
+                    Map.of("headers",
+                        Map.of("authorization", "Bearer {credentials}"),
+                        "query", Map.of("access_token", "{credentials}"))));
+        }
+
+        builder.options(optionsConfig);
+
+        return builder;
+    }
+
+    private <C> ZillaAsyncApiConfigBuilder<C> injectSouthKafkaProxyBinding(
+        ZillaAsyncApiConfigBuilder<C> builder,
+        List<String> operations)
+    {
+        ZillaBindingConfig southKafkaProxy = ZillaBindingConfig.builder()
+            .type("asyncapi")
+            .kind("proxy")
+            .inject(this::injectSouthKafkaProxyOption)
+            .inject(b -> injectSouthKafkaProxyRoutes(b, operations))
+            .build();
+
+        builder.addBinding("south_kafka_proxy", southKafkaProxy);
+
+        return builder;
+    }
+
+    private <C> ZillaBindingConfigBuilder<C> injectSouthKafkaProxyOption(
+        ZillaBindingConfigBuilder<C> builder)
+    {
+        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig = new ArrayList<>();
+        extractedHeaders(topicsConfig);
+
+        ZillaBindingOptionsConfig.KafkaOptionsConfig kafkaOptionsConfig =
+            new ZillaBindingOptionsConfig.KafkaOptionsConfig();
+        kafkaOptionsConfig.topics = topicsConfig;
+
+        ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
+        optionsConfig.specs = Map.of("http_api", httpApi, "kafka_api", kafkaApi);
+
+        builder.options(optionsConfig);
+        optionsConfig.kafka = kafkaOptionsConfig;
+
+        builder.options(optionsConfig);
+
+        return builder;
+    }
+
+    private <C> ZillaBindingConfigBuilder<C> injectSouthKafkaProxyRoutes(
+        ZillaBindingConfigBuilder<C> builder,
+        List<String> operations)
+    {
+        operations.stream()
+            .filter(o -> !o.endsWith("Replies"))
+            .forEach(o ->
+            {
+                ZillaBindingRouteConfig route = ZillaBindingRouteConfig.builder()
+                    .when(List.of(Map.of("api-id", "http_api", "operation-id", o)))
+                    .with(Map.of("api-id", "kafka_api", "operation-id", suffixes.stream()
+                        .filter(o::endsWith)
+                        .map(suffix -> o.substring(0, o.length() - suffix.length()))
+                        .findFirst()
+                        .orElse(o)))
+                    .exit("south_kafka_client")
+                    .build();
+
+                builder.addRoute(route);
+            });
+
+        return builder;
+    }
+
+    private <C> ZillaAsyncApiConfigBuilder<C> injectSouthKafkaClientBinding(
+        ZillaAsyncApiConfigBuilder<C> builder)
+    {
+        ZillaBindingConfig southKafkaClient = ZillaBindingConfig.builder()
+            .type("asyncapi")
+            .kind("client")
+            .inject(this::injectSouthKafkaClientOption)
+            .build();
+
+        builder.addBinding("south_kafka_client", southKafkaClient);
+
+        return builder;
+    }
+
+    private <C> ZillaBindingConfigBuilder<C> injectSouthKafkaClientOption(
+        ZillaBindingConfigBuilder<C> builder)
+    {
+        ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
+        optionsConfig.specs = Map.of("kafka_api", kafkaApi);
+
+        builder.options(optionsConfig);
+
+        return builder;
+    }
+
+    private void extractedHeaders(
         List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig)
     {
         List<KafkaTopicSchemaRecord> records;

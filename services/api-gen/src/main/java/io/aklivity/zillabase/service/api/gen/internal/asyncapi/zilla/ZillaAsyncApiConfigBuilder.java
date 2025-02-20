@@ -1,5 +1,6 @@
 package io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -63,18 +64,17 @@ public class ZillaAsyncApiConfigBuilder<T> extends Builder<T, ZillaAsyncApiConfi
         return this;
     }
 
-    public ZillaAsyncApiConfigBuilder<T> addCatalog(
+    public ZillaAsyncApiConfigBuilder<T> addBinding(
         String name,
-        ZillaCatalogConfig catalog)
+        ZillaBindingConfig binding)
     {
-        if (catalogs == null)
+        if (bindings == null)
         {
-            catalogs = Map.of(name, catalog);
+            bindings = new HashMap<>();
         }
-        else
-        {
-            catalogs.put(name, catalog);
-        }
+
+        bindings.put(name, binding);
+
         return this;
     }
 

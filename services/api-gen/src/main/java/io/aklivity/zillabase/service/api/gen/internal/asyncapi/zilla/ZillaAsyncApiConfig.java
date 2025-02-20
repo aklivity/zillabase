@@ -46,6 +46,6 @@ public class ZillaAsyncApiConfig
     @SuppressWarnings("unchecked")
     private static <T> java.util.function.Function<ZillaAsyncApiConfig, T> identity()
     {
-        return spec -> (T) spec;
+        return config -> (T) config;
     }
 }
