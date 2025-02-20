@@ -51,15 +51,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import reactor.core.publisher.Mono;
 
 public class KafkaTopicSchemaHelperTest
 {
-    @Mock
-    private ApiGenConfig config;
-
     @Mock
     private KafkaConfig kafkaConfig;
 
@@ -104,7 +100,7 @@ public class KafkaTopicSchemaHelperTest
             .thenReturn(Mono.just(expectedResponse));
 
         TopicListing topicListing = mock(TopicListing.class);
-        when(topicListing.name()).thenReturn("test-topic");
+        when(topicListing.name()).thenReturn("public.test-topic");
         when(topicListing.isInternal()).thenReturn(false);
 
         KafkaFuture<List<TopicListing>> future = KafkaFuture.completedFuture(Collections.singletonList(topicListing));
@@ -112,7 +108,7 @@ public class KafkaTopicSchemaHelperTest
         when(adminClient.listTopics()).thenReturn(listTopicsResult);
         when(listTopicsResult.listings()).thenReturn((KafkaFuture) future);
 
-        ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, "test-topic");
+        ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, "public.test-topic");
         Config config = new Config(List.of(new ConfigEntry(TopicConfig.CLEANUP_POLICY_CONFIG, "delete")));
 
         DescribeConfigsResult describeConfigsResult = mock(DescribeConfigsResult.class);
@@ -123,7 +119,7 @@ public class KafkaTopicSchemaHelperTest
 
         assertNotNull(records);
         assertEquals(1, records.size());
-        assertEquals("test-topic", records.get(0).name);
+        assertEquals("public.test-topic", records.get(0).name);
     }
 
     @Test

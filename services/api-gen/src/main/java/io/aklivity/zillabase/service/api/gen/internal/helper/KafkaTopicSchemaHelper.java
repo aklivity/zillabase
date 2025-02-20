@@ -47,7 +47,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
 @Component
@@ -60,7 +59,6 @@ public class KafkaTopicSchemaHelper
     private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
-    private final ApiGenConfig config;
     private final KafkaConfig kafkaConfig;
     private final AdminClient adminClient;
 
@@ -68,12 +66,10 @@ public class KafkaTopicSchemaHelper
     private final WebClient webClient;
 
     KafkaTopicSchemaHelper(
-        ApiGenConfig config,
         KafkaConfig kafkaConfig,
         AdminClient adminClient,
         WebClient webClient)
     {
-        this.config = config;
         this.kafkaConfig = kafkaConfig;
         this.adminClient = adminClient;
         this.webClient = webClient;
@@ -112,11 +108,8 @@ public class KafkaTopicSchemaHelper
                     {
                         String schemaStr = object.getString("schema");
                         String type = resolveType(schemaStr);
-                        String label = matcher.reset(topicName).replaceAll(match -> match.group(2).toUpperCase());
-                        label = toCamelCase(label);
-                        records.add(new KafkaTopicSchemaRecord(topicName, policies,
-                            label,
-                            subject, type, schemaStr));
+                        String label = toCamelCase(matcher.reset(topicName).replaceAll(match -> match.group(2)));
+                        records.add(new KafkaTopicSchemaRecord(topicName, policies, label, subject, type, schemaStr));
                     }
                 }
             }

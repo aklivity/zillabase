@@ -257,7 +257,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
         String label = toCamelCase(name);
 
-        addReadWriteScopes(label);
+        addReadWriteScopes(name);
 
         Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
         Reference messages = new Reference("#/components/messages/%sMessages".formatted(label));
@@ -319,7 +319,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
     private void addReadWriteScopes(
         String label)
     {
-        String base = label.toLowerCase();
+        String base = label;
         scopes.add(base + ":read");
         scopes.add(base + ":write");
     }
