@@ -24,7 +24,7 @@ public final class ZillabaseStudioConfig
     public String tag = DEFAULT_STUDIO_TAG;
     public int port = DEFAULT_STUDIO_HTTP_PORT;
 
-    public static final String ZILLABASE_STUDIO_ZILLA_YAML = """
+    private final String zillaConfig = """
         ---
         name: example
         bindings:
@@ -34,10 +34,10 @@ public final class ZillabaseStudioConfig
             options:
               host: 0.0.0.0
               port:
-                - 7194
+                - %d
             routes:
                 - when:
-                    - port: 7194
+                    - port: %d
                   exit: north_http_server
           north_http_server:
             type: http
@@ -46,7 +46,7 @@ public final class ZillabaseStudioConfig
               - when:
                   - headers:
                       :scheme: http
-                      :authority: localhost:7194
+                      :authority: localhost:%d
                 exit: east_http_filesystem_mapping
           east_http_filesystem_mapping:
             type: http-filesystem
@@ -71,5 +71,10 @@ public final class ZillabaseStudioConfig
           exporters:
             stdout_logs_exporter:
               type: stdout
-        """;
+        """.formatted(port, port, port);
+
+    public String zillaConfig()
+    {
+        return zillaConfig;
+    }
 }

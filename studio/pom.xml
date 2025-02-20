@@ -67,7 +67,7 @@
                     <images combine.children="append">
                         <image>
                             <alias>zillabase-studio</alias>
-                            <name>ghcr.io/aklivity/zillabase/zillabase-studio:%v</name>
+                            <name>ghcr.io/aklivity/zillabase/studio:%v</name>
                             <build>
                                 <contextDir>${project.basedir}</contextDir>
                                 <tags>
