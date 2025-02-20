@@ -182,7 +182,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private void printExposedEndpoints(
         ZillabaseConfig config)
     {
-        int studioPort = config.studio.port;
+        int studioPort = config.studio.port();
         int pgsqlPort = config.admin.pgsqlPort;
 
         String studioUrl = "Studio UI: http://localhost:%d".formatted(studioPort);
@@ -1155,7 +1155,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateStudioFactory(
             ZillabaseConfig config)
         {
-            super(config, "studio", "ghcr.io/aklivity/zillabase/studio:%s".formatted(config.studio.tag));
+            super(config, "studio", "ghcr.io/aklivity/zillabase/studio:%s".formatted(config.studio.tag()));
         }
 
         @Override
@@ -1163,7 +1163,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client,
             ZillabaseConfig config)
         {
-            int port = config.studio.port;
+            int port = config.studio.port();
 
             List<ExposedPort> exposedPorts = List.of(ExposedPort.tcp(port));
 

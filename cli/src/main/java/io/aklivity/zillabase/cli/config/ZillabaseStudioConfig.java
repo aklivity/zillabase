@@ -21,8 +21,8 @@ public final class ZillabaseStudioConfig
     public static final String DEFAULT_STUDIO_TAG = Zillabase.version();
     public static final int DEFAULT_STUDIO_HTTP_PORT = 7194;
 
-    public String tag = DEFAULT_STUDIO_TAG;
-    public int port = DEFAULT_STUDIO_HTTP_PORT;
+    private final String tag = DEFAULT_STUDIO_TAG;
+    private final int port = DEFAULT_STUDIO_HTTP_PORT;
 
     private final String zillaConfig = """
         ---
@@ -76,5 +76,15 @@ public final class ZillabaseStudioConfig
     public String zillaConfig()
     {
         return zillaConfig;
+    }
+
+    public int port()
+    {
+        return port;
+    }
+
+    public String tag()
+    {
+        return tag;
     }
 }
