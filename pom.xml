@@ -58,6 +58,7 @@
   <modules>
     <module>cli</module>
     <module>services</module>
+    <module>studio</module>
   </modules>
 
   <dependencyManagement>

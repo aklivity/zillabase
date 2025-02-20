@@ -15,4 +15,4 @@
 
 FROM ghcr.io/aklivity/zilla:0.9.122
 
-COPY src/io/aklivity/zillabase/dist/spa /var/www/
+COPY dist/spa /var/www/

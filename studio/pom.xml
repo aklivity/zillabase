@@ -27,7 +27,6 @@
                 <configuration>
                     <nodeVersion>v18.17.1</nodeVersion>
                     <npmVersion>9.8.1</npmVersion>
-                    <workingDirectory>src/io/aklivity/zillabase</workingDirectory>
                 </configuration>
 
                 <executions>
