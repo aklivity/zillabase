@@ -182,7 +182,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private void printExposedEndpoints(
         ZillabaseConfig config)
     {
-        int studioPort = config.studio.port();
+        int studioPort = config.studio.port;
         int pgsqlPort = config.admin.pgsqlPort;
 
         String studioUrl = "Studio UI: http://localhost:%d".formatted(studioPort);
@@ -265,7 +265,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         List<String> containerIds = new LinkedList<>();
         for (CreateContainerFactory factory : factories)
         {
-            try (CreateContainerCmd command = factory.createContainer(client, config))
+            try (CreateContainerCmd command = factory.createContainer(client))
             {
                 CreateContainerResponse response = command.exec();
                 String id = response.getId();
@@ -1106,8 +1106,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         abstract CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config);
+            DockerClient client);
     }
 
     private static final class CreateZillaFactory extends CreateContainerFactory
@@ -1120,8 +1119,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<ExposedPort> exposedPorts = config.zilla.ports.stream()
                 .map(portConfig -> ExposedPort.tcp(portConfig.port))
@@ -1155,15 +1153,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateStudioFactory(
             ZillabaseConfig config)
         {
-            super(config, "studio", "ghcr.io/aklivity/zillabase/studio:%s".formatted(config.studio.tag()));
+            super(config, "studio", "ghcr.io/aklivity/zillabase/studio:%s".formatted(config.studio.tag));
         }
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
-            int port = config.studio.port();
+            int port = config.studio.port;
 
             List<ExposedPort> exposedPorts = List.of(ExposedPort.tcp(port));
 
@@ -1207,8 +1204,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(9092);
             String volume = "/bitnami/kafka";
@@ -1262,8 +1258,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             return client
                 .createContainerCmd(image)
@@ -1296,8 +1291,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(8081);
 
@@ -1342,8 +1336,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             client.createVolumeCmd()
                 .withName(ZILLABASE_POSTGRES_VOLUME_NAME)
@@ -1383,8 +1376,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             client.createVolumeCmd()
                 .withName(ZILLABASE_MINIO_VOLUME_NAME)
@@ -1428,8 +1420,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             return client
                 .createContainerCmd(image)
@@ -1481,8 +1472,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(8180);
 
@@ -1522,8 +1512,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<String> envVars = Arrays.asList(
                 "ADMIN_HTTP_URL=http://admin.zillabase.dev:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
@@ -1556,8 +1545,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<String> envVars = Arrays.asList(
                 "AUTH_SERVER_PORT=%d".formatted(DEFAULT_AUTH_PORT),
@@ -1592,8 +1580,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<ExposedPort> exposedPorts = config.admin.PORTS.stream()
                 .map(port -> ExposedPort.tcp(port))
@@ -1684,8 +1671,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<String> envVars = Arrays.asList(
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl));
@@ -1733,8 +1719,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             List<String> envVars = new ArrayList<>();
             envVars.add("CLASSPATH=service-udf-java.jar:/opt/udf/lib/*");
@@ -1821,8 +1806,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         @Override
         CreateContainerCmd createContainer(
-            DockerClient client,
-            ZillabaseConfig config)
+            DockerClient client)
         {
             String projectsBasePath = "zillabase/functions/python";
 
