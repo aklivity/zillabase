@@ -662,7 +662,6 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         String label,
         String identity)
     {
-
         List<Object> security = List.of(new Reference("#/components/securitySchemes/httpOauth"));
 
         builder
