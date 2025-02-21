@@ -38,7 +38,9 @@ import com.asyncapi.schemas.asyncapi.Reference;
 import com.asyncapi.schemas.asyncapi.multiformat.AvroFormatSchema;
 import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuth2SecurityScheme;
 import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuthFlows;
+import com.asyncapi.schemas.avro.v1._9_0.AvroSchema;
 import com.asyncapi.schemas.avro.v1._9_0.AvroSchemaRecord;
+import com.asyncapi.schemas.avro.v1._9_0.AvroSchemaRecordField;
 import com.asyncapi.v3._0_0.model.AsyncAPI;
 import com.asyncapi.v3._0_0.model.channel.Channel;
 import com.asyncapi.v3._0_0.model.channel.Parameter;
@@ -48,6 +50,7 @@ import com.asyncapi.v3._0_0.model.operation.Operation;
 import com.asyncapi.v3._0_0.model.operation.OperationAction;
 import com.asyncapi.v3._0_0.model.server.Server;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -70,6 +73,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
     private final Matcher referenceMatcher = REFERENCE_PATTERN.matcher("");
     private final KafkaTopicSchemaHelper kafkaHelper;
     private final List<String> scopes;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public HttpAsyncApiGenerator(
         KafkaTopicSchemaHelper kafkaHelper)
@@ -155,15 +160,13 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         Components.ComponentsBuilder builder,
         Map<String, Object> schemas)
     {
-        ObjectMapper mapper = new ObjectMapper();
-
         builder.schemas(schemas.entrySet().stream()
             .flatMap(entry ->
             {
                 String originalName = entry.getKey();
-                AvroFormatSchema originalSchema = (AvroFormatSchema) entry.getValue();
+                ObjectNode originalSchema = convertToAsyncapiSchema((AvroFormatSchema) entry.getValue());
 
-                AvroFormatSchema newSchema = convertToAvroArraySchema(mapper, originalSchema);
+                ObjectNode newSchema = convertToAsyncapiSchemas(originalSchema);
                 String newSchemaName = originalName.replace("-value", "-values");
 
                 return Stream.of(
@@ -175,32 +178,158 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         );
     }
 
-    private AvroFormatSchema convertToAvroArraySchema(
-        ObjectMapper mapper,
-        AvroFormatSchema originalSchema)
+    private ObjectNode convertToAsyncapiSchema(
+        AvroFormatSchema avroFormatSchema)
     {
-        AvroSchemaRecord originalSchemaRecord = (AvroSchemaRecord) originalSchema.getSchema();
+        ObjectNode jsonSchema = objectMapper.createObjectNode();
+        AvroSchemaRecord schema = (AvroSchemaRecord) avroFormatSchema.getSchema();
 
-        ObjectNode recordNode = mapper.createObjectNode()
-            .put("type", "record")
-            .put("name", originalSchemaRecord.getName())
-            .put("namespace", originalSchemaRecord.getNamespace());
-
-        ArrayNode fieldsNode = mapper.createArrayNode();
-        originalSchemaRecord.getFields().forEach(f ->
+        if (schema.getType().equals("record"))
         {
-            ObjectNode fieldNode = mapper.createObjectNode();
-            fieldNode.put("name", f.getName());
-            fieldNode.set("type", mapper.valueToTree(f.getType()));
-            fieldsNode.add(fieldNode);
-        });
-        recordNode.set("fields", fieldsNode);
+            jsonSchema.put("type", "object");
 
-        return new AvroFormatSchema(
-            mapper.createObjectNode()
-                .put("type", "array")
-                .set("items", recordNode)
-        );
+            ObjectNode propertiesNode = objectMapper.createObjectNode();
+            ArrayNode requiredNode = objectMapper.createArrayNode();
+
+            for (AvroSchemaRecordField field : schema.getFields())
+            {
+                String fieldName = field.getName();
+                propertiesNode.set(fieldName, mapAvroTypeToJsonSchema(field.getType()));
+                requiredNode.add(fieldName);
+            }
+
+            jsonSchema.set("properties", propertiesNode);
+            jsonSchema.set("required", requiredNode);
+        }
+
+        return jsonSchema;
+    }
+
+    private ObjectNode convertToAsyncapiSchemas(
+        ObjectNode schema)
+    {
+        ObjectNode schemas = objectMapper.createObjectNode();
+        schemas.put("type", "array");
+        schemas.set("items", schema);
+
+        return schemas;
+    }
+
+    public JsonNode mapAvroTypeToJsonSchema(
+        Object avroType)
+    {
+        if (avroType instanceof String)
+        {
+            return handlePrimitiveType((String) avroType);
+        }
+        if (avroType instanceof AvroSchema)
+        {
+            return handlePrimitiveType(((AvroSchema) avroType).getType());
+        }
+        else if (avroType instanceof Map)
+        {
+            return handleComplexType((Map<String, Object>) avroType);
+        }
+        else if (avroType instanceof List)
+        {
+            return handleUnionType((List<Object>) avroType);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unsupported Avro type: " + avroType.getClass().getName());
+        }
+    }
+
+    private JsonNode handlePrimitiveType(
+        String type)
+    {
+        ObjectNode jsonTypeNode = objectMapper.createObjectNode();
+        switch (type)
+        {
+        case "int":
+            jsonTypeNode.put("type", "integer");
+            break;
+        case "long":
+            jsonTypeNode.put("type", "integer");
+            jsonTypeNode.put("format", "int64");
+            break;
+        case "float":
+        case "double":
+            jsonTypeNode.put("type", "number");
+            break;
+        case "boolean":
+            jsonTypeNode.put("type", "boolean");
+            break;
+        case "string":
+            jsonTypeNode.put("type", "string");
+            break;
+        case "null":
+            jsonTypeNode.put("type", "null");
+            break;
+        default:
+            jsonTypeNode.put("type", "string");
+        }
+
+        return jsonTypeNode;
+    }
+
+    private JsonNode handleComplexType(
+        Map<String, Object> type)
+    {
+        ObjectNode jsonTypeNode = objectMapper.createObjectNode();
+        String typeName = (String) type.get("type");
+
+        switch (typeName)
+        {
+        case "record":
+            jsonTypeNode.put("type", "object");
+            ObjectNode properties = jsonTypeNode.putObject("properties");
+            List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
+            for (Map<String, Object> field : fields)
+            {
+                String fieldName = (String) field.get("name");
+                Object fieldType = field.get("type");
+                properties.set(fieldName, mapAvroTypeToJsonSchema(fieldType));
+            }
+            break;
+        case "enum":
+            jsonTypeNode.put("type", "string");
+            ArrayNode enumValues = jsonTypeNode.putArray("enum");
+            List<String> symbols = (List<String>) type.get("symbols");
+            symbols.forEach(enumValues::add);
+            break;
+        case "array":
+            jsonTypeNode.put("type", "array");
+            jsonTypeNode.set("items", mapAvroTypeToJsonSchema(type.get("items")));
+            break;
+        case "map":
+            jsonTypeNode.put("type", "object");
+            jsonTypeNode.set("additionalProperties", mapAvroTypeToJsonSchema(type.get("values")));
+            break;
+        default:
+            jsonTypeNode.put("type", "string");
+        }
+        return jsonTypeNode;
+    }
+
+    private JsonNode handleUnionType(
+        List<Object> types)
+    {
+        if (types.size() == 1)
+        {
+            return mapAvroTypeToJsonSchema(types.get(0));
+        }
+        else
+        {
+            ArrayNode oneOf = objectMapper.createArrayNode();
+            for (Object type : types)
+            {
+                oneOf.add(mapAvroTypeToJsonSchema(type));
+            }
+            ObjectNode unionNode = objectMapper.createObjectNode();
+            unionNode.set("oneOf", oneOf);
+            return unionNode;
+        }
     }
 
     private void injectMessages(
@@ -379,7 +508,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         }
         catch (Exception e)
         {
-            System.out.println("Failed to resolve identity field for: " + label);
+            // ignore
         }
 
         return identity;
