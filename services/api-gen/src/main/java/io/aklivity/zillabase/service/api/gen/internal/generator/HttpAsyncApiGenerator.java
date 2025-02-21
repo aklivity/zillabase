@@ -315,9 +315,11 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
     private JsonNode handleUnionType(
         List<Object> types)
     {
+        JsonNode node;
+
         if (types.size() == 1)
         {
-            return mapAvroTypeToJsonSchema(types.get(0));
+            node = mapAvroTypeToJsonSchema(types.get(0));
         }
         else
         {
@@ -328,8 +330,10 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             }
             ObjectNode unionNode = objectMapper.createObjectNode();
             unionNode.set("oneOf", oneOf);
-            return unionNode;
+            node = unionNode;
         }
+
+        return node;
     }
 
     private void injectMessages(
