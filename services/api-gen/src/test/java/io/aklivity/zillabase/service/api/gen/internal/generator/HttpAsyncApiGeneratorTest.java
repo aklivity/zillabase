@@ -15,13 +15,14 @@
 package io.aklivity.zillabase.service.api.gen.internal.generator;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
+import org.yaml.snakeyaml.Yaml;
 
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
@@ -69,6 +70,10 @@ public class HttpAsyncApiGeneratorTest
     {
         String actualHttpSpec = specBuilder.generate(kafkaSpec);
 
-        assertEquals(expectedHttpSpec, actualHttpSpec);
+        Yaml yaml = new Yaml();
+        Map<String, Object> expectedMap = yaml.load(expectedHttpSpec);
+        Map<String, Object> actualMap = yaml.load(actualHttpSpec);
+
+        assertThat(actualMap).isEqualTo(expectedMap);
     }
 }

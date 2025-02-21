@@ -16,6 +16,7 @@ package io.aklivity.zillabase.service.api.gen.internal.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +29,7 @@ import org.mockito.MockitoAnnotations;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KeycloakConfig;
+import io.aklivity.zillabase.service.api.gen.internal.generator.ZillaConfigGenerator;
 import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
 import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.helper.ZillaConfigHelper;
@@ -43,13 +45,16 @@ public class PublishConfigServiceTest
     private KafkaConfig kafkaConfig;
 
     @Mock
-    private KafkaTopicSchemaHelper kafkaService;
+    private KafkaTopicSchemaHelper kafkaHelper;
 
     @Mock
     private ApicurioHelper apicurioHelper;
 
     @Mock
     private KeycloakConfig keycloakConfig;
+
+    @Mock
+    private ZillaConfigGenerator configGenerator;
 
     @Mock
     private ZillaConfigHelper zillaConfigHelper;
@@ -66,6 +71,7 @@ public class PublishConfigServiceTest
         when(config.apicurioGroupId()).thenReturn("public");
         when(kafkaConfig.karapaceUrl()).thenReturn("http://localhost:8081");
         when(keycloakConfig.realm()).thenReturn("zillabase");
+        when(configGenerator.generate(anyList())).thenReturn("test");
         when(keycloakConfig.jwksUrl()).thenReturn(
             "http://keycloak.zillabase.dev:8180/realms/%s/protocol/openid-connect/certs");
     }

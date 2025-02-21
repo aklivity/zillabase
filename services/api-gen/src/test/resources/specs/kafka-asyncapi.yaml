@@ -16,440 +16,79 @@ servers:
         schemaRegistryUrl: "http://karapace.zillabase.dev:8081"
         schemaRegistryVendor: "karapace"
 channels:
-  public.streampay_send_payment_commands:
-    address: "public.streampay_send_payment_commands"
+  public.petstore_verified_customers:
+    address: "public.petstore_verified_customers"
     messages:
-      STREAMPAY_SEND_PAYMENT_COMMANDSMessage:
-        $ref: "#/components/messages/STREAMPAY_SEND_PAYMENT_COMMANDSMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
-  public.streampay_users:
-    address: "public.streampay_users"
-    messages:
-      STREAMPAY_USERSMessage:
-        $ref: "#/components/messages/STREAMPAY_USERSMessage"
+      petstoreVerifiedCustomersMessage:
+        $ref: "#/components/messages/petstoreVerifiedCustomersMessage"
     bindings:
       kafka:
         bindingVersion: "0.4.0"
         topicConfiguration:
           cleanup.policy:
           - "compact"
-  public.streampay_activities:
-    address: "public.streampay_activities"
+  public.petstore_customers:
+    address: "public.petstore_customers"
     messages:
-      STREAMPAY_ACTIVITIESMessage:
-        $ref: "#/components/messages/STREAMPAY_ACTIVITIESMessage"
+      petstoreCustomersMessage:
+        $ref: "#/components/messages/petstoreCustomersMessage"
     bindings:
       kafka:
         bindingVersion: "0.4.0"
         topicConfiguration:
           cleanup.policy:
-          - "delete"
-  public.streampay_payment_risk_assessment:
-    address: "public.streampay_payment_risk_assessment"
+          - "compact"
+  public.petstore_pets:
+    address: "public.petstore_pets"
     messages:
-      STREAMPAY_PAYMENT_RISK_ASSESSMENTMessage:
-        $ref: "#/components/messages/STREAMPAY_PAYMENT_RISK_ASSESSMENTMessage"
+      petstorePetsMessage:
+        $ref: "#/components/messages/petstorePetsMessage"
     bindings:
       kafka:
         bindingVersion: "0.4.0"
         topicConfiguration:
           cleanup.policy:
-          - "delete"
-  public.streampay_send_payment_replies:
-    address: "public.streampay_send_payment_replies"
-    messages:
-      STREAMPAY_SEND_PAYMENT_REPLIESMessage:
-        $ref: "#/components/messages/STREAMPAY_SEND_PAYMENT_REPLIESMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
-  public.streampay_request_payment_commands:
-    address: "public.streampay_request_payment_commands"
-    messages:
-      STREAMPAY_REQUEST_PAYMENT_COMMANDSMessage:
-        $ref: "#/components/messages/STREAMPAY_REQUEST_PAYMENT_COMMANDSMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
-  public.streampay_balances:
-    address: "public.streampay_balances"
-    messages:
-      STREAMPAY_BALANCESMessage:
-        $ref: "#/components/messages/STREAMPAY_BALANCESMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
-  public.streampay_request_payment_replies:
-    address: "public.streampay_request_payment_replies"
-    messages:
-      STREAMPAY_REQUEST_PAYMENT_REPLIESMessage:
-        $ref: "#/components/messages/STREAMPAY_REQUEST_PAYMENT_REPLIESMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
-  public.streampay_reject_payment_replies:
-    address: "public.streampay_reject_payment_replies"
-    messages:
-      STREAMPAY_REJECT_PAYMENT_REPLIESMessage:
-        $ref: "#/components/messages/STREAMPAY_REJECT_PAYMENT_REPLIESMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
-  public.streampay_reject_payment_commands:
-    address: "public.streampay_reject_payment_commands"
-    messages:
-      STREAMPAY_REJECT_PAYMENT_COMMANDSMessage:
-        $ref: "#/components/messages/STREAMPAY_REJECT_PAYMENT_COMMANDSMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
-  public.streampay_payment_requests:
-    address: "public.streampay_payment_requests"
-    messages:
-      STREAMPAY_PAYMENT_REQUESTSMessage:
-        $ref: "#/components/messages/STREAMPAY_PAYMENT_REQUESTSMessage"
-    bindings:
-      kafka:
-        bindingVersion: "0.4.0"
-        topicConfiguration:
-          cleanup.policy:
-          - "delete"
+          - "compact"
 operations:
-  onSTREAMPAY_PAYMENT_RISK_ASSESSMENT:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_payment_risk_assessment"
-    messages:
-    - $ref: "#/channels/public.streampay_payment_risk_assessment/messages/STREAMPAY_PAYMENT_RISK_ASSESSMENTMessage"
-  onSTREAMPAY_REJECT_PAYMENT_COMMANDS:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_reject_payment_commands"
-    messages:
-    - $ref: "#/channels/public.streampay_reject_payment_commands/messages/STREAMPAY_REJECT_PAYMENT_COMMANDSMessage"
-  doSTREAMPAY_SEND_PAYMENT_REPLIES:
+  dopetstoreVerifiedCustomers:
     action: "send"
     channel:
-      $ref: "#/channels/public.streampay_send_payment_replies"
+      $ref: "#/channels/public.petstore_verified_customers"
     messages:
-    - $ref: "#/channels/public.streampay_send_payment_replies/messages/STREAMPAY_SEND_PAYMENT_REPLIESMessage"
-  onSTREAMPAY_BALANCES:
+    - $ref: "#/channels/public.petstore_verified_customers/messages/petstoreVerifiedCustomersMessage"
+  dopetstorePets:
+    action: "send"
+    channel:
+      $ref: "#/channels/public.petstore_pets"
+    messages:
+    - $ref: "#/channels/public.petstore_pets/messages/petstorePetsMessage"
+  onpetstoreCustomers:
     action: "receive"
     channel:
-      $ref: "#/channels/public.streampay_balances"
+      $ref: "#/channels/public.petstore_customers"
     messages:
-    - $ref: "#/channels/public.streampay_balances/messages/STREAMPAY_BALANCESMessage"
-  doSTREAMPAY_SEND_PAYMENT_COMMANDS:
+    - $ref: "#/channels/public.petstore_customers/messages/petstoreCustomersMessage"
+  dopetstoreCustomers:
     action: "send"
     channel:
-      $ref: "#/channels/public.streampay_send_payment_commands"
+      $ref: "#/channels/public.petstore_customers"
     messages:
-    - $ref: "#/channels/public.streampay_send_payment_commands/messages/STREAMPAY_SEND_PAYMENT_COMMANDSMessage"
-    reply:
-      channel:
-        $ref: "#/channels/public.streampay_send_payment_replies"
-  onSTREAMPAY_SEND_PAYMENT_COMMANDS:
+    - $ref: "#/channels/public.petstore_customers/messages/petstoreCustomersMessage"
+  onpetstorePets:
     action: "receive"
     channel:
-      $ref: "#/channels/public.streampay_send_payment_commands"
+      $ref: "#/channels/public.petstore_pets"
     messages:
-    - $ref: "#/channels/public.streampay_send_payment_commands/messages/STREAMPAY_SEND_PAYMENT_COMMANDSMessage"
-  doSTREAMPAY_PAYMENT_REQUESTS:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_payment_requests"
-    messages:
-    - $ref: "#/channels/public.streampay_payment_requests/messages/STREAMPAY_PAYMENT_REQUESTSMessage"
-  doSTREAMPAY_PAYMENT_RISK_ASSESSMENT:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_payment_risk_assessment"
-    messages:
-    - $ref: "#/channels/public.streampay_payment_risk_assessment/messages/STREAMPAY_PAYMENT_RISK_ASSESSMENTMessage"
-  doSTREAMPAY_REJECT_PAYMENT_COMMANDS:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_reject_payment_commands"
-    messages:
-    - $ref: "#/channels/public.streampay_reject_payment_commands/messages/STREAMPAY_REJECT_PAYMENT_COMMANDSMessage"
-    reply:
-      channel:
-        $ref: "#/channels/public.streampay_reject_payment_replies"
-  onSTREAMPAY_REQUEST_PAYMENT_REPLIES:
+    - $ref: "#/channels/public.petstore_pets/messages/petstorePetsMessage"
+  onpetstoreVerifiedCustomers:
     action: "receive"
     channel:
-      $ref: "#/channels/public.streampay_request_payment_replies"
+      $ref: "#/channels/public.petstore_verified_customers"
     messages:
-    - $ref: "#/channels/public.streampay_request_payment_replies/messages/STREAMPAY_REQUEST_PAYMENT_REPLIESMessage"
-  onSTREAMPAY_REQUEST_PAYMENT_COMMANDS:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_request_payment_commands"
-    messages:
-    - $ref: "#/channels/public.streampay_request_payment_commands/messages/STREAMPAY_REQUEST_PAYMENT_COMMANDSMessage"
-  onSTREAMPAY_SEND_PAYMENT_REPLIES:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_send_payment_replies"
-    messages:
-    - $ref: "#/channels/public.streampay_send_payment_replies/messages/STREAMPAY_SEND_PAYMENT_REPLIESMessage"
-  doSTREAMPAY_REQUEST_PAYMENT_REPLIES:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_request_payment_replies"
-    messages:
-    - $ref: "#/channels/public.streampay_request_payment_replies/messages/STREAMPAY_REQUEST_PAYMENT_REPLIESMessage"
-  onSTREAMPAY_REJECT_PAYMENT_REPLIES:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_reject_payment_replies"
-    messages:
-    - $ref: "#/channels/public.streampay_reject_payment_replies/messages/STREAMPAY_REJECT_PAYMENT_REPLIESMessage"
-  doSTREAMPAY_REJECT_PAYMENT_REPLIES:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_reject_payment_replies"
-    messages:
-    - $ref: "#/channels/public.streampay_reject_payment_replies/messages/STREAMPAY_REJECT_PAYMENT_REPLIESMessage"
-  doSTREAMPAY_USERS:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_users"
-    messages:
-    - $ref: "#/channels/public.streampay_users/messages/STREAMPAY_USERSMessage"
-  onSTREAMPAY_PAYMENT_REQUESTS:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_payment_requests"
-    messages:
-    - $ref: "#/channels/public.streampay_payment_requests/messages/STREAMPAY_PAYMENT_REQUESTSMessage"
-  onSTREAMPAY_ACTIVITIES:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_activities"
-    messages:
-    - $ref: "#/channels/public.streampay_activities/messages/STREAMPAY_ACTIVITIESMessage"
-  onSTREAMPAY_USERS:
-    action: "receive"
-    channel:
-      $ref: "#/channels/public.streampay_users"
-    messages:
-    - $ref: "#/channels/public.streampay_users/messages/STREAMPAY_USERSMessage"
-  doSTREAMPAY_ACTIVITIES:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_activities"
-    messages:
-    - $ref: "#/channels/public.streampay_activities/messages/STREAMPAY_ACTIVITIESMessage"
-  doSTREAMPAY_BALANCES:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_balances"
-    messages:
-    - $ref: "#/channels/public.streampay_balances/messages/STREAMPAY_BALANCESMessage"
-  doSTREAMPAY_REQUEST_PAYMENT_COMMANDS:
-    action: "send"
-    channel:
-      $ref: "#/channels/public.streampay_request_payment_commands"
-    messages:
-    - $ref: "#/channels/public.streampay_request_payment_commands/messages/STREAMPAY_REQUEST_PAYMENT_COMMANDSMessage"
-    reply:
-      channel:
-        $ref: "#/channels/public.streampay_request_payment_replies"
+    - $ref: "#/channels/public.petstore_verified_customers/messages/petstoreVerifiedCustomersMessage"
 components:
   schemas:
-    public.streampay_reject_payment_replies-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "status"
-          type:
-          - "null"
-          - type: "string"
-        - name: "correlation_id"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_reject_payment_replies"
-        namespace: "public"
-        type: "record"
-    public.streampay_send_payment_replies-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "status"
-          type:
-          - "null"
-          - type: "string"
-        - name: "correlation_id"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_send_payment_replies"
-        namespace: "public"
-        type: "record"
-    public.streampay_balances-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "user_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "balance"
-          type:
-          - "null"
-          - type: "double"
-        name: "streampay_balances"
-        namespace: "public"
-        type: "record"
-    public.streampay_request_payment_replies-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "status"
-          type:
-          - "null"
-          - type: "string"
-        - name: "correlation_id"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_request_payment_replies"
-        namespace: "public"
-        type: "record"
-    public.streampay_activities-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "from_user_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "from_username"
-          type:
-          - "null"
-          - type: "string"
-        - name: "to_username"
-          type:
-          - "null"
-          - type: "string"
-        - name: "timestamp"
-          type:
-          - "null"
-          - type: "double"
-        - name: "id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "amount"
-          type:
-          - "null"
-          - type: "double"
-        - name: "eventname"
-          type:
-          - "null"
-          - type: "string"
-        - name: "to_user_id"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_activities"
-        namespace: "public"
-        type: "record"
-    public.streampay_request_payment_commands-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "user_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "request_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "amount"
-          type:
-          - "null"
-          - type: "double"
-        - name: "notes"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_request_payment_commands"
-        namespace: "public"
-        type: "record"
-    public.streampay_reject_payment_commands-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "user_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "request_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "amount"
-          type:
-          - "null"
-          - type: "double"
-        - name: "notes"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_reject_payment_commands"
-        namespace: "public"
-        type: "record"
-    public.streampay_send_payment_commands-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "user_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "request_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "amount"
-          type:
-          - "null"
-          - type: "double"
-        - name: "notes"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_send_payment_commands"
-        namespace: "public"
-        type: "record"
-    public.streampay_users-value:
+    public.petstore_verified_customers-value:
       schemaFormat: "application/vnd.apache.avro;version=1.9.0"
       schema:
         fields:
@@ -457,136 +96,56 @@ components:
           type:
           - "null"
           - type: "string"
+        - name: "points"
+          type:
+          - "null"
+          - type: "string"
+        name: "petstore_verified_customers"
+        namespace: "public"
+        type: "record"
+    public.petstore_customers-value:
+      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
+      schema:
+        fields:
         - name: "name"
           type:
           - "null"
           - type: "string"
-        - name: "username"
-          type:
-          - "null"
-          - type: "string"
-        - name: "initial_balance"
-          type:
-          - "null"
-          - type: "double"
-        name: "streampay_users"
-        namespace: "public"
-        type: "record"
-    public.streampay_payment_risk_assessment-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "summary"
-          type:
-          - "null"
-          - type: "string"
-        - name: "risk"
-          type:
-          - "null"
-          - type: "string"
-        - name: "to_user_id_identity"
-          type:
-          - "null"
-          - type: "string"
-        name: "streampay_payment_risk_assessment"
-        namespace: "public"
-        type: "record"
-    public.streampay_payment_requests-value:
-      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
-      schema:
-        fields:
-        - name: "from_user_id"
-          type:
-          - "null"
-          - type: "string"
-        - name: "from_username"
-          type:
-          - "null"
-          - type: "string"
-        - name: "to_username"
-          type:
-          - "null"
-          - type: "string"
-        - name: "to_user_id_identity"
-          type:
-          - "null"
-          - type: "string"
         - name: "status"
           type:
           - "null"
           - type: "string"
+        name: "petstore_customers"
+        namespace: "public"
+        type: "record"
+    public.petstore_pets-value:
+      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
+      schema:
+        fields:
         - name: "id"
           type:
           - "null"
           - type: "string"
-        - name: "amount"
-          type:
-          - "null"
-          - type: "double"
-        - name: "notes"
+        - name: "breed"
           type:
           - "null"
           - type: "string"
-        name: "streampay_payment_requests"
+        name: "petstore_pets"
         namespace: "public"
         type: "record"
   messages:
-    STREAMPAY_REQUEST_PAYMENT_REPLIESMessage:
+    petstoreVerifiedCustomersMessage:
       payload:
-        $ref: "#/components/schemas/public.streampay_request_payment_replies-value"
+        $ref: "#/components/schemas/public.petstore_verified_customers-value"
       contentType: "application/avro"
-      name: "STREAMPAY_REQUEST_PAYMENT_REPLIESMessage"
-    STREAMPAY_USERSMessage:
+      name: "petstoreVerifiedCustomersMessage"
+    petstoreCustomersMessage:
       payload:
-        $ref: "#/components/schemas/public.streampay_users-value"
+        $ref: "#/components/schemas/public.petstore_customers-value"
       contentType: "application/avro"
-      name: "STREAMPAY_USERSMessage"
-    STREAMPAY_PAYMENT_REQUESTSMessage:
+      name: "petstoreCustomersMessage"
+    petstorePetsMessage:
       payload:
-        $ref: "#/components/schemas/public.streampay_payment_requests-value"
+        $ref: "#/components/schemas/public.petstore_pets-value"
       contentType: "application/avro"
-      name: "STREAMPAY_PAYMENT_REQUESTSMessage"
-    STREAMPAY_SEND_PAYMENT_REPLIESMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_send_payment_replies-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_SEND_PAYMENT_REPLIESMessage"
-    STREAMPAY_REJECT_PAYMENT_REPLIESMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_reject_payment_replies-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_REJECT_PAYMENT_REPLIESMessage"
-    STREAMPAY_ACTIVITIESMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_activities-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_ACTIVITIESMessage"
-    STREAMPAY_REJECT_PAYMENT_COMMANDSMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_reject_payment_commands-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_REJECT_PAYMENT_COMMANDSMessage"
-    STREAMPAY_REQUEST_PAYMENT_COMMANDSMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_request_payment_commands-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_REQUEST_PAYMENT_COMMANDSMessage"
-    STREAMPAY_PAYMENT_RISK_ASSESSMENTMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_payment_risk_assessment-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_PAYMENT_RISK_ASSESSMENTMessage"
-    STREAMPAY_SEND_PAYMENT_COMMANDSMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_send_payment_commands-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_SEND_PAYMENT_COMMANDSMessage"
-    STREAMPAY_BALANCESMessage:
-      payload:
-        $ref: "#/components/schemas/public.streampay_balances-value"
-      contentType: "application/avro"
-      name: "STREAMPAY_BALANCESMessage"
+      name: "petstorePetsMessage"
