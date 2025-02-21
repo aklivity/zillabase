@@ -21,7 +21,11 @@ import io.aklivity.zillabase.cli.internal.Zillabase;
 public final class ZillabaseUdfPythonConfig
 {
     public static final String DEFAULT_UDF_PYTHON_TAG = Zillabase.version();
+    public static final String DEFAULT_UDF_PYTHON_API_URL = "http://udf-server-python.zillabase.dev:5000";
+    public static final String DEFAULT_UDF_JAVA_SERVER_URL = "http://udf-server-python.zillabase.dev:8816";
 
     public String tag = DEFAULT_UDF_PYTHON_TAG;
     public List<String> env;
+    public String apiUrl = DEFAULT_UDF_PYTHON_API_URL;
+    public String serverUrl = DEFAULT_UDF_JAVA_SERVER_URL;
 }

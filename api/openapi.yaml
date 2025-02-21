@@ -147,6 +147,37 @@ paths:
                   $ref: "#/components/schemas/Buckets"
         "400":
           description: Invalid output value
+  /udf/java:
+    get:
+      tags:
+        - functions
+      summary: List of external java functions
+      operationId: listJavaUdfFunctions
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JavaFunctions"
+        "400":
+          description: Invalid output value
+  /udf/python:
+    get:
+      tags:
+        - functions
+      summary: List of external python functions
+      operationId: listPythonUdfFunctions
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                 $ref: "#/components/schemas/PythonFunctions"
+
+        "400":
+          description: Invalid output value
   /storage/buckets/{bucket-name}:
     post:
       tags:
@@ -497,6 +528,53 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Bucket"
+    JavaFunction:
+      type: object
+      properties:
+        name:
+          type: string
+        returnType:
+          type: string
+        params:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+    JavaFunctions:
+      type: array
+      items:
+        $ref: "#/components/schemas/JavaFunction"
+    PythonFunction:
+      type: object
+      properties:
+        name:
+          type: string
+        input_type:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+        result_type:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+    PythonFunctions:
+      type: array
+      items:
+        $ref: "#/components/schemas/PythonFunction"
     StorageObject:
       type: object
       properties:

@@ -12,20 +12,12 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.cli.config;
+package io.aklivity.zillabase.udf.server.model;
 
 import java.util.List;
 
-import io.aklivity.zillabase.cli.internal.Zillabase;
-
-public final class ZillabaseUdfJavaConfig
+public record FunctionMetadata(
+    List<ParameterInfo> params,
+    String returnType)
 {
-    public static final String DEFAULT_UDF_JAVA_TAG = Zillabase.version();
-    public static final String DEFAULT_UDF_JAVA_API_URL = "http://udf-server-java.zillabase.dev:5001";
-    public static final String DEFAULT_UDF_JAVA_SERVER_URL = "http://udf-server-java.zillabase.dev:8815";
-
-    public String tag = DEFAULT_UDF_JAVA_TAG;
-    public List<String> env;
-    public String apiUrl = DEFAULT_UDF_JAVA_API_URL;
-    public String serverUrl = DEFAULT_UDF_JAVA_SERVER_URL;
 }

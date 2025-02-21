@@ -1524,6 +1524,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             URI apicurio = URI.create(config.registry.apicurio.url);
             URI configServer = URI.create(config.admin.configServerUrl);
+            URI udfPythonApiUrl = URI.create(config.udf.python.apiUrl);
+            URI udfJavaApiUrl = URI.create(config.udf.java.apiUrl);
             String risingwaveUrl = config.risingwave.url;
             String[] risingwave = risingwaveUrl.split(":");
 
@@ -1533,6 +1535,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "RISINGWAVE_PORT=%s".formatted(risingwave[1]),
                 "CONFIG_SERVER_HOST=%s".formatted(configServer.getHost()),
                 "CONFIG_SERVER_PORT=%d".formatted(configServer.getPort()),
+                "PYTHON_UDF_SERVER_HOST=%s".formatted(udfPythonApiUrl.getHost()),
+                "PYTHON_UDF_SERVER_PORT=%d".formatted(udfPythonApiUrl.getPort()),
+                "JAVA_UDF_SERVER_HOST=%s".formatted(udfJavaApiUrl.getHost()),
+                "JAVA_UDF_SERVER_PORT=%d".formatted(udfJavaApiUrl.getPort()),
                 "APICURIO_HOST=%s".formatted(apicurio.getHost()),
                 "APICURIO_PORT=%d".formatted(apicurio.getPort()),
                 "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
@@ -1540,8 +1546,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "AUTH_ADMIN_PORT=%d".formatted(DEFAULT_AUTH_PORT),
                 "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl),
-                "UDF_JAVA_SERVER=%s".formatted("http://udf-server-java.zillabase.dev:8815"),
-                "UDF_PYTHON_SERVER=%s".formatted("http://udf-server-python.zillabase.dev:8816"));
+                "UDF_JAVA_SERVER=%s".formatted(config.udf.java.serverUrl),
+                "UDF_PYTHON_SERVER=%s".formatted(config.udf.python.serverUrl));
 
             CreateContainerCmd container = client
                 .createContainerCmd(image)
