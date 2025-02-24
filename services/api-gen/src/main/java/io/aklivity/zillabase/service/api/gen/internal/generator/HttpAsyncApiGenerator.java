@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
@@ -76,14 +75,12 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
     private final List<String> scopes;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final WebClient.Builder builder;
 
     public HttpAsyncApiGenerator(
-        KafkaTopicSchemaHelper kafkaHelper, WebClient.Builder builder)
+        KafkaTopicSchemaHelper kafkaHelper)
     {
         this.kafkaHelper = kafkaHelper;
         this.scopes = new ArrayList<>();
-        this.builder = builder;
     }
 
     public String generate(
