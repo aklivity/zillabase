@@ -59,18 +59,18 @@ public class ZillaConfigGenerator
     private final ApiGenConfig config;
     private final KeycloakConfig keycloakConfig;
     private final KafkaConfig kafkaConfig;
-    private final KafkaTopicSchemaHelper kafkaService;
+    private final KafkaTopicSchemaHelper kafkaHelper;
 
     public ZillaConfigGenerator(
         ApiGenConfig config,
         KeycloakConfig keycloakConfig,
         KafkaConfig kafkaConfig,
-        KafkaTopicSchemaHelper kafkaService)
+        KafkaTopicSchemaHelper kafkaHelper)
     {
         this.config = config;
         this.keycloakConfig = keycloakConfig;
         this.kafkaConfig = kafkaConfig;
-        this.kafkaService = kafkaService;
+        this.kafkaHelper = kafkaHelper;
     }
 
     public String generate(
@@ -288,7 +288,7 @@ public class ZillaConfigGenerator
     {
         try
         {
-            kafkaService.resolve()
+            kafkaHelper.resolve()
                 .forEach(record ->
                 {
 
@@ -313,9 +313,7 @@ public class ZillaConfigGenerator
         List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig,
         KafkaTopicSchemaRecord record)
     {
-        String identity = record.type.equals("protobuf")
-            ? kafkaService.findIdentityFieldFromProtobuf(record.schema)
-            : kafkaService.findIdentityField(record.schema);
+        String identity = kafkaHelper.resolveIdentityField(record.type, record.schema);
 
         if (identity != null)
         {

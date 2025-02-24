@@ -552,9 +552,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
                 .stream()
                 .filter(r -> label.equals(r.label))
                 .findFirst()
-                .map(r -> "protobuf".equalsIgnoreCase(r.type)
-                    ? kafkaHelper.findIdentityFieldFromProtobuf(r.schema)
-                    : kafkaHelper.findIdentityField(r.schema))
+                .map(r -> kafkaHelper.resolveIdentityField(r.type, r.schema))
                 .orElse(null);
         }
         catch (Exception e)

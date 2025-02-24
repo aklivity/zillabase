@@ -118,7 +118,41 @@ public class KafkaTopicSchemaHelper
         return records;
     }
 
-    public String findIdentityFieldFromProtobuf(
+    public static String toCamelCase(
+        String str)
+    {
+        String[] words = str.split("[._-]+");
+        StringBuilder camelCaseString = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++)
+        {
+            if (!words[i].isEmpty())
+            {
+                if (i == 0)
+                {
+                    camelCaseString.append(words[i].toLowerCase());
+                }
+                else
+                {
+                    camelCaseString.append(words[i].substring(0, 1).toUpperCase())
+                                   .append(words[i].substring(1).toLowerCase());
+                }
+            }
+        }
+
+        return camelCaseString.toString();
+    }
+
+    public String resolveIdentityField(
+        String type,
+        String schema)
+    {
+        return "protobuf".equals(type)
+                ? findIdentityFieldFromProtobuf(schema)
+                : findIdentityField(schema);
+    }
+
+    private String findIdentityFieldFromProtobuf(
         String schema)
     {
         String identity = null;
@@ -145,7 +179,7 @@ public class KafkaTopicSchemaHelper
         return identity;
     }
 
-    public String findIdentityField(
+    private String findIdentityField(
         String schema)
     {
         AtomicReference<String> identity = new AtomicReference<>(null);
@@ -176,30 +210,6 @@ public class KafkaTopicSchemaHelper
         return identity.get();
     }
 
-    public static String toCamelCase(
-        String str)
-    {
-        String[] words = str.split("[._-]+");
-        StringBuilder camelCaseString = new StringBuilder();
-
-        for (int i = 0; i < words.length; i++)
-        {
-            if (!words[i].isEmpty())
-            {
-                if (i == 0)
-                {
-                    camelCaseString.append(words[i].toLowerCase());
-                }
-                else
-                {
-                    camelCaseString.append(words[i].substring(0, 1).toUpperCase())
-                                   .append(words[i].substring(1).toLowerCase());
-                }
-            }
-        }
-
-        return camelCaseString.toString();
-    }
 
     private String resolveType(
         String schema) throws JsonProcessingException
@@ -216,17 +226,11 @@ public class KafkaTopicSchemaHelper
             if (schemaObject.has("type"))
             {
                 String schemaType = schemaObject.get("type").asText();
-                switch (schemaType)
+                type = switch (schemaType)
                 {
-                case "record":
-                case "enum":
-                case "fixed":
-                    type = "avro";
-                    break;
-                default:
-                    type = "json";
-                    break;
-                }
+                    case "record", "enum", "fixed" -> "avro";
+                    default -> "json";
+                };
             }
         }
 
