@@ -140,9 +140,8 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         List<KafkaTopicSchemaRecord> records)
     {
-        Map<String, Object> channels = new HashMap<>();
 
-        for (KafkaTopicSchemaRecord record : records)
+        records.forEach(record ->
         {
             String topicName = record.name;
             List<String> cleanupPolicies = record.cleanupPolicies;
@@ -151,10 +150,8 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
 
             Channel channel = createChannel(topicName, messageName, cleanupPolicies);
 
-            channels.put(topicName, channel);
-        }
-
-        builder.channels(channels);
+            builder.addChannel(topicName, channel);
+        });
 
         return builder;
     }
@@ -163,9 +160,7 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         List<KafkaTopicSchemaRecord> records)
     {
-        Map<String, Object> operations = new HashMap<>();
-
-        for (KafkaTopicSchemaRecord record : records)
+        records.forEach(record ->
         {
             String topicName = record.name;
             String label = record.label;
@@ -174,11 +169,9 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
             Operation sendOperation = createSendOperation(topicName, messageName);
             Operation receiveOperation = createReceiveOperation(topicName, messageName);
 
-            operations.put("do%s".formatted(label), sendOperation);
-            operations.put("on%s".formatted(label), receiveOperation);
-        }
-
-        builder.operations(operations);
+            builder.addOperation("do%s".formatted(label), sendOperation);
+            builder.addOperation("on%s".formatted(label), receiveOperation);
+        });
 
         return builder;
     }
@@ -271,8 +264,7 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
             .action(OperationAction.RECEIVE)
             .channel(new Reference("#/channels/%s".formatted(channelName)))
             .messages(Collections.singletonList(
-                new Reference("#/channels/%s/messages/%s".formatted(channelName, messageName)))
-            )
+                new Reference("#/channels/%s/messages/%s".formatted(channelName, messageName))))
             .build();
     }
 }
