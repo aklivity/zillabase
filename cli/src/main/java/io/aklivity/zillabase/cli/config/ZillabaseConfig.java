@@ -25,4 +25,5 @@ public final class ZillabaseConfig
     public ZillabaseApiGenConfig apiGen = new ZillabaseApiGenConfig();
     public ZillabaseAuthConfig auth = new ZillabaseAuthConfig();
     public ZillabaseUdfConfig udf = new ZillabaseUdfConfig();
+    public ZillabaseStudioConfig studio = new ZillabaseStudioConfig();
 }
