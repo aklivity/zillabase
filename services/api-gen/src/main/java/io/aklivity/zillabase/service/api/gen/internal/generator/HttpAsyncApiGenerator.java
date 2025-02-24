@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
 import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
@@ -75,12 +76,14 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
     private final List<String> scopes;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final WebClient.Builder builder;
 
     public HttpAsyncApiGenerator(
-        KafkaTopicSchemaHelper kafkaHelper)
+        KafkaTopicSchemaHelper kafkaHelper, WebClient.Builder builder)
     {
         this.kafkaHelper = kafkaHelper;
         this.scopes = new ArrayList<>();
+        this.builder = builder;
     }
 
     public String generate(
@@ -123,14 +126,15 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         AsyncAPI kafkaApi)
     {
-        Map<String, Object> channels = kafkaApi.getChannels();
-        for (Map.Entry<String, Object> entry : channels.entrySet())
+        if (kafkaApi.getChannels() != null)
         {
-            String channelName = entry.getKey();
-            if (!channelName.endsWith("_replies"))
+            kafkaApi.getChannels().forEach((k, v) ->
             {
-                injectChannel(builder, channelName);
-            }
+                if (!k.endsWith("_replies"))
+                {
+                    injectChannels(builder, k);
+                }
+            });
         }
 
         return builder;
@@ -163,15 +167,15 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         builder.schemas(schemas.entrySet().stream()
             .flatMap(entry ->
             {
-                String originalName = entry.getKey();
-                ObjectNode originalSchema = convertToAsyncapiSchema((AvroFormatSchema) entry.getValue());
+                String name = entry.getKey();
+                ObjectNode schema = convertToAsyncapiSchema((AvroFormatSchema) entry.getValue());
 
-                ObjectNode newSchema = convertToAsyncapiSchemas(originalSchema);
-                String newSchemaName = originalName.replace("-value", "-values");
+                ObjectNode newSchema = convertToAsyncapiSchemas(schema);
+                String newName = name.replace("-value", "-values");
 
                 return Stream.of(
-                    Map.entry(originalName, originalSchema),
-                    Map.entry(newSchemaName, newSchema)
+                    Map.entry(name, schema),
+                    Map.entry(newName, newSchema)
                 );
             })
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
@@ -383,7 +387,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         }
     }
 
-    private <C> AsyncapiSpecBuilder<C> injectChannel(
+    private <C> AsyncapiSpecBuilder<C> injectChannels(
         AsyncapiSpecBuilder<C> builder,
         String channelName)
     {
@@ -392,9 +396,21 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
 
         addReadWriteScopes(name);
 
+        builder.inject(spec -> injectItemsChannel(spec, label, name))
+            .inject(spec -> injectItemChannel(spec, label, name))
+            .inject(spec -> injectStreamChannel(spec, label, name))
+            .inject(spec -> injectIdentityChannel(spec, label, name));
+
+        return builder;
+    }
+
+    private <C> AsyncapiSpecBuilder<C> injectItemsChannel(
+        AsyncapiSpecBuilder<C> builder,
+        String label,
+        String name)
+    {
         Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
         Reference messages = new Reference("#/components/messages/%sMessages".formatted(label));
-
         String messageRef = "%sMessage".formatted(label);
         String messagesRef = "%sMessages".formatted(label);
 
@@ -406,6 +422,17 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             ))
             .build());
 
+        return builder;
+    }
+
+    private <C> AsyncapiSpecBuilder<C> injectItemChannel(
+        AsyncapiSpecBuilder<C> builder,
+        String label,
+        String name)
+    {
+        Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
+        String messageRef = "%sMessage".formatted(label);
+
         builder.addChannel("%s-item".formatted(name), Channel.builder()
             .address("/" + name + "/{id}")
             .parameters(Map.of("id", Parameter.builder()
@@ -414,15 +441,38 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             .messages(Map.of(messageRef, message))
             .build());
 
+        return builder;
+    }
+
+    private <C> AsyncapiSpecBuilder<C> injectStreamChannel(
+        AsyncapiSpecBuilder<C> builder,
+        String label,
+        String name)
+    {
+        Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
+        String messageRef = "%sMessage".formatted(label);
+
         builder.addChannel("%s-stream".formatted(name), Channel.builder()
             .address("/%s-stream".formatted(name))
             .messages(Map.of(messageRef, message))
             .build());
 
+        return builder;
+    }
+
+    private <C> AsyncapiSpecBuilder<C> injectIdentityChannel(
+        AsyncapiSpecBuilder<C> builder,
+        String label,
+        String name)
+    {
+        Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
+        String messageRef = "%sMessage".formatted(label);
+
         builder.addChannel("%s-stream-identity".formatted(name), Channel.builder()
             .address("/%s-stream-identity".formatted(name))
             .messages(Map.of(messageRef, message))
             .build());
+
 
         return builder;
     }
