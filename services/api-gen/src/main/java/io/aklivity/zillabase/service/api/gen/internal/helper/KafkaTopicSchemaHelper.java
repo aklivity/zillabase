@@ -228,8 +228,8 @@ public class KafkaTopicSchemaHelper
                 String schemaType = schemaObject.get("type").asText();
                 type = switch (schemaType)
                 {
-                    case "record", "enum", "fixed" -> "avro";
-                    default -> "json";
+                case "record", "enum", "fixed" -> "avro";
+                default -> "json";
                 };
             }
         }

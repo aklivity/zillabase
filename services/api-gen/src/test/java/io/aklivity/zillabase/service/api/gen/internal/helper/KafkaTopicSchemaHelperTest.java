@@ -126,7 +126,7 @@ public class KafkaTopicSchemaHelperTest
     public void testExtractIdentityFieldFromProtobufSchema()
     {
         String schema = "syntax = \"proto3\"; message TestMessage { int32 id = 1; string name_identity = 2; }";
-        String identityField = kafkaTopicSchemaHelper.findIdentityFieldFromProtobuf(schema);
+        String identityField = kafkaTopicSchemaHelper.resolveIdentityField("protobuf", schema);
         assertEquals("name_identity", identityField);
     }
 
@@ -135,7 +135,7 @@ public class KafkaTopicSchemaHelperTest
     {
         String schema = "{\"fields\": [{\"name\": \"id\", \"type\": \"int\"}," +
             " {\"name\": \"name_identity\", \"type\": \"string\"}]}";
-        String identityField = kafkaTopicSchemaHelper.findIdentityField(schema);
+        String identityField = kafkaTopicSchemaHelper.resolveIdentityField("avro", schema);
         assertEquals("name_identity", identityField);
     }
 }
