@@ -60,6 +60,16 @@
 
         <q-btn
           unelevated
+          icon="add"
+          :ripple="false"
+          v-if="showStorage"
+          color="light-green"
+          class="rounded-10 text-white text-capitalize self-center btn-add-new highlighted-border"
+          @click="$emit('add-file')"
+        />
+
+        <q-btn
+          unelevated
           icon="img:/icons/folder-add.svg"
           :ripple="false"
           v-if="showStorage"
@@ -114,7 +124,17 @@
           "
         />
       </template>
-
+      <template v-slot:body-cell-url="props">
+        <q-td :props="props">
+          <q-icon
+            size="sm"
+            class="cursor-pointer"
+            @click="copyToClipboard(props.row.url)"
+            :name="'content_copy'"
+          />
+          {{ props.row.url }}
+        </q-td>
+      </template>
       <template v-slot:header-cell-ztable="props">
         <q-th :props="props">
           {{ props.col.label }}
@@ -264,7 +284,7 @@
       </template>
       <template v-slot:body-cell-tabActions="props">
         <q-td :props="props">
-          <q-btn
+          <!-- <q-btn
             flat
             dense
             round
@@ -282,9 +302,7 @@
                         size="sm"
                         class="q-pr-md filter-gray-dark"
                       />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Move</span
-                      >
+                      <span>Move</span>
                     </div>
                   </q-item-section>
                 </q-item>
@@ -297,9 +315,7 @@
                         size="sm"
                         class="q-pr-md filter-gray-dark"
                       />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Copy URL</span
-                      >
+                      <span>Copy URL</span>
                     </div>
                   </q-item-section>
                 </q-item>
@@ -312,9 +328,7 @@
                         size="sm"
                         class="q-pr-md filter-gray-dark"
                       />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Rename</span
-                      >
+                      <span>Edit</span>
                     </div>
                   </q-item-section>
                 </q-item>
@@ -327,15 +341,20 @@
                         size="sm"
                         class="q-pr-md filter-gray-dark"
                       />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Download</span
-                      >
+                      <span>Download</span>
                     </div>
                   </q-item-section>
                 </q-item>
               </q-list>
             </q-menu>
-          </q-btn>
+          </q-btn> -->
+          <q-btn
+            flat
+            dense
+            icon="img:/icons/edit.svg"
+            class="filter-text-secondary"
+            @click="editRow(props.row)"
+          />
           <q-btn
             flat
             dense
@@ -389,6 +408,7 @@
   </div>
 </template>
 <script>
+import { showSuccess } from "src/services/notification";
 import { defineComponent } from "vue";
 export default defineComponent({
   name: "CommonTable",
@@ -501,6 +521,12 @@ export default defineComponent({
     },
   },
   methods: {
+    copyToClipboard(url) {
+      if (url) {
+        navigator.clipboard.writeText(url);
+        showSuccess("Copied!");
+      }
+    },
     viewRow(row) {
       this.$emit("view-row", row);
     },
