@@ -18,6 +18,7 @@ import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.G
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
 import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
 import static io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper.toCamelCase;
+import static org.springframework.util.StringUtils.capitalize;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -411,7 +412,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         String messageRef = "%sMessage".formatted(label);
         String messagesRef = "%sMessages".formatted(label);
 
-        builder.addChannel(name, Channel.builder()
+        builder.channel(name, Channel.builder()
             .address("/%s".formatted(name))
             .messages(Map.of(
                 messageRef, message,
@@ -430,7 +431,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
         String messageRef = "%sMessage".formatted(label);
 
-        builder.addChannel("%s-item".formatted(name), Channel.builder()
+        builder.channel("%s-item".formatted(name), Channel.builder()
             .address("/" + name + "/{id}")
             .parameters(Map.of("id", Parameter.builder()
                 .description("Id of the item.")
@@ -449,7 +450,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
         String messageRef = "%sMessage".formatted(label);
 
-        builder.addChannel("%s-stream".formatted(name), Channel.builder()
+        builder.channel("%s-stream".formatted(name), Channel.builder()
             .address("/%s-stream".formatted(name))
             .messages(Map.of(messageRef, message))
             .build());
@@ -465,7 +466,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         Reference message = new Reference("#/components/messages/%sMessage".formatted(label));
         String messageRef = "%sMessage".formatted(label);
 
-        builder.addChannel("%s-stream-identity".formatted(name), Channel.builder()
+        builder.channel("%s-stream-identity".formatted(name), Channel.builder()
             .address("/%s-stream-identity".formatted(name))
             .messages(Map.of(messageRef, message))
             .build());
@@ -489,8 +490,9 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
                 boolean compact = isTopicCompact(channel);
                 String name = matcher.reset(channelName).replaceFirst(m -> m.group(2));
                 String label = toCamelCase(name);
+                String capLabel = capitalize(label);
 
-                injectHttpOperations(builder, name, label, compact);
+                injectHttpOperations(builder, name, label, capLabel, compact);
             });
 
         return builder;
@@ -531,15 +533,16 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         String name,
         String label,
+        String capLabel,
         boolean compact)
     {
         String identity = resolveIdentityField(label);
 
         return builder
-            .inject(spec -> injectPostOperation(spec, name, label, compact))
-            .inject(spec -> injectPutOperation(spec, name, label, compact))
-            .inject(spec -> injectGetOperations(spec, name, label, identity))
-            .inject(spec -> injectSseOperations(spec, name, label, identity));
+            .inject(spec -> injectPostOperation(spec, name, label, capLabel, compact))
+            .inject(spec -> injectPutOperation(spec, name, label, capLabel, compact))
+            .inject(spec -> injectGetOperations(spec, name, label, capLabel, identity))
+            .inject(spec -> injectSseOperations(spec, name, label, capLabel, identity));
     }
 
     private String resolveIdentityField(
@@ -567,6 +570,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         String name,
         String label,
+        String capLabel,
         boolean compact)
     {
         Operation op = Operation.builder()
@@ -589,9 +593,9 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
 
         op.setSecurity(List.of(new Reference("#/components/securitySchemes/httpOauth")));
         op.setBindings(bindings);
-        String opName = compact ? "do%sCreate".formatted(label) : "do%s".formatted(label);
+        String opName = compact ? "do%sCreate".formatted(capLabel) : "do%s".formatted(capLabel);
 
-        builder.addOperation(opName, op);
+        builder.operation(opName, op);
 
         return builder;
     }
@@ -600,6 +604,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         String name,
         String label,
+        String capLabel,
         boolean compact)
     {
         if (compact)
@@ -623,9 +628,9 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             op.setSecurity(List.of(new Reference("#/components/securitySchemes/httpOauth")));
             op.setBindings(bindings);
 
-            String opName = "do%sUpdate".formatted(label);
+            String opName = "do%sUpdate".formatted(capLabel);
 
-            builder.addOperation(opName, op);
+            builder.operation(opName, op);
         }
 
         return builder;
@@ -635,6 +640,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         String name,
         String label,
+        String capLabel,
         String identity)
     {
         HTTPOperationBinding get = HTTPOperationBinding.builder()
@@ -653,8 +659,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         }
 
         builder
-            .inject(spec -> injectGetItemOperation(spec, bindings, name, label))
-            .inject(spec -> injectGetOperation(spec, bindings, name, label));
+            .inject(spec -> injectGetItemOperation(spec, bindings, name, label, capLabel))
+            .inject(spec -> injectGetOperation(spec, bindings, name, label, capLabel));
 
         return builder;
     }
@@ -663,7 +669,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         Map<String, Object> bindings,
         String name,
-        String label)
+        String label,
+        String capLabel)
     {
         Operation allGetOp = Operation.builder()
             .action(OperationAction.RECEIVE)
@@ -674,8 +681,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             .security(List.of(new Reference("#/components/securitySchemes/httpOauth")))
             .build();
 
-        String allOpName = "on%sGet".formatted(label);
-        builder.addOperation(allOpName, allGetOp);
+        String allOpName = "on%sGet".formatted(capLabel);
+        builder.operation(allOpName, allGetOp);
 
         return builder;
     }
@@ -684,7 +691,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         Map<String, Object> bindings,
         String name,
-        String label)
+        String label,
+        String capLabel)
     {
         Operation item = Operation.builder()
             .action(OperationAction.RECEIVE)
@@ -695,8 +703,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             .security(List.of(new Reference("#/components/securitySchemes/httpOauth")))
             .build();
 
-        String itemOpName = "on%sGetItem".formatted(label);
-        builder.addOperation(itemOpName, item);
+        String itemOpName = "on%sGetItem".formatted(capLabel);
+        builder.operation(itemOpName, item);
 
         return builder;
     }
@@ -705,13 +713,14 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         String name,
         String label,
+        String capLabel,
         String identity)
     {
         List<Object> security = List.of(new Reference("#/components/securitySchemes/httpOauth"));
 
         builder
-            .inject(spec -> injectSseStreamOperations(spec, name, label, security, identity))
-            .inject(spec -> injectSseIdentityOperations(spec, name, label, security));
+            .inject(spec -> injectSseStreamOperations(spec, name, label, capLabel, security, identity))
+            .inject(spec -> injectSseIdentityOperations(spec, name, label, capLabel, security));
 
         return builder;
     }
@@ -720,6 +729,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         String name,
         String label,
+        String capLabel,
         List<Object> security)
     {
         ZillaSseOperationBinding sse = new ZillaSseOperationBinding();
@@ -731,8 +741,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         filter.key = "{identity}";
         bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(filter)));
 
-        builder.addOperation(
-            "on%sReadItem".formatted(label),
+        builder.operation(
+            "on%sReadItem".formatted(capLabel),
             Operation.builder()
                 .action(OperationAction.RECEIVE)
                 .channel(new Reference("#/channels/%s-stream-identity".formatted(name)))
@@ -749,6 +759,7 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
         AsyncapiSpecBuilder<C> builder,
         String name,
         String label,
+        String capLabel,
         List<Object> security,
         String identity)
     {
@@ -764,8 +775,8 @@ public class HttpAsyncApiGenerator extends AsyncApiGenerator
             bindings.put("x-zilla-sse-kafka", new ZillaSseKafkaOperationBinding(List.of(filter)));
         }
 
-        builder.addOperation(
-            "on%sRead".formatted(label),
+        builder.operation(
+            "on%sRead".formatted(capLabel),
             Operation.builder()
                 .action(OperationAction.RECEIVE)
                 .channel(new Reference("#/channels/%s-stream".formatted(name)))

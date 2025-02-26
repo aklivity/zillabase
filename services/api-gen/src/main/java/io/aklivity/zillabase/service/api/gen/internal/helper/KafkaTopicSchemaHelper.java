@@ -94,8 +94,7 @@ public class KafkaTopicSchemaHelper
                 Map<ConfigResource, Config> configMap = result.all().get();
 
                 Config topicConfig = configMap.get(resource);
-                List<String> policies = Arrays.stream(topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(","))
-                    .toList();
+                List<String> policies = Arrays.asList(topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(","));
 
                 String subject = "%s-value".formatted(topicName);
                 String schema = resolveSchema(subject);

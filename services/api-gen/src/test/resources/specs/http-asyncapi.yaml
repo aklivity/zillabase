@@ -89,7 +89,7 @@ channels:
       petstoreCustomersMessage:
         $ref: "#/components/messages/petstoreCustomersMessage"
 operations:
-  onpetstoreCustomersRead:
+  onPetstoreCustomersRead:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_customers-stream"
@@ -99,7 +99,7 @@ operations:
       x-zilla-sse: {}
     messages:
     - $ref: "#/channels/petstore_customers-stream/messages/petstoreCustomersMessage"
-  dopetstorePetsUpdate:
+  doPetstorePetsUpdate:
     action: "send"
     channel:
       $ref: "#/channels/petstore_pets-item"
@@ -115,7 +115,7 @@ operations:
         method: "PUT"
     messages:
     - $ref: "#/channels/petstore_pets-item/messages/petstorePetsMessage"
-  dopetstoreCustomersUpdate:
+  doPetstoreCustomersUpdate:
     action: "send"
     channel:
       $ref: "#/channels/petstore_customers-item"
@@ -131,7 +131,7 @@ operations:
         method: "PUT"
     messages:
     - $ref: "#/channels/petstore_customers-item/messages/petstoreCustomersMessage"
-  onpetstorePetsReadItem:
+  onPetstorePetsReadItem:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_pets-stream-identity"
@@ -144,7 +144,7 @@ operations:
       x-zilla-sse: {}
     messages:
     - $ref: "#/channels/petstore_pets-stream-identity/messages/petstorePetsMessage"
-  onpetstoreVerifiedCustomersGetItem:
+  onPetstoreVerifiedCustomersGetItem:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_verified_customers-item"
@@ -156,7 +156,7 @@ operations:
         method: "GET"
     messages:
     - $ref: "#/channels/petstore_verified_customers-item/messages/petstoreVerifiedCustomersMessage"
-  dopetstoreVerifiedCustomersUpdate:
+  doPetstoreVerifiedCustomersUpdate:
     action: "send"
     channel:
       $ref: "#/channels/petstore_verified_customers-item"
@@ -172,7 +172,7 @@ operations:
         method: "PUT"
     messages:
     - $ref: "#/channels/petstore_verified_customers-item/messages/petstoreVerifiedCustomersMessage"
-  onpetstorePetsGet:
+  onPetstorePetsGet:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_pets"
@@ -184,7 +184,7 @@ operations:
         method: "GET"
     messages:
     - $ref: "#/channels/petstore_pets/messages/petstorePetsMessages"
-  dopetstorePetsCreate:
+  doPetstorePetsCreate:
     action: "send"
     channel:
       $ref: "#/channels/petstore_pets"
@@ -200,7 +200,7 @@ operations:
         method: "POST"
     messages:
     - $ref: "#/channels/petstore_pets/messages/petstorePetsMessage"
-  onpetstorePetsRead:
+  onPetstorePetsRead:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_pets-stream"
@@ -210,7 +210,7 @@ operations:
       x-zilla-sse: {}
     messages:
     - $ref: "#/channels/petstore_pets-stream/messages/petstorePetsMessage"
-  onpetstoreVerifiedCustomersReadItem:
+  onPetstoreVerifiedCustomersReadItem:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_verified_customers-stream-identity"
@@ -223,7 +223,7 @@ operations:
       x-zilla-sse: {}
     messages:
     - $ref: "#/channels/petstore_verified_customers-stream-identity/messages/petstoreVerifiedCustomersMessage"
-  onpetstoreCustomersReadItem:
+  onPetstoreCustomersReadItem:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_customers-stream-identity"
@@ -236,7 +236,7 @@ operations:
       x-zilla-sse: {}
     messages:
     - $ref: "#/channels/petstore_customers-stream-identity/messages/petstoreCustomersMessage"
-  dopetstoreVerifiedCustomersCreate:
+  doPetstoreVerifiedCustomersCreate:
     action: "send"
     channel:
       $ref: "#/channels/petstore_verified_customers"
@@ -252,7 +252,7 @@ operations:
         method: "POST"
     messages:
     - $ref: "#/channels/petstore_verified_customers/messages/petstoreVerifiedCustomersMessage"
-  onpetstoreVerifiedCustomersGet:
+  onPetstoreVerifiedCustomersGet:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_verified_customers"
@@ -264,7 +264,7 @@ operations:
         method: "GET"
     messages:
     - $ref: "#/channels/petstore_verified_customers/messages/petstoreVerifiedCustomersMessages"
-  onpetstoreCustomersGet:
+  onPetstoreCustomersGet:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_customers"
@@ -276,7 +276,7 @@ operations:
         method: "GET"
     messages:
     - $ref: "#/channels/petstore_customers/messages/petstoreCustomersMessages"
-  onpetstorePetsGetItem:
+  onPetstorePetsGetItem:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_pets-item"
@@ -288,7 +288,7 @@ operations:
         method: "GET"
     messages:
     - $ref: "#/channels/petstore_pets-item/messages/petstorePetsMessage"
-  onpetstoreVerifiedCustomersRead:
+  onPetstoreVerifiedCustomersRead:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_verified_customers-stream"
@@ -298,7 +298,7 @@ operations:
       x-zilla-sse: {}
     messages:
     - $ref: "#/channels/petstore_verified_customers-stream/messages/petstoreVerifiedCustomersMessage"
-  dopetstoreCustomersCreate:
+  doPetstoreCustomersCreate:
     action: "send"
     channel:
       $ref: "#/channels/petstore_customers"
@@ -314,7 +314,7 @@ operations:
         method: "POST"
     messages:
     - $ref: "#/channels/petstore_customers/messages/petstoreCustomersMessage"
-  onpetstoreCustomersGetItem:
+  onPetstoreCustomersGetItem:
     action: "receive"
     channel:
       $ref: "#/channels/petstore_customers-item"

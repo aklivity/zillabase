@@ -30,7 +30,6 @@ public class ZillaAsyncApiConfigBuilder<T> extends Builder<T, ZillaAsyncApiConfi
     private Map<String, ZillaBindingConfig> bindings;
     private Map<String, Object> telemetry;
 
-
     public ZillaAsyncApiConfigBuilder(Function<ZillaAsyncApiConfig, T> mapper)
     {
         this.mapper = mapper;
@@ -78,7 +77,7 @@ public class ZillaAsyncApiConfigBuilder<T> extends Builder<T, ZillaAsyncApiConfi
         return this;
     }
 
-    public ZillaAsyncApiConfigBuilder<T> addBinding(
+    public ZillaAsyncApiConfigBuilder<T> binding(
         String name,
         ZillaBindingConfig binding)
     {

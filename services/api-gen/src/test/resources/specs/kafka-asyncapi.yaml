@@ -50,37 +50,37 @@ channels:
           cleanup.policy:
           - "compact"
 operations:
-  dopetstoreVerifiedCustomers:
+  doPetstoreVerifiedCustomers:
     action: "send"
     channel:
       $ref: "#/channels/public.petstore_verified_customers"
     messages:
     - $ref: "#/channels/public.petstore_verified_customers/messages/petstoreVerifiedCustomersMessage"
-  dopetstorePets:
+  doPetstorePets:
     action: "send"
     channel:
       $ref: "#/channels/public.petstore_pets"
     messages:
     - $ref: "#/channels/public.petstore_pets/messages/petstorePetsMessage"
-  onpetstoreCustomers:
+  onPetstoreCustomers:
     action: "receive"
     channel:
       $ref: "#/channels/public.petstore_customers"
     messages:
     - $ref: "#/channels/public.petstore_customers/messages/petstoreCustomersMessage"
-  dopetstoreCustomers:
+  doPetstoreCustomers:
     action: "send"
     channel:
       $ref: "#/channels/public.petstore_customers"
     messages:
     - $ref: "#/channels/public.petstore_customers/messages/petstoreCustomersMessage"
-  onpetstorePets:
+  onPetstorePets:
     action: "receive"
     channel:
       $ref: "#/channels/public.petstore_pets"
     messages:
     - $ref: "#/channels/public.petstore_pets/messages/petstorePetsMessage"
-  onpetstoreVerifiedCustomers:
+  onPetstoreVerifiedCustomers:
     action: "receive"
     channel:
       $ref: "#/channels/public.petstore_verified_customers"

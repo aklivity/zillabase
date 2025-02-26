@@ -77,7 +77,7 @@ public class ZillaBindingConfigBuilder<T> extends Builder<T, ZillaBindingConfigB
         return this;
     }
 
-    public ZillaBindingConfigBuilder<T> addRoute(
+    public ZillaBindingConfigBuilder<T> route(
         ZillaBindingRouteConfig route)
     {
         if (routes == null)

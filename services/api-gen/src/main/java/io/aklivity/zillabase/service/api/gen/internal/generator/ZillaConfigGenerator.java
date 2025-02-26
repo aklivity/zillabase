@@ -172,7 +172,7 @@ public class ZillaConfigGenerator
             .exit("south_kafka_proxy")
             .build();
 
-        builder.addBinding("north_http_server", northHttpServer);
+        builder.binding("north_http_server", northHttpServer);
 
         return builder;
     }
@@ -211,7 +211,7 @@ public class ZillaConfigGenerator
             .inject(b -> injectSouthKafkaProxyRoutes(b, operations))
             .build();
 
-        builder.addBinding("south_kafka_proxy", southKafkaProxy);
+        builder.binding("south_kafka_proxy", southKafkaProxy);
 
         return builder;
     }
@@ -245,7 +245,7 @@ public class ZillaConfigGenerator
                     .exit("south_kafka_client")
                     .build();
 
-                builder.addRoute(route);
+                builder.route(route);
             });
 
         return builder;
@@ -260,7 +260,7 @@ public class ZillaConfigGenerator
             .inject(this::injectSouthKafkaClientOption)
             .build();
 
-        builder.addBinding("south_kafka_client", southKafkaClient);
+        builder.binding("south_kafka_client", southKafkaClient);
 
         return builder;
     }

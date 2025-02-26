@@ -14,6 +14,9 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.generator;
 
+
+import static org.springframework.util.StringUtils.capitalize;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -150,7 +153,7 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
 
             Channel channel = createChannel(topicName, messageName, cleanupPolicies);
 
-            builder.addChannel(topicName, channel);
+            builder.channel(topicName, channel);
         });
 
         return builder;
@@ -164,13 +167,14 @@ public class KafkaAsyncApiGenerator extends AsyncApiGenerator
         {
             String topicName = record.name;
             String label = record.label;
+            String capLabel = capitalize(label);
             String messageName = "%sMessage".formatted(label);
 
             Operation sendOperation = createSendOperation(topicName, messageName);
             Operation receiveOperation = createReceiveOperation(topicName, messageName);
 
-            builder.addOperation("do%s".formatted(label), sendOperation);
-            builder.addOperation("on%s".formatted(label), receiveOperation);
+            builder.operation("do%s".formatted(capLabel), sendOperation);
+            builder.operation("on%s".formatted(capLabel), receiveOperation);
         });
 
         return builder;

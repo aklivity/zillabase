@@ -88,7 +88,7 @@ public final class AsyncapiSpecBuilder<T> extends Builder<T, AsyncapiSpecBuilder
         return this;
     }
 
-    public AsyncapiSpecBuilder<T> addChannel(
+    public AsyncapiSpecBuilder<T> channel(
         String name,
         Channel channel)
     {
@@ -102,7 +102,7 @@ public final class AsyncapiSpecBuilder<T> extends Builder<T, AsyncapiSpecBuilder
         return this;
     }
 
-    public AsyncapiSpecBuilder<T> addOperation(
+    public AsyncapiSpecBuilder<T> operation(
         String name,
         Operation operation)
     {
