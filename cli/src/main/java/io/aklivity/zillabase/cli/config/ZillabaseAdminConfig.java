@@ -311,6 +311,8 @@ public final class ZillabaseAdminConfig
 
     private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
 
+    public int httpPort = DEFAULT_ADMIN_HTTP_PORT;
+    public int pgsqlPort = DEFAULT_ADMIN_PGSQL_PORT;
     public String tag = DEFAULT_ADMIN_TAG;
     public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
 }

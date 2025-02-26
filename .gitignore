@@ -34,3 +34,6 @@ hs_err_pid*.log
 /.metadata/
 .env
 __pycache__
+*.cmd
+studio/node/node
+studio/node/npm
