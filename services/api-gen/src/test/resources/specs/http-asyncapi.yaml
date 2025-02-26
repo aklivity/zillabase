@@ -1,370 +1,462 @@
-#
-# Copyright 2024 Aklivity Inc
-#
-# Licensed under the Aklivity Community License (the "License"); you may not use
-# this file except in compliance with the License.  You may obtain a copy of the
-# License at
-#
-#   https://www.aklivity.io/aklivity-community-license/
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OF ANY KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations under the License.
-#
-
 ---
-asyncapi: 3.0.0
+asyncapi: "3.0.0"
 info:
-  title: API Document for REST APIs
-  version: 1.0.0
+  title: "API Document for REST APIs"
+  version: "1.0.0"
   license:
-    name: Aklivity Community License
-    url: https://github.com/aklivity/zillabase/blob/develop/LICENSE
+    name: "Aklivity Community License"
+    url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
 servers:
   http:
-    host: localhost:8080
-    protocol: http
+    host: "localhost:8080"
+    protocol: "http"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
 channels:
   petstore_customers-stream-identity:
     address: "/petstore_customers-stream-identity"
     messages:
-      PETSTORE_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_CUSTOMERSMessage"
+      petstoreCustomersMessage:
+        $ref: "#/components/messages/petstoreCustomersMessage"
   petstore_verified_customers:
     address: "/petstore_verified_customers"
     messages:
-      PETSTORE_VERIFIED_CUSTOMERSMessages:
-        "$ref": "#/components/messages/PETSTORE_VERIFIED_CUSTOMERSMessages"
-      PETSTORE_VERIFIED_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
+      petstoreVerifiedCustomersMessages:
+        $ref: "#/components/messages/petstoreVerifiedCustomersMessages"
+      petstoreVerifiedCustomersMessage:
+        $ref: "#/components/messages/petstoreVerifiedCustomersMessage"
   petstore_pets-item:
     address: "/petstore_pets/{id}"
     parameters:
       id:
-        description: Id of the item.
+        description: "Id of the item."
     messages:
-      PETSTORE_PETSMessage:
-        "$ref": "#/components/messages/PETSTORE_PETSMessage"
+      petstorePetsMessage:
+        $ref: "#/components/messages/petstorePetsMessage"
   petstore_verified_customers-item:
     address: "/petstore_verified_customers/{id}"
     parameters:
       id:
-        description: Id of the item.
+        description: "Id of the item."
     messages:
-      PETSTORE_VERIFIED_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
+      petstoreVerifiedCustomersMessage:
+        $ref: "#/components/messages/petstoreVerifiedCustomersMessage"
   petstore_pets-stream:
     address: "/petstore_pets-stream"
     messages:
-      PETSTORE_PETSMessage:
-        "$ref": "#/components/messages/PETSTORE_PETSMessage"
+      petstorePetsMessage:
+        $ref: "#/components/messages/petstorePetsMessage"
   petstore_customers-stream:
     address: "/petstore_customers-stream"
     messages:
-      PETSTORE_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_CUSTOMERSMessage"
+      petstoreCustomersMessage:
+        $ref: "#/components/messages/petstoreCustomersMessage"
   petstore_verified_customers-stream:
     address: "/petstore_verified_customers-stream"
     messages:
-      PETSTORE_VERIFIED_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
+      petstoreVerifiedCustomersMessage:
+        $ref: "#/components/messages/petstoreVerifiedCustomersMessage"
   petstore_customers-item:
     address: "/petstore_customers/{id}"
     parameters:
       id:
-        description: Id of the item.
+        description: "Id of the item."
     messages:
-      PETSTORE_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_CUSTOMERSMessage"
+      petstoreCustomersMessage:
+        $ref: "#/components/messages/petstoreCustomersMessage"
   petstore_pets:
     address: "/petstore_pets"
     messages:
-      PETSTORE_PETSMessage:
-        "$ref": "#/components/messages/PETSTORE_PETSMessage"
-      PETSTORE_PETSMessages:
-        "$ref": "#/components/messages/PETSTORE_PETSMessages"
+      petstorePetsMessages:
+        $ref: "#/components/messages/petstorePetsMessages"
+      petstorePetsMessage:
+        $ref: "#/components/messages/petstorePetsMessage"
   petstore_verified_customers-stream-identity:
     address: "/petstore_verified_customers-stream-identity"
     messages:
-      PETSTORE_VERIFIED_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
+      petstoreVerifiedCustomersMessage:
+        $ref: "#/components/messages/petstoreVerifiedCustomersMessage"
   petstore_pets-stream-identity:
     address: "/petstore_pets-stream-identity"
     messages:
-      PETSTORE_PETSMessage:
-        "$ref": "#/components/messages/PETSTORE_PETSMessage"
+      petstorePetsMessage:
+        $ref: "#/components/messages/petstorePetsMessage"
   petstore_customers:
     address: "/petstore_customers"
     messages:
-      PETSTORE_CUSTOMERSMessages:
-        "$ref": "#/components/messages/PETSTORE_CUSTOMERSMessages"
-      PETSTORE_CUSTOMERSMessage:
-        "$ref": "#/components/messages/PETSTORE_CUSTOMERSMessage"
+      petstoreCustomersMessages:
+        $ref: "#/components/messages/petstoreCustomersMessages"
+      petstoreCustomersMessage:
+        $ref: "#/components/messages/petstoreCustomersMessage"
 operations:
-  doPETSTORE_CUSTOMERSCreate:
-    action: send
+  onPetstoreCustomersRead:
+    action: "receive"
     channel:
-      "$ref": "#/channels/petstore_customers"
+      $ref: "#/channels/petstore_customers-stream"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: POST
+      x-zilla-sse: {}
     messages:
-    - "$ref": "#/channels/petstore_customers/messages/PETSTORE_CUSTOMERSMessage"
-  doPETSTORE_VERIFIED_CUSTOMERSCreate:
-    action: send
+    - $ref: "#/channels/petstore_customers-stream/messages/petstoreCustomersMessage"
+  doPetstorePetsUpdate:
+    action: "send"
     channel:
-      "$ref": "#/channels/petstore_verified_customers"
+      $ref: "#/channels/petstore_pets-item"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
+      x-zilla-http-kafka:
+        method: "PUT"
+        overrides:
+          zilla:identity: "{identity}"
       http:
-        bindingVersion: 0.3.0
-        method: POST
+        bindingVersion: "0.3.0"
+        method: "PUT"
     messages:
-    - "$ref": "#/channels/petstore_verified_customers/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
-  doPETSTORE_PETSCreate:
-    action: send
+    - $ref: "#/channels/petstore_pets-item/messages/petstorePetsMessage"
+  doPetstoreCustomersUpdate:
+    action: "send"
     channel:
-      "$ref": "#/channels/petstore_pets"
+      $ref: "#/channels/petstore_customers-item"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
+      x-zilla-http-kafka:
+        method: "PUT"
+        overrides:
+          zilla:identity: "{identity}"
       http:
-        bindingVersion: 0.3.0
-        method: POST
+        bindingVersion: "0.3.0"
+        method: "PUT"
     messages:
-    - "$ref": "#/channels/petstore_pets/messages/PETSTORE_PETSMessage"
-  onPETSTORE_CUSTOMERSGet:
-    action: receive
+    - $ref: "#/channels/petstore_customers-item/messages/petstoreCustomersMessage"
+  onPetstorePetsReadItem:
+    action: "receive"
     channel:
-      "$ref": "#/channels/petstore_customers"
-    bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: GET
-    messages:
-    - "$ref": "#/channels/petstore_customers/messages/PETSTORE_CUSTOMERSMessages"
-  onPETSTORE_PETSGetItem:
-    action: receive
-    channel:
-      "$ref": "#/channels/petstore_pets-item"
-    bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: GET
-    messages:
-    - "$ref": "#/channels/petstore_pets-item/messages/PETSTORE_PETSMessage"
-  onPETSTORE_VERIFIED_CUSTOMERSGetItem:
-    action: receive
-    channel:
-      "$ref": "#/channels/petstore_verified_customers-item"
-    bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: GET
-    messages:
-    - "$ref": "#/channels/petstore_verified_customers-item/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
-  onPETSTORE_CUSTOMERSGetItem:
-    action: receive
-    channel:
-      "$ref": "#/channels/petstore_customers-item"
-    bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: GET
-    messages:
-    - "$ref": "#/channels/petstore_customers-item/messages/PETSTORE_CUSTOMERSMessage"
-  onPETSTORE_PETSReadItem:
-    action: receive
-    channel:
-      "$ref": "#/channels/petstore_pets-stream-identity"
+      $ref: "#/channels/petstore_pets-stream-identity"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
       x-zilla-sse-kafka:
         filters:
-        - {}
+        - key: "{identity}"
       x-zilla-sse: {}
     messages:
-    - "$ref": "#/channels/petstore_pets-stream-identity/messages/PETSTORE_PETSMessage"
-  doPETSTORE_PETSUpdate:
-    action: send
+    - $ref: "#/channels/petstore_pets-stream-identity/messages/petstorePetsMessage"
+  onPetstoreVerifiedCustomersGetItem:
+    action: "receive"
     channel:
-      "$ref": "#/channels/petstore_pets-item"
+      $ref: "#/channels/petstore_verified_customers-item"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
       http:
-        bindingVersion: 0.3.0
-        method: PUT
+        bindingVersion: "0.3.0"
+        method: "GET"
     messages:
-    - "$ref": "#/channels/petstore_pets-item/messages/PETSTORE_PETSMessage"
-  onPETSTORE_PETSGet:
-    action: receive
+    - $ref: "#/channels/petstore_verified_customers-item/messages/petstoreVerifiedCustomersMessage"
+  doPetstoreVerifiedCustomersUpdate:
+    action: "send"
     channel:
-      "$ref": "#/channels/petstore_pets"
+      $ref: "#/channels/petstore_verified_customers-item"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      x-zilla-http-kafka:
+        method: "PUT"
+        overrides:
+          zilla:identity: "{identity}"
+      http:
+        bindingVersion: "0.3.0"
+        method: "PUT"
+    messages:
+    - $ref: "#/channels/petstore_verified_customers-item/messages/petstoreVerifiedCustomersMessage"
+  onPetstorePetsGet:
+    action: "receive"
+    channel:
+      $ref: "#/channels/petstore_pets"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
       http:
-        bindingVersion: 0.3.0
-        method: GET
+        bindingVersion: "0.3.0"
+        method: "GET"
     messages:
-    - "$ref": "#/channels/petstore_pets/messages/PETSTORE_PETSMessages"
-  onPETSTORE_CUSTOMERSRead:
-    action: receive
+    - $ref: "#/channels/petstore_pets/messages/petstorePetsMessages"
+  doPetstorePetsCreate:
+    action: "send"
     channel:
-      "$ref": "#/channels/petstore_customers-stream"
+      $ref: "#/channels/petstore_pets"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      x-zilla-http-kafka:
+        method: "POST"
+        overrides:
+          zilla:identity: "{identity}"
+      http:
+        bindingVersion: "0.3.0"
+        method: "POST"
+    messages:
+    - $ref: "#/channels/petstore_pets/messages/petstorePetsMessage"
+  onPetstorePetsRead:
+    action: "receive"
+    channel:
+      $ref: "#/channels/petstore_pets-stream"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
       x-zilla-sse: {}
     messages:
-    - "$ref": "#/channels/petstore_customers-stream/messages/PETSTORE_CUSTOMERSMessage"
-  onPETSTORE_PETSRead:
-    action: receive
+    - $ref: "#/channels/petstore_pets-stream/messages/petstorePetsMessage"
+  onPetstoreVerifiedCustomersReadItem:
+    action: "receive"
     channel:
-      "$ref": "#/channels/petstore_pets-stream"
-    bindings:
-      x-zilla-sse: {}
-    messages:
-    - "$ref": "#/channels/petstore_pets-stream/messages/PETSTORE_PETSMessage"
-  onPETSTORE_VERIFIED_CUSTOMERSRead:
-    action: receive
-    channel:
-      "$ref": "#/channels/petstore_verified_customers-stream"
-    bindings:
-      x-zilla-sse: {}
-    messages:
-    - "$ref": "#/channels/petstore_verified_customers-stream/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
-  doPETSTORE_CUSTOMERSUpdate:
-    action: send
-    channel:
-      "$ref": "#/channels/petstore_customers-item"
-    bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: PUT
-    messages:
-    - "$ref": "#/channels/petstore_customers-item/messages/PETSTORE_CUSTOMERSMessage"
-  onPETSTORE_VERIFIED_CUSTOMERSGet:
-    action: receive
-    channel:
-      "$ref": "#/channels/petstore_verified_customers"
-    bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: GET
-    messages:
-    - "$ref": "#/channels/petstore_verified_customers/messages/PETSTORE_VERIFIED_CUSTOMERSMessages"
-  doPETSTORE_VERIFIED_CUSTOMERSUpdate:
-    action: send
-    channel:
-      "$ref": "#/channels/petstore_verified_customers-item"
-    bindings:
-      http:
-        bindingVersion: 0.3.0
-        method: PUT
-    messages:
-    - "$ref": "#/channels/petstore_verified_customers-item/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
-  onPETSTORE_CUSTOMERSReadItem:
-    action: receive
-    channel:
-      "$ref": "#/channels/petstore_customers-stream-identity"
+      $ref: "#/channels/petstore_verified_customers-stream-identity"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
       x-zilla-sse-kafka:
         filters:
-        - {}
+        - key: "{identity}"
       x-zilla-sse: {}
     messages:
-    - "$ref": "#/channels/petstore_customers-stream-identity/messages/PETSTORE_CUSTOMERSMessage"
-  onPETSTORE_VERIFIED_CUSTOMERSReadItem:
-    action: receive
+    - $ref: "#/channels/petstore_verified_customers-stream-identity/messages/petstoreVerifiedCustomersMessage"
+  onPetstoreCustomersReadItem:
+    action: "receive"
     channel:
-      "$ref": "#/channels/petstore_verified_customers-stream-identity"
+      $ref: "#/channels/petstore_customers-stream-identity"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
     bindings:
       x-zilla-sse-kafka:
         filters:
-        - {}
+        - key: "{identity}"
       x-zilla-sse: {}
     messages:
-    - "$ref": "#/channels/petstore_verified_customers-stream-identity/messages/PETSTORE_VERIFIED_CUSTOMERSMessage"
+    - $ref: "#/channels/petstore_customers-stream-identity/messages/petstoreCustomersMessage"
+  doPetstoreVerifiedCustomersCreate:
+    action: "send"
+    channel:
+      $ref: "#/channels/petstore_verified_customers"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      x-zilla-http-kafka:
+        method: "POST"
+        overrides:
+          zilla:identity: "{identity}"
+      http:
+        bindingVersion: "0.3.0"
+        method: "POST"
+    messages:
+    - $ref: "#/channels/petstore_verified_customers/messages/petstoreVerifiedCustomersMessage"
+  onPetstoreVerifiedCustomersGet:
+    action: "receive"
+    channel:
+      $ref: "#/channels/petstore_verified_customers"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      http:
+        bindingVersion: "0.3.0"
+        method: "GET"
+    messages:
+    - $ref: "#/channels/petstore_verified_customers/messages/petstoreVerifiedCustomersMessages"
+  onPetstoreCustomersGet:
+    action: "receive"
+    channel:
+      $ref: "#/channels/petstore_customers"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      http:
+        bindingVersion: "0.3.0"
+        method: "GET"
+    messages:
+    - $ref: "#/channels/petstore_customers/messages/petstoreCustomersMessages"
+  onPetstorePetsGetItem:
+    action: "receive"
+    channel:
+      $ref: "#/channels/petstore_pets-item"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      http:
+        bindingVersion: "0.3.0"
+        method: "GET"
+    messages:
+    - $ref: "#/channels/petstore_pets-item/messages/petstorePetsMessage"
+  onPetstoreVerifiedCustomersRead:
+    action: "receive"
+    channel:
+      $ref: "#/channels/petstore_verified_customers-stream"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      x-zilla-sse: {}
+    messages:
+    - $ref: "#/channels/petstore_verified_customers-stream/messages/petstoreVerifiedCustomersMessage"
+  doPetstoreCustomersCreate:
+    action: "send"
+    channel:
+      $ref: "#/channels/petstore_customers"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      x-zilla-http-kafka:
+        method: "POST"
+        overrides:
+          zilla:identity: "{identity}"
+      http:
+        bindingVersion: "0.3.0"
+        method: "POST"
+    messages:
+    - $ref: "#/channels/petstore_customers/messages/petstoreCustomersMessage"
+  onPetstoreCustomersGetItem:
+    action: "receive"
+    channel:
+      $ref: "#/channels/petstore_customers-item"
+    security:
+    - $ref: "#/components/securitySchemes/httpOauth"
+    bindings:
+      http:
+        bindingVersion: "0.3.0"
+        method: "GET"
+    messages:
+    - $ref: "#/channels/petstore_customers-item/messages/petstoreCustomersMessage"
 components:
   schemas:
     public.petstore_pets-values:
-      type: array
+      type: "array"
       items:
-        "$ref": "#/components/schemas/public.petstore_pets-value"
-      name: public.petstore_pets-values
-      namespace: dev
+        type: "object"
+        properties:
+          id:
+            oneOf:
+            - type: "null"
+            - type: "string"
+          breed:
+            oneOf:
+            - type: "null"
+            - type: "string"
+        required:
+        - "id"
+        - "breed"
     public.petstore_verified_customers-value:
-      fields:
-      - name: id
-        type:
-        - 'null'
-        - type: string
-      - name: points
-        type:
-        - 'null'
-        - type: string
-      name: petstore_verified_customers
-      namespace: public
-      type: object
+      type: "object"
+      properties:
+        id:
+          oneOf:
+          - type: "null"
+          - type: "string"
+        points:
+          oneOf:
+          - type: "null"
+          - type: "string"
+      required:
+      - "id"
+      - "points"
     public.petstore_verified_customers-values:
-      type: array
+      type: "array"
       items:
-        "$ref": "#/components/schemas/public.petstore_verified_customers-value"
-      name: public.petstore_verified_customers-values
-      namespace: dev
+        type: "object"
+        properties:
+          id:
+            oneOf:
+            - type: "null"
+            - type: "string"
+          points:
+            oneOf:
+            - type: "null"
+            - type: "string"
+        required:
+        - "id"
+        - "points"
     public.petstore_customers-value:
-      fields:
-      - name: name
-        type:
-        - 'null'
-        - type: string
-      - name: status
-        type:
-        - 'null'
-        - type: string
-      name: petstore_customers
-      namespace: public
-      type: object
+      type: "object"
+      properties:
+        name:
+          oneOf:
+          - type: "null"
+          - type: "string"
+        status:
+          oneOf:
+          - type: "null"
+          - type: "string"
+      required:
+      - "name"
+      - "status"
     public.petstore_pets-value:
-      fields:
-      - name: id
-        type:
-        - 'null'
-        - type: string
-      - name: breed
-        type:
-        - 'null'
-        - type: string
-      name: petstore_pets
-      namespace: public
-      type: object
+      type: "object"
+      properties:
+        id:
+          oneOf:
+          - type: "null"
+          - type: "string"
+        breed:
+          oneOf:
+          - type: "null"
+          - type: "string"
+      required:
+      - "id"
+      - "breed"
     public.petstore_customers-values:
-      type: array
+      type: "array"
       items:
-        "$ref": "#/components/schemas/public.petstore_customers-value"
-      name: public.petstore_customers-values
-      namespace: dev
+        type: "object"
+        properties:
+          name:
+            oneOf:
+            - type: "null"
+            - type: "string"
+          status:
+            oneOf:
+            - type: "null"
+            - type: "string"
+        required:
+        - "name"
+        - "status"
   messages:
-    PETSTORE_PETSMessage:
+    petstoreVerifiedCustomersMessage:
       payload:
-        "$ref": "#/components/schemas/public.petstore_pets-value"
-      contentType: application/avro
-      name: PETSTORE_PETSMessage
-    PETSTORE_PETSMessages:
+        $ref: "#/components/schemas/public.petstore_verified_customers-value"
+      contentType: "application/avro"
+      name: "petstoreVerifiedCustomersMessage"
+    petstoreVerifiedCustomersMessages:
       payload:
-        "$ref": "#/components/schemas/public.petstore_pets-values"
-      contentType: application/avro
-      name: PETSTORE_PETSMessages
-    PETSTORE_CUSTOMERSMessages:
+        $ref: "#/components/schemas/public.petstore_verified_customers-values"
+      contentType: "application/avro"
+      name: "petstoreVerifiedCustomersMessages"
+    petstoreCustomersMessage:
       payload:
-        "$ref": "#/components/schemas/public.petstore_customers-values"
-      contentType: application/avro
-      name: PETSTORE_CUSTOMERSMessages
-    PETSTORE_CUSTOMERSMessage:
+        $ref: "#/components/schemas/public.petstore_customers-value"
+      contentType: "application/avro"
+      name: "petstoreCustomersMessage"
+    petstoreCustomersMessages:
       payload:
-        "$ref": "#/components/schemas/public.petstore_customers-value"
-      contentType: application/avro
-      name: PETSTORE_CUSTOMERSMessage
-    PETSTORE_VERIFIED_CUSTOMERSMessages:
+        $ref: "#/components/schemas/public.petstore_customers-values"
+      contentType: "application/avro"
+      name: "petstoreCustomersMessages"
+    petstorePetsMessage:
       payload:
-        "$ref": "#/components/schemas/public.petstore_verified_customers-values"
-      contentType: application/avro
-      name: PETSTORE_VERIFIED_CUSTOMERSMessages
-    PETSTORE_VERIFIED_CUSTOMERSMessage:
+        $ref: "#/components/schemas/public.petstore_pets-value"
+      contentType: "application/avro"
+      name: "petstorePetsMessage"
+    petstorePetsMessages:
       payload:
-        "$ref": "#/components/schemas/public.petstore_verified_customers-value"
-      contentType: application/avro
+        $ref: "#/components/schemas/public.petstore_pets-values"
+      contentType: "application/avro"
+      name: "petstorePetsMessages"
+  securitySchemes:
+    httpOauth:
+      type: "oauth2"
+      flows: {}
+      scopes:
+      - "petstore_verified_customers:read"
+      - "petstore_verified_customers:write"
+      - "petstore_customers:read"
+      - "petstore_customers:write"
+      - "petstore_pets:read"
+      - "petstore_pets:write"

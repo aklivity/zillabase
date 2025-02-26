@@ -29,10 +29,10 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
-import io.aklivity.zillabase.service.api.gen.internal.component.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
+import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.KafkaTopicSchemaHelper;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEvent;
 import io.aklivity.zillabase.service.api.gen.internal.model.ApiGenEventType;
 
@@ -67,7 +67,7 @@ public class KafkaAsyncApiServiceTest
         List<KafkaTopicSchemaRecord> schemaRecords = List.of(
             new KafkaTopicSchemaRecord(
                 "test-topic",
-                new String[]{"delete"},
+                List.of("delete"),
                 "TestTopic",
                 "test-topic-value",
                 "record",

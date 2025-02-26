@@ -16,7 +16,28 @@ package io.aklivity.zillabase.service.api.gen.internal.asyncapi.zilla;
 
 public class ZillaBindingRouteConfig
 {
-    public Object when;
-    public Object with;
-    public String exit;
+    public final Object when;
+    public final Object with;
+    public final String exit;
+
+    public ZillaBindingRouteConfig(
+        Object when,
+        Object with,
+        String exit)
+    {
+        this.when = when;
+        this.with = with;
+        this.exit = exit;
+    }
+
+    public static ZillaBindingRouteConfigBuilder<ZillaBindingRouteConfig> builder()
+    {
+        return new ZillaBindingRouteConfigBuilder<>(identity());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> java.util.function.Function<ZillaBindingRouteConfig, T> identity()
+    {
+        return config -> (T) config;
+    }
 }
