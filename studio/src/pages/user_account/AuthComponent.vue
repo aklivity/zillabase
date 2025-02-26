@@ -24,6 +24,7 @@
           :columns="ssoTableColumns"
           :rows="ssoTableData"
           buttonLabel=""
+          :isShowEdit="false"
           searchInputPlaceholder="Providers"
           @add-new="openProviderDialog"
           showPagination
@@ -229,14 +230,18 @@
               >
             </div>
             <div class="col-9">
-              <q-input
-                dense
-                outlined
-                placeholder="e.g Google"
+              <q-select
                 v-model="providerInfo.providerId"
-                class="rounded-10 self-center text-weight-light rounded-input"
+                :options="providers"
+                class="rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
-              />
+                emit-value
+                map-options
+                option-value="value"
+                option-label="label"
+                outlined
+                dense
+              ></q-select>
             </div>
           </div>
           <div class="row items-start q-mt-sm q-pt-md">
@@ -271,6 +276,32 @@
                 class="rounded-10 self-center text-weight-light rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
               />
+            </div>
+          </div>
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Secret</span
+              >
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="providerInfo.secret"
+                :type="isPasswordVisible ? 'text' : 'password'"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              >
+                <template v-slot:append>
+                  <q-icon
+                    :name="isPasswordVisible ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer"
+                    @click="isPasswordVisible = !isPasswordVisible"
+                  />
+                </template>
+              </q-input>
             </div>
           </div>
         </q-card-section>
@@ -414,6 +445,36 @@ export default defineComponent({
     return {
       addNewUser: false,
       addNewProvider: false,
+      providers: [
+        { label: "Bitbucket", value: "bitbucket", icon: "code" },
+        { label: "Facebook", value: "facebook", icon: "facebook" },
+        { label: "GitHub", value: "github", icon: "github" },
+        { label: "GitLab", value: "gitlab", icon: "gitlab" },
+        { label: "Google", value: "google", icon: "google" },
+        {
+          label: "Instagram",
+          value: "instagram",
+          icon: "fa-brands fa-instagram",
+        },
+        {
+          label: "LinkedIn",
+          value: "linkedin-openid-connect",
+          icon: "fa-brands fa-linkedin",
+        },
+        {
+          label: "Microsoft",
+          value: "microsoft",
+          icon: "fa-brands fa-microsoft",
+        },
+        { label: "OpenShift", value: "openshift-v4", icon: "cloud" },
+        { label: "PayPal", value: "paypal", icon: "fa-brands fa-paypal" },
+        {
+          label: "Stack Overflow",
+          value: "stackoverflow",
+          icon: "fa-brands fa-stack-overflow",
+        },
+        { label: "Twitter", value: "twitter", icon: "fa-brands fa-twitter" },
+      ],
       providerInfo: {
         providerId: "",
         alias: "",
@@ -460,6 +521,7 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       ssoTableData: [],
+      isPasswordVisible: false
     };
   },
   mounted() {
@@ -549,11 +611,13 @@ export default defineComponent({
         secret: "",
         enabled: false,
       };
+      this.isPasswordVisible = false;
     },
     getSSOProvider() {
       appGetSSOProviders()
         .then(({ data }) => {
           this.ssoTableData = data;
+          this.isPasswordVisible = false;
         })
         .catch((err) => {});
     },
@@ -574,7 +638,7 @@ export default defineComponent({
     },
     confirmSSOProviderDelete() {
       this.isDeleteSSOProviderDialogOpen = false;
-      appDeleteSSOProvidersById(user.alias)
+      appDeleteSSOProvidersById(this.providerInfo.providerId)
         .then(({ data }) => {
           this.getSSOProvider();
         })
