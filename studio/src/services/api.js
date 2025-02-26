@@ -249,5 +249,5 @@ export {
     appGetSSOProvidersById,
     appDeleteSSOProvidersById,
     appGetExternalFunctionDetails,
-    appAddStorageObjectContent
+    appAddStorageObjectContent,
 }

@@ -376,18 +376,6 @@
         />
       </q-card-section>
       <q-separator />
-      <!-- <q-card-section class="q-pb-lg">
-        <p class="text-custom-gray-dark text-weight-light q-pb-sm">
-          Write Bucket Object Name
-        </p>
-        <q-input
-          dense
-          outlined
-          v-model="newObjectBucketName"
-          placeholder="e.g my-bucket"
-          class="rounded-10 self-center text-weight-light rounded-input bg-custom-primary"
-        />
-      </q-card-section> -->
       <q-card-section class="cursor-pointer" @click="openFilePicker">
         <div class="flex flex-center q-mb-md">
           <q-icon class="fs-60" name="img:/icons/folder-add-bucket.svg" />
