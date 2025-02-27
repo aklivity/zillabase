@@ -12,13 +12,14 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.component;
+package io.aklivity.zillabase.service.api.gen.internal.helper;
 
 import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
 import java.io.StringReader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
 @Component
@@ -59,7 +59,6 @@ public class KafkaTopicSchemaHelper
     private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
     private final Matcher matcher = TOPIC_PATTERN.matcher("");
 
-    private final ApiGenConfig config;
     private final KafkaConfig kafkaConfig;
     private final AdminClient adminClient;
 
@@ -67,12 +66,10 @@ public class KafkaTopicSchemaHelper
     private final WebClient webClient;
 
     KafkaTopicSchemaHelper(
-        ApiGenConfig config,
         KafkaConfig kafkaConfig,
         AdminClient adminClient,
         WebClient webClient)
     {
-        this.config = config;
         this.kafkaConfig = kafkaConfig;
         this.adminClient = adminClient;
         this.webClient = webClient;
@@ -97,7 +94,7 @@ public class KafkaTopicSchemaHelper
                 Map<ConfigResource, Config> configMap = result.all().get();
 
                 Config topicConfig = configMap.get(resource);
-                String[] policies = topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(",");
+                List<String> policies = Arrays.asList(topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(","));
 
                 String subject = "%s-value".formatted(topicName);
                 String schema = resolveSchema(subject);
@@ -110,10 +107,8 @@ public class KafkaTopicSchemaHelper
                     {
                         String schemaStr = object.getString("schema");
                         String type = resolveType(schemaStr);
-                        records.add(new KafkaTopicSchemaRecord(topicName, policies,
-                            matcher.reset(topicName.replace("%s.".formatted(config.risingwaveDb()), ""))
-                                .replaceAll(match -> match.group(2).toUpperCase()),
-                            subject, type, schemaStr));
+                        String label = toCamelCase(matcher.reset(topicName).replaceAll(match -> match.group(2)));
+                        records.add(new KafkaTopicSchemaRecord(topicName, policies, label, subject, type, schemaStr));
                     }
                 }
             }
@@ -122,7 +117,41 @@ public class KafkaTopicSchemaHelper
         return records;
     }
 
-    public String extractIdentityFieldFromProtobufSchema(
+    public static String toCamelCase(
+        String str)
+    {
+        String[] words = str.split("[._-]+");
+        StringBuilder camelCaseString = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++)
+        {
+            if (!words[i].isEmpty())
+            {
+                if (i == 0)
+                {
+                    camelCaseString.append(words[i].toLowerCase());
+                }
+                else
+                {
+                    camelCaseString.append(words[i].substring(0, 1).toUpperCase())
+                                   .append(words[i].substring(1).toLowerCase());
+                }
+            }
+        }
+
+        return camelCaseString.toString();
+    }
+
+    public String resolveIdentityField(
+        String type,
+        String schema)
+    {
+        return "protobuf".equals(type)
+                ? findIdentityFieldFromProtobuf(schema)
+                : findIdentityField(schema);
+    }
+
+    private String findIdentityFieldFromProtobuf(
         String schema)
     {
         String identity = null;
@@ -134,6 +163,7 @@ public class KafkaTopicSchemaHelper
             {
                 continue;
             }
+
             String[] tokens = part.split("\\s+");
             if (tokens.length >= 2)
             {
@@ -148,42 +178,37 @@ public class KafkaTopicSchemaHelper
         return identity;
     }
 
-    public String extractIdentityFieldFromSchema(
-        String schema) throws JsonProcessingException
+    private String findIdentityField(
+        String schema)
     {
         AtomicReference<String> identity = new AtomicReference<>(null);
-        ObjectMapper schemaMapper = new ObjectMapper();
-        JsonNode schemaObject = schemaMapper.readTree(schema);
+        try
+        {
+            ObjectMapper schemaMapper = new ObjectMapper();
+            JsonNode schemaObject = schemaMapper.readTree(schema);
 
-        if (schemaObject.has("fields"))
-        {
-            JsonNode fieldsNode = schemaObject.get("fields");
-            StreamSupport.stream(fieldsNode.spliterator(), false)
-                .forEach(field ->
-                {
-                    String fieldName = field.has("name")
-                        ? field.get("name").asText()
-                        : fieldsNode.fieldNames().next();
-                    if (fieldName.endsWith("_identity"))
-                    {
-                        identity.set(fieldName);
-                    }
-                });
-        }
-        else if (schemaObject.has("properties"))
-        {
-            JsonNode fieldsNode = schemaObject.get("properties");
-            fieldsNode.fieldNames().forEachRemaining(fieldName ->
+            JsonNode fieldsNode = schemaObject.has("fields") ? schemaObject.get("fields") :
+                                  schemaObject.has("properties") ? schemaObject.get("properties") : null;
+
+            if (fieldsNode != null)
             {
-                if (fieldName.endsWith("_identity"))
-                {
-                    identity.set(fieldName);
-                }
-            });
+                StreamSupport.stream(fieldsNode.spliterator(), false)
+                    .map(field -> field.has("name")
+                        ? field.get("name").asText()
+                        : fieldsNode.fieldNames().next())
+                    .filter(fieldName -> fieldName.endsWith("_identity"))
+                    .findFirst()
+                    .ifPresent(identity::set);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.err.println("Failed to parse schema: " + schema);
         }
 
         return identity.get();
     }
+
 
     private String resolveType(
         String schema) throws JsonProcessingException
@@ -200,17 +225,11 @@ public class KafkaTopicSchemaHelper
             if (schemaObject.has("type"))
             {
                 String schemaType = schemaObject.get("type").asText();
-                switch (schemaType)
+                type = switch (schemaType)
                 {
-                case "record":
-                case "enum":
-                case "fixed":
-                    type = "avro";
-                    break;
-                default:
-                    type = "json";
-                    break;
-                }
+                case "record", "enum", "fixed" -> "avro";
+                default -> "json";
+                };
             }
         }
 
@@ -231,7 +250,7 @@ public class KafkaTopicSchemaHelper
         }
         catch (Exception e)
         {
-            // ignore
+            System.err.println("Failed to resolve schema for subject: " + subject);
         }
 
         return schema;

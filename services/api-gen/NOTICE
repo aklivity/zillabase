@@ -25,7 +25,6 @@ This project includes:
   asm under BSD-3-Clause
   asyncapi-core under Apache License, Version 2.0
   asyncutil under The Apache Software License, Version 2.0
-  Bean Validation API under Apache License 2.0
   btf under Lesser General Public License, version 3 or greater or Apache Software License, version 2.0
   Byte Buddy (without dependencies) under Apache License, Version 2.0
   Byte Buddy agent under Apache License, Version 2.0
@@ -101,7 +100,6 @@ This project includes:
   org.leadpony.joy.core under The Apache Software License, Version 2.0
   org.leadpony.joy.yaml under The Apache Software License, Version 2.0
   org.opentest4j:opentest4j under The Apache License, Version 2.0
-  Project Lombok under The MIT License
   reactive-streams under MIT-0
   RESTEasy Jackson 2 Provider under Apache License 2.0
   RESTEasy JAX-RS Client under Apache License 2.0

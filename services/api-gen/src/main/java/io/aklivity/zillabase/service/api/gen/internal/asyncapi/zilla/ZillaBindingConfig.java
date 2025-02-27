@@ -18,9 +18,34 @@ import java.util.List;
 
 public class ZillaBindingConfig
 {
-    public String type;
-    public String kind;
-    public ZillaBindingOptionsConfig options;
-    public List<ZillaBindingRouteConfig> routes;
-    public String exit;
+    public final String type;
+    public final String kind;
+    public final ZillaBindingOptionsConfig options;
+    public final List<ZillaBindingRouteConfig> routes;
+    public final String exit;
+
+    public ZillaBindingConfig(
+        String type,
+        String kind,
+        ZillaBindingOptionsConfig options,
+        List<ZillaBindingRouteConfig> routes,
+        String exit)
+    {
+        this.type = type;
+        this.kind = kind;
+        this.options = options;
+        this.routes = routes;
+        this.exit = exit;
+    }
+
+    public static ZillaBindingConfigBuilder<ZillaBindingConfig> builder()
+    {
+        return new ZillaBindingConfigBuilder<>(identity());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> java.util.function.Function<ZillaBindingConfig, T> identity()
+    {
+        return config -> (T) config;
+    }
 }

@@ -111,7 +111,7 @@
       <dependency>
         <groupId>com.asyncapi</groupId>
         <artifactId>asyncapi-core</artifactId>
-        <version>1.0.0-RC2</version>
+        <version>1.0.0-RC3</version>
       </dependency>
       <dependency>
         <groupId>org.keycloak</groupId>
@@ -229,6 +229,8 @@
                   <exclude>src/conf/**</exclude>
                   <exclude>src/test/**/asyncapi.yaml</exclude>
                   <exclude>src/test/**/seed-kafka.yaml</exclude>
+                  <exclude>src/test/**/kafka-asyncapi.yaml</exclude>
+                  <exclude>src/test/**/http-asyncapi.yaml</exclude>
                 </excludes>
               </licenseSet>
             </licenseSets>

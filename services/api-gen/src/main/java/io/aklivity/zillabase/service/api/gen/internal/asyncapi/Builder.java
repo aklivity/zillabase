@@ -14,30 +14,16 @@
  */
 package io.aklivity.zillabase.service.api.gen.internal.asyncapi;
 
-import java.util.List;
+import java.util.function.Function;
 
-public final class KafkaTopicSchemaRecord
+public abstract class Builder<T, B extends Builder<T, B>>
 {
-    public String name;
-    public String label;
-    public String subject;
-    public String type;
-    public String schema;
-    public List<String> cleanupPolicies;
+    protected abstract Class<B> thisType();
 
-    public KafkaTopicSchemaRecord(
-        String name,
-        List<String> cleanupPolicies,
-        String label,
-        String subject,
-        String type,
-        String schema)
+    public final <R> R inject(Function<B, R> visitor)
     {
-        this.name = name;
-        this.cleanupPolicies = cleanupPolicies;
-        this.label = label;
-        this.subject = subject;
-        this.type = type;
-        this.schema = schema;
+        return visitor.apply(thisType().cast(this));
     }
+
+    public abstract T build();
 }

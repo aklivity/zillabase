@@ -12,7 +12,7 @@
  * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.aklivity.zillabase.service.api.gen.internal.component;
+package io.aklivity.zillabase.service.api.gen.internal.helper;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,15 +51,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 import reactor.core.publisher.Mono;
 
 public class KafkaTopicSchemaHelperTest
 {
-    @Mock
-    private ApiGenConfig config;
-
     @Mock
     private KafkaConfig kafkaConfig;
 
@@ -104,7 +100,7 @@ public class KafkaTopicSchemaHelperTest
             .thenReturn(Mono.just(expectedResponse));
 
         TopicListing topicListing = mock(TopicListing.class);
-        when(topicListing.name()).thenReturn("test-topic");
+        when(topicListing.name()).thenReturn("public.test-topic");
         when(topicListing.isInternal()).thenReturn(false);
 
         KafkaFuture<List<TopicListing>> future = KafkaFuture.completedFuture(Collections.singletonList(topicListing));
@@ -112,7 +108,7 @@ public class KafkaTopicSchemaHelperTest
         when(adminClient.listTopics()).thenReturn(listTopicsResult);
         when(listTopicsResult.listings()).thenReturn((KafkaFuture) future);
 
-        ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, "test-topic");
+        ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, "public.test-topic");
         Config config = new Config(List.of(new ConfigEntry(TopicConfig.CLEANUP_POLICY_CONFIG, "delete")));
 
         DescribeConfigsResult describeConfigsResult = mock(DescribeConfigsResult.class);
@@ -123,23 +119,23 @@ public class KafkaTopicSchemaHelperTest
 
         assertNotNull(records);
         assertEquals(1, records.size());
-        assertEquals("test-topic", records.get(0).name);
+        assertEquals("public.test-topic", records.get(0).name);
     }
 
     @Test
     public void testExtractIdentityFieldFromProtobufSchema()
     {
         String schema = "syntax = \"proto3\"; message TestMessage { int32 id = 1; string name_identity = 2; }";
-        String identityField = kafkaTopicSchemaHelper.extractIdentityFieldFromProtobufSchema(schema);
+        String identityField = kafkaTopicSchemaHelper.resolveIdentityField("protobuf", schema);
         assertEquals("name_identity", identityField);
     }
 
     @Test
-    public void testExtractIdentityFieldFromSchema() throws JsonProcessingException
+    public void testExtractIdentityFieldFromSchema()
     {
         String schema = "{\"fields\": [{\"name\": \"id\", \"type\": \"int\"}," +
             " {\"name\": \"name_identity\", \"type\": \"string\"}]}";
-        String identityField = kafkaTopicSchemaHelper.extractIdentityFieldFromSchema(schema);
+        String identityField = kafkaTopicSchemaHelper.resolveIdentityField("avro", schema);
         assertEquals("name_identity", identityField);
     }
 }

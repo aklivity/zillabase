@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import io.aklivity.zillabase.service.api.gen.internal.component.ApicurioHelper;
+import io.aklivity.zillabase.service.api.gen.internal.helper.ApicurioHelper;
 
 @SpringBootApplication
 @SuppressWarnings({"HideUtilityClassConstructor"})
