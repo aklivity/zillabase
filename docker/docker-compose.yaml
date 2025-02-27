@@ -24,6 +24,8 @@ services:
     hostname: "studio.zillabase.dev"
     ports:
       - ${STUDIO_PORT}:${STUDIO_PORT}
+    environment:
+      - STUDIO_PORT=${STUDIO_PORT}
     command: ["start", "-v", "-e"]
     volumes:
       - ./volumes/studio/zilla.yaml:/etc/zilla/zilla.yaml
@@ -232,7 +234,7 @@ services:
       JAVA_UDF_SERVER_URL: ${JAVA_UDF_SERVER_URL}
       APICURIO_HOST: ${APICURIO_HOST}
       APICURIO_PORT: ${APICURIO_PORT}
-      REGISTRY_GROUP_ID: ${APICURIO_GROUP_ID}
+      APICURIO_GROUP_ID: ${APICURIO_GROUP_ID}
       AUTH_HOST: ${AUTH_HOST}
       AUTH_PORT: ${AUTH_PORT}
       KARAPACE_URL: ${KARAPACE_URL}
