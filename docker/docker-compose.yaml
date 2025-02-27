@@ -132,6 +132,8 @@ services:
   minio:
     image: quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z
     hostname: minio.zillabase.dev
+    networks:
+      - zillabase_default
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -155,7 +157,7 @@ services:
       RW_STANDALONE_META_OPTS: ${RW_STANDALONE_META_OPTS}
       RW_STANDALONE_COMPUTE_OPTS: ${RW_STANDALONE_COMPUTE_OPTS}
       RW_STANDALONE_FRONTEND_OPTS: ${RW_STANDALONE_FRONTEND_OPTS}
-      RW_STANDALONE_COMPACTOR_OPTS: ${RW_STANDALONE_COMPACTOR_OPTS}$
+      RW_STANDALONE_COMPACTOR_OPTS: ${RW_STANDALONE_COMPACTOR_OPTS}
     command: standalone
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/4566" ]
