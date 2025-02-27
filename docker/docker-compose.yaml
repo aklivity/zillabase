@@ -1,0 +1,309 @@
+# Usage
+#   Start:              docker compose up
+#   With helpers:       docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml up
+#   Stop:               docker compose down
+#   Destroy:            docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml down -v --remove-orphans
+#   Reset everything:  ./reset.sh
+
+name: zillabase
+
+services:
+  zilla:
+    image: "ghcr.io/aklivity/zilla:0.9.122"
+    hostname: "zilla.zillabase.dev"
+    ports:
+      - ${HOST_PORT}:${HOST_PORT}
+    command: ["start", "-v", "-e", "-c", "http://config.zillabase.dev:7114/config/zilla.yaml", "-Pzilla.engine.verbose.composites=true",
+              "-Pzilla.engine.config.poll.interval.seconds=10"]
+    networks:
+      - zillabase_defaults
+    restart: unless-stopped
+
+  studio:
+    image: "ghcr.io/aklivity/zillabase/studio:develop-SNAPSHOT"
+    hostname: "studio.zillabase.dev"
+    ports:
+      - ${STUDIO_PORT}:${STUDIO_PORT}
+    command: ["start", "-v", "-e"]
+    volumes:
+      - volumes/studio/zilla.yaml:/etc/zilla/zilla.yaml
+    networks:
+      - zillabase_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7194"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  kafka:
+    image: "bitnami/kafka:3.2.3"
+    hostname: "kafka.zillabase.dev"
+    ports:
+      - ${KAFKA_PORT}:${KAFKA_PORT}
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=${ALLOW_PLAINTEXT_LISTENER}
+      - KAFKA_CFG_NODE_ID=${KAFKA_NODE_ID}
+      - KAFKA_CFG_BROKER_ID=${KAFKA_BROKER_ID}
+      - KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS=${KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS}
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=${KAFKA_CONTROLLER_QUORUM_VOTERS}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=${KAFKA_CONTROLLER_LISTENER_NAMES}
+      - KAFKA_CFG_LOG_DIRS=${KAFKA_LOG_DIRS}
+      - KAFKA_CFG_PROCESS_ROLES=${KAFKA_PROCESS_ROLES}
+      - KAFKA_CFG_LISTENERS=${KAFKA_LISTENERS}
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=${KAFKA_INTER_BROKER_LISTENER_NAME}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=${KAFKA_ADVERTISED_LISTENERS}
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=${KAFKA_AUTO_CREATE_TOPICS_ENABLE}
+    volumes:
+      - zillabase_kafka:/bitnami/kafka
+    networks:
+      - zillabase_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/29092"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  apicurio:
+    image: "apicurio/apicurio-registry:3.0.4"
+    hostname: "apicurio.zillabase.dev"
+    environment:
+      - QUARKUS_HTTP_CORS_ORIGINS=${QUARKUS_HTTP_CORS_ORIGINS}
+      - APICURIO_STORAGE_KIND=${APICURIO_STORAGE_KIND}
+      - APICURIO_KAFKASQL_BOOTSTRAP_SERVERS=${APICURIO_KAFKASQL_BOOTSTRAP_SERVERS}
+    networks:
+      - zillabase_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  karapace:
+    image: "ghcr.io/aiven/karapace:3.7.1"
+    hostname: "karapace.zillabase.dev"
+    ports:
+      - ${KARAPACE_PORT}:${KARAPACE_PORT}
+    environment:
+      - KARAPACE_ADVERTISED_HOSTNAME=${KARAPACE_ADVERTISED_HOSTNAME}
+      - KARAPACE_BOOTSTRAP_URI=${KARAPACE_BOOTSTRAP_URI}
+      - KARAPACE_PORT=${KARAPACE_PORT}
+      - KARAPACE_HOST=0.0.0.0
+      - KARAPACE_CLIENT_ID=${KARAPACE_CLIENT_ID}
+      - KARAPACE_GROUP_ID=${KARAPACE_GROUP_ID}
+      - KARAPACE_MASTER_ELIGIBILITY=${KARAPACE_MASTER_ELIGIBILITY}
+      - KARAPACE_TOPIC_NAME=${KARAPACE_TOPIC_NAME}
+      - KARAPACE_LOG_LEVEL=${KARAPACE_LOG_LEVEL}
+      - KARAPACE_COMPATIBILITY=${KARAPACE_COMPATIBILITY}
+    command: ["/bin/bash", "/opt/karapace/start.sh", "registry"]
+    networks:
+      - zillabase_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8081"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: "postgres:15-alpine"
+    hostname: "postgres.zillabase.dev"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD}
+      - POSTGRES_INITDB_ARGS=${POSTGRES_INITDB_ARGS}
+    volumes:
+      - zillabase_postgres:/var/lib/postgresql/data
+    networks:
+      - zillabase_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z
+    hostname: minio.zillabase.dev
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    entrypoint: /bin/sh -c "set -e && mkdir -p /data/hummock001 && /usr/bin/docker-entrypoint.sh \"$0\" \"$@\""
+    command: server --address 0.0.0.0:9301 /data
+    volumes:
+      - zillabase_minio:/data
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/9301" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  risingwave:
+    image: risingwavelabs/risingwave:v2.0.2
+    hostname: risingwave.zillabase.dev
+    networks:
+      - zillabase_default
+    environment:
+      RW_STANDALONE_META_OPTS: ${RW_STANDALONE_META_OPTS}
+      RW_STANDALONE_COMPUTE_OPTS: ${RW_STANDALONE_COMPUTE_OPTS}
+      RW_STANDALONE_FRONTEND_OPTS: ${RW_STANDALONE_FRONTEND_OPTS}
+      RW_STANDALONE_COMPACTOR_OPTS: ${RW_STANDALONE_COMPACTOR_OPTS}$
+    command: standalone
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/4566" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: bitnami/keycloak:26
+    hostname: keycloak.zillabase.dev
+    ports:
+      - ${KEYCLOAK_PORT}:${KEYCLOAK_PORT}
+    networks:
+      - zillabase_default
+    environment:
+      KEYCLOAK_DATABASE_VENDOR: ${KEYCLOAK_DATABASE_VENDOR}
+      KEYCLOAK_HTTP_PORT: ${KEYCLOAK_PORT}
+      KEYCLOAK_ACCESS_TOKEN_LIFESPAN: ${KEYCLOAK_ACCESS_TOKEN_LIFESPAN}
+      KEYCLOAK_ACCESS_TOKEN_LIFESPAN_IMPLICIT: ${KEYCLOAK_ACCESS_TOKEN_LIFESPAN_IMPLICIT}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8180" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  api-gen:
+    image: ghcr.io/aklivity/zillabase/api-gen:develop-SNAPSHOT
+    hostname: api-gen.zillabase.dev
+    networks:
+      - zillabase_default
+    environment:
+      ADMIN_HTTP_URL: ${ADMIN_HTTP_URL}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KARAPACE_URL: ${KARAPACE_URL}
+      APICURIO_REGISTRY_URL: ${APICURIO_REGISTRY_URL}
+      KEYLOAK_JWT_SECRET: ${KEYLOAK_JWT_SECRET}
+    restart: unless-stopped
+
+  auth:
+    image: ghcr.io/aklivity/zillabase/auth:develop-SNAPSHOT
+    hostname: auth.zillabase.dev
+    networks:
+      - zillabase_default
+    environment:
+      AUTH_SERVER_PORT: ${DEFAULT_AUTH_PORT}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1:7185" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  admin:
+    image: ghcr.io/aklivity/zilla:develop-SNAPSHOT
+    hostname: admin.zillabase.dev
+    networks:
+      - zillabase_default
+    ports:
+      - ${ADMIN_PORT}:${ADMIN_PORT}
+    environment:
+      ZILLA_INCUBATOR_ENABLED: "true"
+      RISINGWAVE_HOST: ${RISINGWAVE_HOST}
+      RISINGWAVE_PORT: ${RISINGWAVE_PORT}
+      CONFIG_SERVER_HOST: ${CONFIG_SERVER_HOST}
+      CONFIG_SERVER_PORT: ${CONFIG_SERVER_PORT}
+      PYTHON_UDF_SERVER_HOST: ${PYTHON_UDF_SERVER_HOST}
+      PYTHON_UDF_SERVER_PORT: ${PYTHON_UDF_SERVER_PORT}
+      PYTHON_UDF_SERVER_URL: ${PYTHON_UDF_SERVER_URL}
+      JAVA_UDF_SERVER_HOST: ${JAVA_UDF_SERVER_HOST}
+      JAVA_UDF_SERVER_PORT: ${JAVA_UDF_SERVER_PORT}
+      JAVA_UDF_SERVER_URL: ${UDF_JAVA_SERVER}
+      APICURIO_HOST: ${APICURIO_HOST}
+      APICURIO_PORT: ${APICURIO_PORT}
+      REGISTRY_GROUP_ID: ${REGISTRY_GROUP_ID}
+      AUTH_HOST: ${AUTH_HOST}
+      AUTH_PORT: ${AUTH_PORT}
+      KARAPACE_URL: ${KARAPACE_URL}
+      KAFKA_BOOTSTRAP_SERVER: ${KAFKA_BOOTSTRAP_SERVER}
+    command: [ "start", "-v", "-e" ]
+    volumes:
+      - volumes/admin/zilla.yaml:/etc/zilla/zilla.yaml
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  config:
+    image: ghcr.io/aklivity/zilla:develop-SNAPSHOT
+    hostname: config.zillabase.dev
+    environment:
+      KAFKA_BOOTSTRAP_SERVER: ${KAFKA_BOOTSTRAP_SERVER}
+    volumes:
+      - volumes/config/zilla.yaml:/etc/zilla/zilla.yaml
+    command: ["start", "-v", "-e"]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7114"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  udf-server-java:
+    image: ghcr.io/aklivity/zillabase/udf-server-java:develop-SNAPSHOT
+    hostname: udf-server-java.zillabase.dev
+    networks:
+      - zillabase_default
+    environment:
+      CLASSPATH: service-udf-java.jar:/opt/udf/lib/*
+    volumes:
+      - functions/java:/opt/udf/lib
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8815" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  udf-server-python:
+    image: ghcr.io/aklivity/zillabase/udf-server-python:develop-SNAPSHOT
+    container_name: udf-server-python
+    hostname: udf-server-python
+    environment:
+      PYTHONPATH: /opt/udf/lib
+    volumes:
+      - functions/python:/opt/udf/lib
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  zillabase_kafka:
+    labels:
+      ${VOLUME_LABEL}: ${PROJECT_NAME}
+  zillabase_postgres:
+    labels:
+      ${VOLUME_LABEL}: ${PROJECT_NAME}
+  zillabase_minio:
+    labels:
+      ${VOLUME_LABEL}: ${PROJECT_NAME}
+
+networks:
+  zillabase_default:
+    driver: bridge
