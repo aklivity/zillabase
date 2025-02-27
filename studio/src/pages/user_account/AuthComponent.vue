@@ -228,6 +228,13 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Provider</span
               >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Identity Provider ID
+              </q-tooltip>
             </div>
             <div class="col-9">
               <q-select
@@ -241,7 +248,25 @@
                 option-label="label"
                 outlined
                 dense
-              ></q-select>
+              >
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar>
+                      <q-icon
+                        :class="
+                          scope.opt.value == 'microsoft'
+                            ? 'q-ml-sm q-pl-xs'
+                            : ''
+                        "
+                        :name="scope.opt.icon"
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      {{ scope.opt.label }}
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
             </div>
           </div>
           <div class="row items-start q-mt-sm q-pt-md">
@@ -250,6 +275,13 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Alias</span
               >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Identity Provider Alias
+              </q-tooltip>
             </div>
             <div class="col-9">
               <q-input
@@ -267,6 +299,13 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Client</span
               >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Client ID for the Identity Provider
+              </q-tooltip>
             </div>
             <div class="col-9">
               <q-input
@@ -284,6 +323,13 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Secret</span
               >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Client Secret for the Identity Provider
+              </q-tooltip>
             </div>
             <div class="col-9">
               <q-input
@@ -447,33 +493,25 @@ export default defineComponent({
       addNewProvider: false,
       providers: [
         { label: "Bitbucket", value: "bitbucket", icon: "code" },
-        { label: "Facebook", value: "facebook", icon: "facebook" },
-        { label: "GitHub", value: "github", icon: "github" },
-        { label: "GitLab", value: "gitlab", icon: "gitlab" },
-        { label: "Google", value: "google", icon: "google" },
-        {
-          label: "Instagram",
-          value: "instagram",
-          icon: "fa-brands fa-instagram",
-        },
+        { label: "Facebook", value: "facebook", icon: "public" },
+        { label: "GitHub", value: "github", icon: "hub" },
+        { label: "GitLab", value: "gitlab", icon: "developer_mode" },
+        { label: "Google", value: "google", icon: "language" },
+        { label: "Instagram", value: "instagram", icon: "photo_camera" },
         {
           label: "LinkedIn",
           value: "linkedin-openid-connect",
-          icon: "fa-brands fa-linkedin",
+          icon: "business_center",
         },
-        {
-          label: "Microsoft",
-          value: "microsoft",
-          icon: "fa-brands fa-microsoft",
-        },
+        { label: "Microsoft", value: "microsoft", icon: "windows" },
         { label: "OpenShift", value: "openshift-v4", icon: "cloud" },
-        { label: "PayPal", value: "paypal", icon: "fa-brands fa-paypal" },
+        { label: "PayPal", value: "paypal", icon: "account_balance_wallet" },
         {
           label: "Stack Overflow",
           value: "stackoverflow",
-          icon: "fa-brands fa-stack-overflow",
+          icon: "question_answer",
         },
-        { label: "Twitter", value: "twitter", icon: "fa-brands fa-twitter" },
+        { label: "Twitter", value: "twitter", icon: "chat_bubble" },
       ],
       providerInfo: {
         providerId: "",
@@ -521,7 +559,7 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       ssoTableData: [],
-      isPasswordVisible: false
+      isPasswordVisible: false,
     };
   },
   mounted() {
@@ -638,7 +676,7 @@ export default defineComponent({
     },
     confirmSSOProviderDelete() {
       this.isDeleteSSOProviderDialogOpen = false;
-      appDeleteSSOProvidersById(this.providerInfo.providerId)
+      appDeleteSSOProvidersById(this.providerInfo.alias)
         .then(({ data }) => {
           this.getSSOProvider();
         })
