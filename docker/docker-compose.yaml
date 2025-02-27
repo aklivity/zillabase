@@ -25,7 +25,7 @@ services:
     ports:
       - ${STUDIO_PORT}:${STUDIO_PORT}
     environment:
-  STUDIO_PORT:    ${STUDIO_PORT}
+      STUDIO_PORT: ${STUDIO_PORT}
     command: ["start", "-v", "-e"]
     volumes:
       - ./volumes/studio/zilla.yaml:/etc/zilla/zilla.yaml
@@ -56,7 +56,7 @@ services:
       KAFKA_CFG_LISTENERS: ${KAFKA_CFG_LISTENERS}
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: ${KAFKA_CFG_INTER_BROKER_LISTENER_NAME}
       KAFKA_CFG_ADVERTISED_LISTENERS: ${KAFKA_CFG_ADVERTISED_LISTENERS}
-    KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE:  ${KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE}
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE:  ${KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE}
     volumes:
       - zillabase_kafka:/bitnami/kafka
     networks:
