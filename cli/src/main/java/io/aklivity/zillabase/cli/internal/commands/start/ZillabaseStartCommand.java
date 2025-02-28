@@ -14,12 +14,21 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.start;
 
+import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
+import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
+import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_APICURIO_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
+import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_API_GEN_EVENTS_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
+import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,13 +47,18 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -76,8 +90,24 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.HealthState;
+import com.github.dockerjava.api.command.InspectContainerCmd;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
+import com.github.dockerjava.api.command.PullImageCmd;
+import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HealthCheck;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Network;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
+import com.github.dockerjava.api.model.Volume;
 import com.github.rvesse.airline.annotations.Command;
 
 import io.aklivity.zillabase.cli.config.ZillabaseAdminConfig;
@@ -111,6 +141,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
         Pattern.DOTALL);
 
+    private static final String ZILLABASE_KAFKA_VOLUME_NAME = "zillabase_kafka";
+    private static final String ZILLABASE_POSTGRES_VOLUME_NAME = "zillabase_postgres";
+    private static final String ZILLABASE_MINIO_VOLUME_NAME = "zillabase_minio";
+    private static final String ZILLABASE_UDF_PYTHON_VOLUME_NAME = "zillabase_udf_python";
+
     public static final String PROJECT_NAME = ZILLABASE_PATH.toAbsolutePath().getParent().getFileName().toString();
     public static final String VOLUME_LABEL = "io.aklivity.zillabase.cli.project";
 
@@ -125,6 +160,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         DockerClient client)
     {
         final ZillabaseConfig config = readZillabaseConfig();
+
+        startContainers(client, config);
 
         createConfigServerKafkaTopic(config);
 
@@ -160,6 +197,118 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         System.out.println(border);
     }
 
+    private void startContainers(
+        DockerClient client,
+        ZillabaseConfig config)
+    {
+        new CreateNetworkFactory().createNetwork(client);
+
+        List<CreateContainerFactory> factories = new LinkedList<>();
+        factories.add(new CreateAuthFactory(config));
+        factories.add(new CreateConfigFactory(config));
+        factories.add(new CreateZillaFactory(config));
+        factories.add(new CreateMinioFactory(config));
+        factories.add(new CreatePostgresFactory(config));
+        factories.add(new CreateApiGenFactory(config));
+        factories.add(new CreateStudioFactory(config));
+
+        if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
+        {
+            factories.add(new CreateKafkaFactory(config));
+        }
+
+        if (config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL))
+        {
+            factories.add(new CreateRisingWaveFactory(config));
+        }
+
+        if (config.registry.apicurio.url.equals(DEFAULT_APICURIO_URL))
+        {
+            factories.add(new CreateApicurioFactory(config));
+        }
+
+        if (config.keycloak.realm != null)
+        {
+            factories.add(new CreateKeycloakFactory(config));
+        }
+
+        if (config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL))
+        {
+            factories.add(new CreateKarapaceFactory(config));
+        }
+
+        factories.add(new CreateAdminFactory(config));
+        factories.add(new CreateUdfServerJavaFactory(config));
+        factories.add(new CreateUdfServerPythonFactory(config));
+
+        for (CreateContainerFactory factory : factories)
+        {
+            String repository = factory.image;
+            try (PullImageCmd command = client.pullImageCmd(repository))
+            {
+                ReentrantLock lock = new ReentrantLock();
+                Condition complete = lock.newCondition();
+
+                lock.lock();
+                try
+                {
+                    command.exec(new PullImageProgressHandler(System.out, lock, complete));
+                    complete.awaitUninterruptibly();
+                }
+                finally
+                {
+                    lock.unlock();
+                }
+            }
+        }
+
+        List<String> containerIds = new LinkedList<>();
+        for (CreateContainerFactory factory : factories)
+        {
+            try (CreateContainerCmd command = factory.createContainer(client))
+            {
+                CreateContainerResponse response = command.exec();
+                String id = response.getId();
+
+                containerIds.add(id);
+            }
+        }
+
+        for (String containerId : containerIds)
+        {
+            try (StartContainerCmd command = client.startContainerCmd(containerId))
+            {
+                command.exec();
+            }
+        }
+
+        System.out.println("Started containers successfully, awaiting health checks");
+
+        while (!containerIds.isEmpty())
+        {
+            for (Iterator<String> i = containerIds.iterator(); i.hasNext(); )
+            {
+                String containerId = i.next();
+
+                try (InspectContainerCmd command = client.inspectContainerCmd(containerId))
+                {
+                    InspectContainerResponse response = command.exec();
+
+                    ContainerState state = response.getState();
+                    HealthState health = state.getHealth();
+
+                    if (health == null || "healthy".equals(health.getStatus()))
+                    {
+                        i.remove();
+                    }
+                }
+
+                Thread.onSpinWait();
+            }
+        }
+
+        System.out.println("Verified containers are healthy");
+    }
 
     private void processInitSql(
         ZillabaseConfig config)
@@ -899,6 +1048,816 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             {
                 lock.unlock();
             }
+        }
+    }
+
+    private abstract static class CommandFactory
+    {
+        static final String ZILLABASE_NAME_FORMAT = "zillabase_%s";
+
+        final String network;
+
+        CommandFactory()
+        {
+            this.network = String.format(ZILLABASE_NAME_FORMAT, "default");
+        }
+    }
+
+    private static final class CreateNetworkFactory extends CommandFactory
+    {
+        void createNetwork(
+            DockerClient client)
+        {
+            List<Network> networks = client.listNetworksCmd()
+                    .exec();
+
+            if (!networks.stream()
+                    .map(Network::getName)
+                    .anyMatch(network::equals))
+            {
+                client.createNetworkCmd()
+                    .withName(network)
+                    .withDriver("bridge")
+                    .exec();
+            }
+        }
+    }
+
+    private abstract static class CreateContainerFactory extends CommandFactory
+    {
+        private static final String ZILLABASE_HOSTNAME_FORMAT = "%s.zillabase.dev";
+
+        final ZillabaseConfig config;
+        final Map<String, String> project;
+        final String name;
+        final String image;
+        final String hostname;
+
+        CreateContainerFactory(
+            ZillabaseConfig config,
+            String name,
+            String image)
+        {
+            this.config = config;
+            this.project = Map.of("com.docker.compose.project", "zillabase");
+            this.name = String.format(ZILLABASE_NAME_FORMAT, name);
+            this.image = image;
+            this.hostname = String.format(ZILLABASE_HOSTNAME_FORMAT, name);
+        }
+
+        abstract CreateContainerCmd createContainer(
+            DockerClient client);
+    }
+
+    private static final class CreateZillaFactory extends CreateContainerFactory
+    {
+        CreateZillaFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "zilla", "ghcr.io/aklivity/zilla:%s".formatted(config.zilla.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<ExposedPort> exposedPorts = config.zilla.ports.stream()
+                .map(portConfig -> ExposedPort.tcp(portConfig.port))
+                .toList();
+
+            List<PortBinding> portBindings = config.zilla.ports.stream()
+                .map(portConfig -> new PortBinding(Ports.Binding.bindPort(portConfig.port), ExposedPort.tcp(portConfig.port)))
+                .toList();
+
+            List<String> env = Optional.ofNullable(config.zilla.env).orElse(List.of());
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPorts)
+                .withCmd("start", "-v", "-e", "-c", "%s/config/zilla.yaml".formatted(config.admin.configServerUrl),
+                    "-Pzilla.engine.verbose.composites=true", "-Pzilla.engine.config.poll.interval.seconds=10")
+                .withTty(true)
+                .withEnv(env);
+        }
+    }
+
+    private static final class CreateStudioFactory extends CreateContainerFactory
+    {
+        CreateStudioFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "studio", "ghcr.io/aklivity/zillabase/studio:%s".formatted(config.studio.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            int port = config.studio.port;
+
+            List<ExposedPort> exposedPorts = List.of(ExposedPort.tcp(port));
+
+            List<PortBinding> portBindings = List.of(new PortBinding(Ports.Binding.bindPort(port),
+                ExposedPort.tcp(port)));
+
+            List<String> env = Optional.ofNullable(config.zilla.env).orElse(List.of());
+
+            CreateContainerCmd container = client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPorts)
+                .withCmd("start", "-v", "-e")
+                .withTty(true)
+                .withEnv(env)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c",
+                        "echo -n '' > /dev/tcp/127.0.0.1/%d".formatted(port))));
+
+            mountZillaConfig(container, config.studio.zillaConfig());
+
+            return container;
+        }
+    }
+
+    private static final class CreateKafkaFactory extends CreateContainerFactory
+    {
+        CreateKafkaFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "kafka", "bitnami/kafka:%s".formatted(config.kafka.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            ExposedPort exposedPort = ExposedPort.tcp(9092);
+            String volume = "/bitnami/kafka";
+
+            client.createVolumeCmd()
+                .withName(ZILLABASE_KAFKA_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(ZILLABASE_KAFKA_VOLUME_NAME, new Volume(volume))))
+                .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
+                .withExposedPorts(exposedPort)
+                .withTty(true)
+                .withEnv(
+                    "ALLOW_PLAINTEXT_LISTENER=yes",
+                    "KAFKA_CFG_NODE_ID=1",
+                    "KAFKA_CFG_BROKER_ID=1",
+                    "KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS=0",
+                    "KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093",
+                    "KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT",
+                    "KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER",
+                    "KAFKA_CFG_LOG_DIRS=%s/logs".formatted(volume),
+                    "KAFKA_CFG_PROCESS_ROLES=broker,controller",
+                    "KAFKA_CFG_LISTENERS=CLIENT://:9092,INTERNAL://:29092,CONTROLLER://:9093",
+                    "KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL",
+                    "KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://localhost:9092,INTERNAL://kafka.zillabase.dev:29092",
+                    "KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true")
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/29092")));
+        }
+    }
+
+    private static final class CreateApicurioFactory extends CreateContainerFactory
+    {
+        CreateApicurioFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "apicurio", "apicurio/apicurio-registry:%s".formatted(config.registry.apicurio.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withTty(true)
+                .withEnv(
+                    "QUARKUS_HTTP_CORS_ORIGINS=*",
+                    "APICURIO_STORAGE_KIND=kafkasql",
+                    "APICURIO_KAFKASQL_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl))
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8080")));
+        }
+    }
+
+    private static final class CreateKarapaceFactory extends CreateContainerFactory
+    {
+        CreateKarapaceFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "karapace", "ghcr.io/aiven/karapace:%s".formatted(config.registry.karapace.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            ExposedPort exposedPort = ExposedPort.tcp(8081);
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withPortBindings(new PortBinding(Ports.Binding.bindPort(8081), exposedPort))
+                .withExposedPorts(exposedPort)
+                .withCmd("/bin/bash", "/opt/karapace/start.sh", "registry")
+                .withEnv(
+                    "KARAPACE_ADVERTISED_HOSTNAME=karapace.zillabase.dev",
+                    "KARAPACE_BOOTSTRAP_URI=%s".formatted(config.kafka.bootstrapUrl),
+                    "KARAPACE_PORT=8081",
+                    "KARAPACE_HOST=0.0.0.0",
+                    "KARAPACE_CLIENT_ID=karapace",
+                    "KARAPACE_GROUP_ID=karapace-registry",
+                    "KARAPACE_MASTER_ELIGIBILITY=true",
+                    "KARAPACE_TOPIC_NAME=_schemas",
+                    "KARAPACE_LOG_LEVEL=WARNING",
+                    "KARAPACE_COMPATIBILITY=FULL")
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8081")));
+        }
+    }
+
+    private static final class CreatePostgresFactory extends CreateContainerFactory
+    {
+        CreatePostgresFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "postgres", "postgres:15-alpine");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            client.createVolumeCmd()
+                .withName(ZILLABASE_POSTGRES_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(
+                        ZILLABASE_POSTGRES_VOLUME_NAME, new Volume("/var/lib/postgresql/data"))))
+                .withEnv(
+                    "POSTGRES_USER=postgres",
+                    "POSTGRES_DB=metadata",
+                    "POSTGRES_HOST_AUTH_METHOD=trust",
+                    "POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C")
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(2L))
+                    .withTimeout(SECONDS.toNanos(5L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD-SHELL", "pg_isready -U postgres")));
+        }
+    }
+
+    private static final class CreateMinioFactory extends CreateContainerFactory
+    {
+        CreateMinioFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "minio", "quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            client.createVolumeCmd()
+                .withName(ZILLABASE_MINIO_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(ZILLABASE_MINIO_VOLUME_NAME, new Volume("/data"))))
+                .withTty(true)
+                .withCmd("server", "--address", "0.0.0.0:9301", "/data")
+                .withEnv("MINIO_ROOT_PASSWORD=hummockadmin",
+                    "MINIO_ROOT_USER=hummockadmin")
+                .withEntrypoint(
+                    "/bin/sh", "-c",
+                    String.join(" && ",
+                        "set -e",
+                        "mkdir -p /data/hummock001",
+                        "/usr/bin/docker-entrypoint.sh \"$0\" \"$@\""))
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(1L))
+                    .withTimeout(SECONDS.toNanos(5L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/9301")));
+        }
+    }
+
+    private static final class CreateRisingWaveFactory extends CreateContainerFactory
+    {
+        CreateRisingWaveFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "risingwave", "risingwavelabs/risingwave:%s".formatted(config.risingwave.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withTty(true)
+                .withEnv("RW_STANDALONE_META_OPTS=" +
+                        "--listen-addr 0.0.0.0:5690 " +
+                        "--advertise-addr 0.0.0.0:5690 " +
+                        "--dashboard-host 0.0.0.0:5691 " +
+                        "--backend sql " +
+                        "--sql-endpoint postgres://postgres:@postgres.zillabase.dev:5432/metadata " +
+                        "--state-store hummock+minio://hummockadmin:hummockadmin@minio.zillabase.dev:9301/hummock001 " +
+                        "--data-directory hummock_001",
+                    "RW_STANDALONE_COMPUTE_OPTS=" +
+                        "--listen-addr 0.0.0.0:5688 " +
+                        "--advertise-addr 0.0.0.0:5688 " +
+                        "--meta-address http://0.0.0.0:5690 ",
+                    "RW_STANDALONE_FRONTEND_OPTS=" +
+                        "--listen-addr 0.0.0.0:4566 " +
+                        "--advertise-addr 0.0.0.0:4566 " +
+                        "--health-check-listener-addr 0.0.0.0:6786 " +
+                        "--meta-addr http://0.0.0.0:5690 ",
+                    "RW_STANDALONE_COMPACTOR_OPTS=" +
+                        "--listen-addr 0.0.0.0:6660 " +
+                        "--advertise-addr 0.0.0.0:6660 " +
+                        "--meta-address http://0.0.0.0:5690"
+                )
+                .withCmd("standalone")
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/4566")));
+        }
+    }
+
+    private static final class CreateKeycloakFactory extends CreateContainerFactory
+    {
+        CreateKeycloakFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "keycloak", "bitnami/keycloak:%s".formatted(config.keycloak.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            ExposedPort exposedPort = ExposedPort.tcp(8180);
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withPortBindings(new PortBinding(Ports.Binding.bindPort(8180), exposedPort))
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPort)
+                .withEnv(
+                    "KEYCLOAK_DATABASE_VENDOR=dev-file",
+                    "KEYCLOAK_HTTP_PORT=8180",
+                    "KEYCLOAK_ACCESS_TOKEN_LIFESPAN=3600",
+                    "KEYCLOAK_ACCESS_TOKEN_LIFESPAN_IMPLICIT=3600",
+                    "KEYCLOAK_ADMIN=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL),
+                    "KEYCLOAK_ADMIN_PASSWORD=%s".formatted(DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL))
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8180")));
+        }
+    }
+
+    private static final class CreateApiGenFactory extends CreateContainerFactory
+    {
+        CreateApiGenFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "api-gen", "ghcr.io/aklivity/zillabase/api-gen:%s".formatted(config.apiGen.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<String> envVars = Arrays.asList(
+                "ADMIN_HTTP_URL=http://admin.zillabase.dev:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
+                "KAFKA_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl),
+                "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
+                "APICURIO_REGISTRY_URL=%s".formatted(config.registry.apicurio.url),
+                "KEYLOAK_JWT_SECRET=%s".formatted(config.keycloak.jwks),
+                "DEBUG=%s".formatted(true));
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withEnv(envVars)
+                .withTty(true);
+        }
+    }
+
+    private static final class CreateAuthFactory extends CreateContainerFactory
+    {
+        CreateAuthFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "auth", "ghcr.io/aklivity/zillabase/auth:%s".formatted(config.auth.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<String> envVars = Arrays.asList(
+                "AUTH_SERVER_PORT=%d".formatted(DEFAULT_AUTH_PORT),
+                "KEYCLOAK_REALM=%s".formatted(config.keycloak.realm),
+                "DEBUG=%s".formatted(true));
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withEnv(envVars)
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s".formatted(DEFAULT_AUTH_PORT))));
+        }
+    }
+
+    private static final class CreateAdminFactory extends CreateContainerFactory
+    {
+        CreateAdminFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "admin", "ghcr.io/aklivity/zilla:%s".formatted(config.admin.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<ExposedPort> exposedPorts = config.admin.PORTS.stream()
+                .map(port -> ExposedPort.tcp(port))
+                .toList();
+
+            List<PortBinding> portBindings = config.admin.PORTS.stream()
+                .map(port -> new PortBinding(Ports.Binding.bindPort(port), ExposedPort.tcp(port)))
+                .toList();
+
+            URI apicurio = URI.create(config.registry.apicurio.url);
+            URI configServer = URI.create(config.admin.configServerUrl);
+            URI udfPythonApiUrl = URI.create(config.udf.python.apiUrl);
+            URI udfJavaApiUrl = URI.create(config.udf.java.apiUrl);
+            String risingwaveUrl = config.risingwave.url;
+            String[] risingwave = risingwaveUrl.split(":");
+
+            List<String> envVars = Arrays.asList(
+                "ZILLA_INCUBATOR_ENABLED=%s".formatted(true),
+                "RISINGWAVE_HOST=%s".formatted(risingwave[0]),
+                "RISINGWAVE_PORT=%s".formatted(risingwave[1]),
+                "CONFIG_SERVER_HOST=%s".formatted(configServer.getHost()),
+                "CONFIG_SERVER_PORT=%d".formatted(configServer.getPort()),
+                "PYTHON_UDF_SERVER_HOST=%s".formatted(udfPythonApiUrl.getHost()),
+                "PYTHON_UDF_SERVER_PORT=%d".formatted(udfPythonApiUrl.getPort()),
+                "JAVA_UDF_SERVER_HOST=%s".formatted(udfJavaApiUrl.getHost()),
+                "JAVA_UDF_SERVER_PORT=%d".formatted(udfJavaApiUrl.getPort()),
+                "APICURIO_HOST=%s".formatted(apicurio.getHost()),
+                "APICURIO_PORT=%d".formatted(apicurio.getPort()),
+                "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
+                "AUTH_ADMIN_HOST=%s".formatted(DEFAULT_AUTH_HOST),
+                "AUTH_ADMIN_PORT=%d".formatted(DEFAULT_AUTH_PORT),
+                "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
+                "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl),
+                "UDF_JAVA_SERVER=%s".formatted(config.udf.java.serverUrl),
+                "UDF_PYTHON_SERVER=%s".formatted(config.udf.python.serverUrl));
+
+            CreateContainerCmd container = client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withCmd("start", "-v", "-e")
+                .withExposedPorts(exposedPorts)
+                .withEnv(envVars)
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184")));
+
+            mountZillaConfig(container, ZILLABASE_ADMIN_SERVER_ZILLA_YAML);
+
+            return container;
+        }
+    }
+
+    private static void mountZillaConfig(
+        CreateContainerCmd container,
+        String content)
+    {
+        try
+        {
+            File tempFile = File.createTempFile("zillabase-zilla", ".yaml");
+            Path configPath = Paths.get(tempFile.getPath());
+            Files.writeString(configPath, content);
+            container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")),
+                new Bind("/var/storage", new Volume("/var/storage")));
+            tempFile.deleteOnExit();
+        }
+        catch (IOException ex)
+        {
+            ex.printStackTrace(System.err);
+        }
+    }
+
+    private static final class CreateConfigFactory extends CreateContainerFactory
+    {
+        CreateConfigFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "config", "ghcr.io/aklivity/zilla:%s".formatted(config.admin.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<String> envVars = Arrays.asList(
+                "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl));
+
+            CreateContainerCmd container = client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withCmd("start", "-v", "-e")
+                .withEnv(envVars)
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7114")));
+
+            try
+            {
+                File tempFile = File.createTempFile("zillabase-config-server-zilla", ".yaml");
+                Path configPath = Paths.get(tempFile.getPath());
+                Files.writeString(configPath, ZILLABASE_CONFIG_SERVER_ZILLA_YAML);
+                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")));
+                tempFile.deleteOnExit();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace(System.err);
+            }
+            return container;
+        }
+    }
+
+    private static final class CreateUdfServerJavaFactory extends CreateContainerFactory
+    {
+        CreateUdfServerJavaFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "udf-server-java", "ghcr.io/aklivity/zillabase/udf-server-java:%s".formatted(config.udf.java.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<String> envVars = new ArrayList<>();
+            envVars.add("CLASSPATH=service-udf-java.jar:/opt/udf/lib/*");
+
+            List<String> env = config.udf.java.env;
+            if (env != null)
+            {
+                envVars.addAll(env);
+            }
+
+            String projectsBasePath = "zillabase/functions/java";
+
+            File projectsDirectory = new File(projectsBasePath);
+            List<Bind> binds = new ArrayList<>();
+
+            if (projectsDirectory.exists() && projectsDirectory.isDirectory())
+            {
+                File targetDir = new File(projectsDirectory, "target");
+                if (targetDir.exists())
+                {
+                    File[] jarFiles = targetDir.listFiles((dir, name) -> name.endsWith(".jar"));
+                    if (jarFiles != null)
+                    {
+                        for (File jarFile : jarFiles)
+                        {
+                            String jarHostPath = jarFile.getAbsolutePath();
+                            String jarContainerPath = "/opt/udf/lib/" + jarFile.getName();
+                            binds.add(new Bind(jarHostPath, new Volume(jarContainerPath)));
+                        }
+                    }
+                }
+            }
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withBinds(binds)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withEnv(envVars)
+                .withTty(true)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8815")));
+        }
+    }
+
+    private static final class CreateUdfServerPythonFactory extends CreateContainerFactory
+    {
+        CreateUdfServerPythonFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "udf-server-python",
+                    "ghcr.io/aklivity/zillabase/udf-server-python:%s".formatted(config.udf.python.tag));
+        }
+
+        private void importModule(
+            File directory,
+            List<Bind> binds)
+        {
+            File[] files = directory.listFiles();
+            if (files != null)
+            {
+                for (File file : files)
+                {
+                    if (file.isDirectory())
+                    {
+                        importModule(file, binds);
+                    }
+                    else if (file.isFile() && file.getName().endsWith(".py"))
+                    {
+                        String pyHostPath = file.getAbsolutePath();
+                        String pyContainerPath = "/opt/udf/lib/" + file.getName();
+                        binds.add(new Bind(pyHostPath, new Volume(pyContainerPath)));
+                    }
+                }
+            }
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            String projectsBasePath = "zillabase/functions/python";
+
+            File projectsDirectory = new File(projectsBasePath);
+            List<Bind> binds = new ArrayList<>();
+
+            client.createVolumeCmd()
+                .withName(ZILLABASE_UDF_PYTHON_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+            binds.add(new Bind(ZILLABASE_UDF_PYTHON_VOLUME_NAME, new Volume("/usr/local/lib")));
+
+            if (projectsDirectory.exists() && projectsDirectory.isDirectory())
+            {
+                importModule(projectsDirectory, binds);
+
+                File requirementsFile = new File(projectsDirectory, "requirements.txt");
+                if (requirementsFile.exists() && requirementsFile.isFile())
+                {
+                    String requirementsHostPath = requirementsFile.getAbsolutePath();
+                    String requirementsContainerPath = "/opt/udf/lib/requirements.txt";
+                    binds.add(new Bind(requirementsHostPath, new Volume(requirementsContainerPath)));
+                }
+
+                File[] projectDirs = projectsDirectory.listFiles(File::isDirectory);
+                if (projectDirs != null)
+                {
+                    for (File projectDir : projectDirs)
+                    {
+                        importModule(projectDir, binds);
+                    }
+                }
+            }
+
+            List<String> env = Optional.ofNullable(config.udf.python.env).orElse(List.of());
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withBinds(binds))
+                .withTty(true)
+                .withEnv(env)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(60)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816")));
         }
     }
 
