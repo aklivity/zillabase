@@ -16,5 +16,6 @@ package io.aklivity.zillabase.cli.config;
 
 public class ZillabaseRegistryConfig
 {
+    public ZillabaseApicurioConfig apicurio = new ZillabaseApicurioConfig();
     public ZillabaseKarapaceConfig karapace = new ZillabaseKarapaceConfig();
 }
