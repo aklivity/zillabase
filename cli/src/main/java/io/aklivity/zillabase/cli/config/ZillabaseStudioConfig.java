@@ -23,4 +23,58 @@ public final class ZillabaseStudioConfig
 
     public final String tag = DEFAULT_STUDIO_TAG;
     public final int port = DEFAULT_STUDIO_HTTP_PORT;
+
+    private final String zillaConfig = """
+        ---
+        name: example
+        bindings:
+          north_tcp_server:
+            type: tcp
+            kind: server
+            options:
+              host: 0.0.0.0
+              port:
+                - %d
+            routes:
+                - when:
+                    - port: %d
+                  exit: north_http_server
+          north_http_server:
+            type: http
+            kind: server
+            routes:
+              - when:
+                  - headers:
+                      :scheme: http
+                      :authority: localhost:%d
+                exit: east_http_filesystem_mapping
+          east_http_filesystem_mapping:
+            type: http-filesystem
+            kind: proxy
+            routes:
+              - when:
+                  - path: /
+                exit: east_filesystem_server
+                with:
+                  path: index.html
+              - when:
+                  - path: /{path}
+                exit: east_filesystem_server
+                with:
+                  path: ${params.path}
+          east_filesystem_server:
+            type: filesystem
+            kind: server
+            options:
+              location: /var/www/
+        telemetry:
+          exporters:
+            stdout_logs_exporter:
+              type: stdout
+        """.formatted(port, port, port);
+
+    public String zillaConfig()
+    {
+        return zillaConfig;
+    }
 }
