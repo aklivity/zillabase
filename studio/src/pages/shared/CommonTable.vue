@@ -203,12 +203,16 @@
               'bg-light-green':
                 props.row.type === 'External' ||
                 props.row.type === 'Active' ||
-                props.row.type === 'ZTable',
+                props.row.type === 'Table' ||
+                props.row.type === 'View' ||
+                props.row.type === 'Materialized View',
               'bg-custom-dark':
                 props.row.type === 'Embedded' ||
                 props.row.zfunction === true ||
                 props.row.type === 'Real-time Synced' ||
-                props.row.type === 'Table',
+                props.row.type === 'ZTable' ||
+                props.row.type === 'ZView',
+
             }"
           >
             {{ props.row.type }}

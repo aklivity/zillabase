@@ -259,17 +259,10 @@ export default defineComponent({
       tableColumns: [
         { name: "name", label: "View Name", align: "left", field: "name" },
         {
-          name: "zview",
-          label: "ZView",
+          name: "type",
+          label: "Type",
           align: "center",
-          field: "zview",
-          sortable: true,
-        },
-        {
-          name: "materialized",
-          label: "Materialized",
-          align: "center",
-          field: "materialized",
+          field: "type",
           sortable: true,
         },
         { name: "actions", label: "Actions", align: "center" },
@@ -290,6 +283,7 @@ export default defineComponent({
           this.tableData.push({
             ...item,
             name: item.Name,
+            type: "View",
           });
         });
       }
@@ -298,7 +292,7 @@ export default defineComponent({
           this.tableData.push({
             ...item,
             name: item.Name,
-            materialized: true,
+            type: "Materialized View",
           });
         });
       }
@@ -307,7 +301,7 @@ export default defineComponent({
           this.tableData.push({
             ...item,
             name: item.Name,
-            zview: true,
+            type: "ZView",
           });
         });
       }
