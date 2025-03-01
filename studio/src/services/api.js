@@ -166,22 +166,26 @@ const appGetStorageObjectDetail = (bucketName, fileName) => {
     })
 }
 
-const appAddStorageObject = (bucketName, fileName, file) => {
-    const formData = new FormData()
-    formData.append('file', file)
+const appAddStorageObject = (bucketName, file) => {
     return new Promise((resolve, reject) => {
-        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}/${file.name}`, formData)
-            .then(response => {
-                resolve(response)
-            }).catch(error => {
-                reject(error)
-            })
+        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${file.name}`, file, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        })
+        .then(response => {
+            resolve(response)
+        }).catch(error => {
+            reject(error)
+        })
     })
 }
 
-const appAddStorageObjectContent = (bucketName, fileName, name, body) => {
+const appAddStorageObjectContent = (bucketName, name, body) => {
     return new Promise((resolve, reject) => {
-        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}/${name}`, { content: body })
+        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${name}`, { content: body })
             .then(response => {
                 resolve(response)
             }).catch(error => {

@@ -736,7 +736,7 @@ export default defineComponent({
         const tabs = this.tabs.find((x) => x.name?.path == this.selectedTab);
         if (tabs) {
           tabs.tableData = data.map((x, i) => ({
-            name: x.path,
+            name: decodeURIComponent(x.path),
             url: `${app.apiEndpoint}/storage/objects/${this.selectedTab}/${x.path}`,
             id: i + 1,
             tabType: x.type,
@@ -765,7 +765,6 @@ export default defineComponent({
       this.addNewBucketObject = false;
       appAddStorageObject(
         this.selectedTab,
-        this.newObjectBucketName,
         this.selectedFile
       ).then(({ data }) => {
         this.getStorageObjects();
@@ -774,7 +773,6 @@ export default defineComponent({
     addStorageObjectContent() {
       appAddStorageObjectContent(
         this.selectedTab,
-        this.newObjectBucketName,
         this.fileName,
         this.fileContent
       ).then(({ data }) => {
