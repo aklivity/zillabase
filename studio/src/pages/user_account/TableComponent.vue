@@ -104,7 +104,7 @@
             <div class="col-9">
               <q-checkbox
                 dense
-                v-model="tableInfo.zTableVal"
+                v-model="tableInfo.zTableType"
                 color="light-green"
               />
             </div>
@@ -137,7 +137,7 @@
             @add-row="addRow"
             @remove-row="removeRow"
             @setting-row="openRowSettingDialog"
-            :isSettingShow="tableInfo.zTableVal"
+            :isSettingShow="tableInfo.zTableType"
           />
         </q-card-section>
         <q-separator />
@@ -299,13 +299,13 @@ export default defineComponent({
       isDeleteDialogOpen: false,
       addNewTable: false,
       isRowSettingDialogOpen: false,
-      zTableVal: false,
+      zTableType: false,
       selectedRow: null,
       activeRowSetting: {},
       tableInfo: {
         name: "",
         description: "",
-        zTableVal: false,
+        zTableType: false,
       },
       tableColumns: [
         { name: "name", label: "Table Name", align: "left", field: "name" },
@@ -315,7 +315,7 @@ export default defineComponent({
           align: "left",
           field: "description",
         },
-        { name: "ztable", label: "ZTable", align: "center", field: "ztable" },
+        { name: "type", label: "Type", align: "center", field: "type" },
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
@@ -413,7 +413,7 @@ export default defineComponent({
           description: x.table_description,
           columns: x.total_columns,
           rows: x.total_rows,
-          ztable: false,
+          type: "Table",
         }));
         this.getZTables();
       }
@@ -425,7 +425,7 @@ export default defineComponent({
               (x) => x.name.toLowerCase() == item.Name.toLowerCase()
             );
             if (itemData) {
-              itemData.ztable = true;
+              itemData.type = "ZTable";
             }
           });
       }
@@ -448,7 +448,7 @@ export default defineComponent({
         name: data.find((x) => x.Name == "table description")?.Type,
         description: data.find((x) => x.Name == "table description")
           ?.Description,
-        zTableVal: this.selectedRow.ztable,
+        zTableType: this.selectedRow.type == "ZTable",
       };
       const excludeIds = [
         "primary key",
@@ -505,7 +505,7 @@ export default defineComponent({
           return columnDef;
         });
       if (
-        this.tableInfo.zTableVal &&
+        this.tableInfo.zTableType &&
         this.$refs.dataTypeTable.rows.some(
           (field) => field.constraints == "identity" && field.type == "integer"
         )
@@ -519,7 +519,7 @@ export default defineComponent({
       if (primaryKey.length > 0) {
         columns.push(`PRIMARY KEY (${primaryKey.join(", ")})`);
       }
-      if (this.tableInfo.zTableVal) {
+      if (this.tableInfo.zTableType) {
         const zTableQuery = `CREATE ZTABLE ${
           this.tableInfo.name
         } (${columns.join(",\n    ")});`;
@@ -537,7 +537,7 @@ export default defineComponent({
       this.tableInfo = {
         name: "",
         description: "",
-        zTableVal: false,
+        zTableType: false,
       };
 
       this.dataTypeRow = [

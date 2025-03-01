@@ -135,28 +135,6 @@
           {{ props.row.url }}
         </q-td>
       </template>
-      <template v-slot:header-cell-ztable="props">
-        <q-th :props="props">
-          {{ props.col.label }}
-          <q-icon
-            name="img:icons/question-circle.svg"
-            class="fs-lg filter-gray-dark q-ml-xs"
-          />
-          <q-tooltip anchor="bottom middle" self="top middle">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-          </q-tooltip>
-        </q-th>
-      </template>
-      <template v-slot:body-cell-ztable="props">
-        <q-td :props="props">
-          <q-icon
-            size="sm"
-            :name="props.row.ztable ? 'check_circle' : 'cancel'"
-            :color="props.row.ztable ? '' : 'negative'"
-            :class="props.row.ztable ? 'text-default-light-green' : ''"
-          />
-        </q-td>
-      </template>
 
       <template v-slot:header-cell-zview="props">
         <q-th :props="props">
@@ -223,11 +201,18 @@
             class="function-type-cell inline-block text-white"
             :class="{
               'bg-light-green':
-                props.row.type === 'External' || props.row.type === 'Active',
+                props.row.type === 'External' ||
+                props.row.type === 'Active' ||
+                props.row.type === 'Table' ||
+                props.row.type === 'View' ||
+                props.row.type === 'Materialized View',
               'bg-custom-dark':
                 props.row.type === 'Embedded' ||
                 props.row.zfunction === true ||
-                props.row.type === 'Real-time Synced',
+                props.row.type === 'Real-time Synced' ||
+                props.row.type === 'ZTable' ||
+                props.row.type === 'ZView',
+
             }"
           >
             {{ props.row.type }}
