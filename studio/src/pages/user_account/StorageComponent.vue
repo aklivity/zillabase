@@ -644,7 +644,7 @@ import {
   appUpdateStorageObject,
   appUpdateStorageObjectContent,
 } from "src/services/api";
-import { showSuccess } from "src/services/notification";
+import {showError, showSuccess} from "src/services/notification";
 import app from "src/services/app";
 
 export default defineComponent({
@@ -829,7 +829,10 @@ export default defineComponent({
         ({ data }) => {
           this.getStorageBuckets();
         }
-      );
+      ).catch(error => {
+        const message = error?.status == 409 ? "Bucket is not empty" : "Something went wrong";
+        showError(message);
+      });
     },
     handleClick() {},
     openMoveDialog(row) {
