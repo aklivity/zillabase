@@ -2,7 +2,7 @@
   <div class="q-pa-lg">
     <common-table
       title="All Views"
-      description="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      description="Create and manage your views."
       :columns="tableColumns"
       :rows="tableData"
       buttonLabel="Add View"
@@ -58,7 +58,7 @@
               <q-input
                 dense
                 outlined
-                placeholder="View Name"
+                placeholder="Name"
                 v-model="viewInfo.name"
                 class="rounded-10 self-center text-weight-light rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
@@ -76,7 +76,7 @@
               <q-input
                 outlined
                 type="textarea"
-                placeholder="Write Query..."
+                placeholder="Write SELECT Query..."
                 v-model="viewInfo.body"
                 rows="8"
                 autogrow
@@ -101,7 +101,7 @@
                   class="fs-lg filter-gray-dark q-ml-sm"
                 />
                 <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  A Stream creates the topic and APIs to fetch and stream data.
                 </q-tooltip>
               </div>
             </div>
@@ -118,17 +118,8 @@
             <div class="col-3 flex items-center">
               <span
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Materialized</span
+                >Materialized View</span
               >
-              <div>
-                <q-icon
-                  name="img:icons/question-circle.svg"
-                  class="fs-lg filter-gray-dark q-ml-sm"
-                />
-                <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                </q-tooltip>
-              </div>
             </div>
             <div class="col-9">
               <q-radio
@@ -145,15 +136,6 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Views</span
               >
-              <div>
-                <q-icon
-                  name="img:icons/question-circle.svg"
-                  class="fs-lg filter-gray-dark q-ml-sm"
-                />
-                <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                </q-tooltip>
-              </div>
             </div>
             <div class="col-9">
               <q-radio
@@ -257,7 +239,7 @@ export default defineComponent({
         views: "",
       },
       tableColumns: [
-        { name: "name", label: "View Name", align: "left", field: "name" },
+        { name: "name", label: "Name", align: "left", field: "name" },
         {
           name: "type",
           label: "Type",
@@ -298,11 +280,18 @@ export default defineComponent({
       }
       if (data.type == "get_z_views") {
         data.data.forEach((item) => {
-          this.tableData.push({
-            ...item,
-            name: item.Name,
-            type: "ZView",
-          });
+          const existingItem = this.tableData.find(
+            (x) => x.name.toLowerCase() === item.Name.toLowerCase()
+          );
+          if (existingItem) {
+            existingItem.type = "ZView";
+          } else {
+            this.tableData.push({
+              ...item,
+              name: item.Name,
+              type: "ZView",
+            });
+          }
         });
       }
       if (
