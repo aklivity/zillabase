@@ -1,8 +1,8 @@
 <template>
   <div class="q-pa-lg">
     <common-table
-      title="Example Table"
-      description="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      title="All Tables"
+      description="Create and manage your tables"
       :columns="tableColumns"
       :rows="tableData"
       buttonLabel="Add Table"
@@ -34,7 +34,7 @@
               class="rounded-10"
             />
             <p class="text-custom-text-secondary text-h6 fw-600">
-              Create New Table
+              {{ dialogTitle }}
             </p>
           </div>
           <q-icon
@@ -57,28 +57,9 @@
                 dense
                 outlined
                 v-model="tableInfo.name"
-                placeholder="Table Name"
+                placeholder="Name"
                 class="rounded-10 self-center text-weight-light rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
-              />
-            </div>
-          </div>
-          <div class="row items-start q-mt-lg">
-            <div class="col-3">
-              <span
-                class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Description</span
-              >
-            </div>
-            <div class="col-9">
-              <q-input
-                outlined
-                type="textarea"
-                placeholder="Table Description..."
-                rows="6"
-                v-model="tableInfo.description"
-                autogrow
-                class="rounded-10 self-center text-weight-light rounded-input"
               />
             </div>
           </div>
@@ -97,7 +78,7 @@
                   class="fs-lg filter-gray-dark q-ml-sm"
                 />
                 <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  A Table creates the topic and CRUD APIs to insert and query data.
                 </q-tooltip>
               </div>
             </div>
@@ -261,7 +242,7 @@
               Identity
             </p>
             <p class="text-custom-gray-dark text-weight-light q-mt-xs">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              Identity value will be auto populated.
             </p>
           </div>
         </div>
@@ -275,7 +256,7 @@
           <div>
             <p class="text-custom-text-secondary text-weight-medium">Now</p>
             <p class="text-custom-gray-dark text-weight-light q-mt-xs">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              Timestamp value will be auto populated.
             </p>
           </div>
         </div>
@@ -308,13 +289,7 @@ export default defineComponent({
         zTableType: false,
       },
       tableColumns: [
-        { name: "name", label: "Table Name", align: "left", field: "name" },
-        {
-          name: "description",
-          label: "Description",
-          align: "left",
-          field: "description",
-        },
+        { name: "name", label: "Name", align: "left", field: "name" },
         { name: "type", label: "Type", align: "center", field: "type" },
         { name: "actions", label: "Actions", align: "center" },
       ],
@@ -385,18 +360,22 @@ export default defineComponent({
           id: 1,
           primary: true,
           label: "Identity",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+          description: "Identity value will be auto populated.",
         },
         {
           id: 2,
           primary: false,
           label: "Now",
           description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "Timestamp value will be auto populated.",
         },
       ],
     };
+  },
+  computed: {
+    dialogTitle() {
+      return this.selectedRow ? "Edit Table" : "Create New Table";
+    },
   },
   mounted() {
     this.$ws.connect(() => {

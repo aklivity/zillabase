@@ -2,7 +2,7 @@
   <div class="q-pa-lg">
     <common-table
       title="External & Embedded"
-      description="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      description="Create and manage your functions."
       :columns="tableColumns"
       :rows="tableData"
       buttonLabel="Add function"
@@ -58,13 +58,6 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Embedded</span
               >
-              <q-icon
-                name="img:icons/question-circle.svg"
-                class="fs-lg filter-gray-dark q-ml-sm"
-              />
-              <q-tooltip anchor="bottom middle" self="top middle">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </q-tooltip>
             </div>
             <div class="col-9">
               <q-radio
@@ -81,13 +74,6 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >External</span
               >
-              <q-icon
-                name="img:icons/question-circle.svg"
-                class="fs-lg filter-gray-dark q-ml-sm"
-              />
-              <q-tooltip anchor="bottom middle" self="top middle">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </q-tooltip>
             </div>
             <div class="col-9">
               <q-radio
@@ -104,13 +90,6 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >ZFunction</span
               >
-              <q-icon
-                name="img:icons/question-circle.svg"
-                class="fs-lg filter-gray-dark q-ml-sm"
-              />
-              <q-tooltip anchor="bottom middle" self="top middle">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </q-tooltip>
             </div>
             <div class="col-9">
               <q-radio
@@ -400,20 +379,6 @@ export default defineComponent({
       tableColumns: [
         { name: "name", label: "Name", align: "left", field: "name" },
         {
-          name: "parameters",
-          label: "Parameters",
-          align: "left",
-          field: "parameters",
-          width: "200px",
-        },
-        {
-          name: "returnType",
-          label: "Return Type",
-          align: "center",
-          field: "returnType",
-          sortable: true,
-        },
-        {
           name: "language",
           label: "Language",
           align: "center",
@@ -425,6 +390,20 @@ export default defineComponent({
           label: "Type",
           align: "center",
           field: "type",
+          sortable: true,
+        },
+        {
+          name: "parameters",
+          label: "Parameters",
+          align: "left",
+          field: "parameters",
+          width: "200px",
+        },
+        {
+          name: "returnType",
+          label: "Return Type",
+          align: "center",
+          field: "returnType",
           sortable: true,
         },
         { name: "actions", label: "Actions", align: "center" },
@@ -480,12 +459,12 @@ export default defineComponent({
         this.tableData = data.data.map((x, i) => ({
           id: i + 1,
           name: x.Name,
+          zfunction: false,
+          type: x.Link ? "External" : "Embedded",
           parameters: x.Arguments,
           returnType: x["Return Type"],
           language: x.Language,
           rows: x.total_rows,
-          zfunction: false,
-          type: x.Link ? "External" : "Embedded",
         }));
       }
       if (data.type == "get_table") {
@@ -498,12 +477,12 @@ export default defineComponent({
           ...data.data.map((x, i) => ({
             id: i + 1,
             name: x.Name,
+            zfunction: true,
+            type: "Z Function",
             parameters: x.Arguments,
             returnType: x["Return Type"],
             language: x.Language,
             rows: x.total_rows,
-            zfunction: true,
-            type: "Z Function",
           })),
         ];
       }
@@ -610,7 +589,7 @@ export default defineComponent({
         .filter((x) => x.type && x.name)
         .map((x) => `${x.name} ${x.type}`)
         .join(", ")})
-      LANGUAGE ${this.functionInfo.language} 
+      LANGUAGE ${this.functionInfo.language}
       AS $$
         ${this.functionInfo.body}
       $$
@@ -647,7 +626,7 @@ export default defineComponent({
           ?.replaceAll("string", "varchar")
           .replaceAll("double", "double precision")
           .replaceAll(": ", " ")}
-      LANGUAGE ${this.functionInfo.language} 
+      LANGUAGE ${this.functionInfo.language}
       AS '${this.functionInfo.name}';`;
       }
     },
@@ -669,7 +648,7 @@ export default defineComponent({
         .filter((x) => x.type)
         .map((x) => x.type)
         .join(", ")}
-        LANGUAGE ${this.functionInfo.language} 
+        LANGUAGE ${this.functionInfo.language}
       AS $$
         ${this.functionInfo.body}
       $$;`;

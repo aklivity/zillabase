@@ -183,16 +183,9 @@
         </q-td>
       </template>
 
-      <template v-slot:header-cell-type="props" v-if="showLabelBottom">
+      <template v-slot:header-cell-type="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <q-icon
-            name="img:icons/question-circle.svg"
-            class="fs-lg filter-gray-dark"
-          />
-          <q-tooltip anchor="bottom middle" self="top middle">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-          </q-tooltip>
         </q-th>
       </template>
       <template v-slot:body-cell-type="props">
@@ -340,7 +333,6 @@ export default defineComponent({
     },
     description: {
       type: String,
-      default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     },
     columns: {
       type: Array,
