@@ -622,7 +622,7 @@
           unelevated
           color="negative"
           class="rounded-10 text-capitalize min-w-80"
-          @click="deleteMultipleSelectedRows.isDeleted = false"
+          @click="deleteStorageObjects"
         />
       </q-card-actions>
     </q-card>
@@ -742,6 +742,17 @@ export default defineComponent({
             tabType: x.type,
           }));
         }
+      });
+    },
+    deleteStorageObjects() {
+      this.deleteMultipleSelectedRows.isDeleted = false;
+      const names = this.deleteMultipleSelectedRows.selectedRows.map(row => row.name);
+      Promise.all(
+        names.map(name =>
+          appDeleteStorageObject(this.selectedTab, name)
+        )
+      ).then(() => {
+        this.getStorageObjects();
       });
     },
     deleteStorageObject() {
