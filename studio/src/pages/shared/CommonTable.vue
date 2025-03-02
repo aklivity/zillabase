@@ -441,6 +441,11 @@ export default defineComponent({
       return Math.ceil(rowsLength / this.pagination.rowsPerPage);
     },
   },
+  watch: {
+    searchQuery() {
+      this.pagination.page = 1;
+    },
+  },
   methods: {
     copyToClipboard(url) {
       if (url) {
