@@ -622,7 +622,7 @@
           unelevated
           color="negative"
           class="rounded-10 text-capitalize min-w-80"
-          @click="deleteMultipleSelectedRows.isDeleted = false"
+          @click="deleteStorageObjects"
         />
       </q-card-actions>
     </q-card>
@@ -644,7 +644,7 @@ import {
   appUpdateStorageObject,
   appUpdateStorageObjectContent,
 } from "src/services/api";
-import { showSuccess } from "src/services/notification";
+import {showError, showSuccess} from "src/services/notification";
 import app from "src/services/app";
 
 export default defineComponent({
@@ -744,6 +744,17 @@ export default defineComponent({
         }
       });
     },
+    deleteStorageObjects() {
+      this.deleteMultipleSelectedRows.isDeleted = false;
+      const names = this.deleteMultipleSelectedRows.selectedRows.map(row => row.name);
+      Promise.all(
+        names.map(name =>
+          appDeleteStorageObject(this.selectedTab, name)
+        )
+      ).then(() => {
+        this.getStorageObjects();
+      });
+    },
     deleteStorageObject() {
       this.isOpenBucketObjectDeleteDialog.isDeleted = false;
       appDeleteStorageObject(
@@ -818,7 +829,10 @@ export default defineComponent({
         ({ data }) => {
           this.getStorageBuckets();
         }
-      );
+      ).catch(error => {
+        const message = error?.status == 409 ? "Bucket is not empty" : "Something went wrong";
+        showError(message);
+      });
     },
     handleClick() {},
     openMoveDialog(row) {
