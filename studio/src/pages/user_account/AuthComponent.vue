@@ -57,7 +57,7 @@
             class="rounded-10"
           />
           <p class="text-custom-text-secondary text-h6 fw-600">
-            Create {{ hasUserInfoValues ? "Edit" : "New" }} User
+            {{ hasUserInfoValues ? "Edit" : "Create New" }} User
           </p>
         </div>
         <q-icon
@@ -174,8 +174,8 @@
           />
           <q-btn
             unelevated
-            label="Add User"
-            icon="add"
+            :label="`${hasUserInfoValues ? 'Edit' : 'Add'} User`"
+            :icon="`${hasUserInfoValues ? 'edit' : 'add'}`"
             :ripple="false"
             type="submit"
             class="bg-light-green rounded-10 text-white text-capitalize self-center"
