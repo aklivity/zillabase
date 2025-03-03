@@ -294,6 +294,9 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
+      zTableData: [],
+      tablesLoaded: false,
+      zTablesLoaded: false,
       dataTypeRow: [
         { name: "", type: "", defaultValue: "", primary: false, id: 1 },
         {
@@ -380,11 +383,26 @@ export default defineComponent({
   mounted() {
     this.$ws.connect(() => {
       this.getTableInformations();
+      this.getZTables()
     });
     this.$ws.addMessageHandler((data) => {
-      if (data.type == "get_table_name") {
-        this.setEditTableInfo(data.data);
+      if (
+        data.type == "create_table" ||
+        data.type == "create_ztable" ||
+        data.type == "drop_ztable"
+      ) {
+        this.getTableInformations();
+        this.getZTables();
       }
+
+      this.handleReceivedData(data);
+    });
+  },
+  beforeUnmount() {
+    this.$ws.removeAll();
+  },
+  methods: {
+    handleReceivedData(data) {
       if (data.type == "get_table") {
         this.tableData = data.data.map((x, i) => ({
           id: i + 1,
@@ -394,33 +412,25 @@ export default defineComponent({
           rows: x.total_rows,
           type: "Table",
         }));
-        this.getZTables();
+        this.tablesLoaded = true;
+        this.updateTableTypes();
       }
+
       if (data.type == "get_ztables") {
-        data.data
-          .filter((x) => x.Name)
-          .forEach((item) => {
-            const itemData = this.tableData.find(
-              (x) => x.name.toLowerCase() == item.Name.toLowerCase()
-            );
-            if (itemData) {
-              itemData.type = "ZTable";
-            }
-          });
+        this.zTableData = data.data.filter((x) => x.Name).map((item) => item.Name.toLowerCase());
+        this.zTablesLoaded = true;
+        this.updateTableTypes();
       }
-      if (
-        data.type == "create_table" ||
-        data.type == "create_ztable" ||
-        data.type == "drop_ztable"
-      ) {
-        this.getTableInformations();
+    },
+    updateTableTypes() {
+      if (this.tablesLoaded && this.zTablesLoaded) {
+        this.tableData.forEach((item) => {
+          if (this.zTableData.includes(item.name.toLowerCase())) {
+            item.type = "ZTable";
+          }
+        });
       }
-    });
-  },
-  beforeUnmount() {
-    this.$ws.removeAll();
-  },
-  methods: {
+    },
     setEditTableInfo(data) {
       this.addNewTable = true;
       this.tableInfo = {
@@ -529,6 +539,9 @@ export default defineComponent({
           id: 1,
         },
       ];
+
+      this.zTablesLoaded = false;
+      this.tablesLoaded = false;
       this.$nextTick(() => {
         if (this.$refs.dataTypeTable) {
           this.$refs.dataTypeTable.rows = this.dataTypeRow;
@@ -545,7 +558,7 @@ export default defineComponent({
     },
     confirmDelete() {
       this.isDeleteDialogOpen = false;
-      if (this.selectedRow.ztable) {
+      if (this.selectedRow.type === "ZTable") {
         this.$ws.sendMessage(
           `DROP ZTABLE ${this.selectedRow.name};`,
           "drop_ztable"
