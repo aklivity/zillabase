@@ -394,7 +394,7 @@ export default defineComponent({
         data.type == "drop_ztable"
       ) {
         this.getTableInformations();
-        this.getZTables();s
+        this.getZTables();
       }
     });
   },
