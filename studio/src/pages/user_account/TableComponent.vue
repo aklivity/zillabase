@@ -386,8 +386,6 @@ export default defineComponent({
       this.getZTables()
     });
     this.$ws.addMessageHandler((data) => {
-      this.handleReceivedData(data);
-
       if (
         data.type == "create_table" ||
         data.type == "create_ztable" ||
@@ -396,6 +394,8 @@ export default defineComponent({
         this.getTableInformations();
         this.getZTables();
       }
+
+      this.handleReceivedData(data);
     });
   },
   beforeUnmount() {
