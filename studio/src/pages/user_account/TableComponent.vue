@@ -539,6 +539,9 @@ export default defineComponent({
           id: 1,
         },
       ];
+
+      this.zTablesLoaded = false;
+      this.tablesLoaded = false;
       this.$nextTick(() => {
         if (this.$refs.dataTypeTable) {
           this.$refs.dataTypeTable.rows = this.dataTypeRow;
