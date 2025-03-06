@@ -422,7 +422,7 @@ export default defineComponent({
         this.zFunctionData = data.data.map((x, i) => ({
           id: i + 1,
           name: x.Name,
-          type: "Z Function",
+          type: "ZFunction",
           parameters: x.Arguments,
           returnType: x["Return Type"],
           language: x.Language,
@@ -493,7 +493,7 @@ export default defineComponent({
       });
     },
     dropFunction() {
-      const query = this.selectedRow.type === "Z Function"
+      const query = this.selectedRow.type === "ZFunction"
         ? `DROP ZFUNCTION ${this.selectedRow.name};`
         : `DROP FUNCTION ${this.selectedRow.name};`;
 
@@ -583,7 +583,7 @@ export default defineComponent({
         name: row.name,
         returnType: row.returnType,
         language: row.language,
-        functionType: row.type === "External" ? "external" : row.type === "Z Function" ? "zfunction" : "embedded",
+        functionType: row.type === "External" ? "external" : row.type === "ZFunction" ? "zfunction" : "embedded",
         body: row.type === "Embedded" ? row.body : "",
       };
       this.functionTypeRow = [{ name: "", type: "", defaultValue: "" }];
