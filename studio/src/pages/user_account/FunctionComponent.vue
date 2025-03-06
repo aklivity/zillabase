@@ -354,7 +354,7 @@ import CommonTable from "../shared/CommonTable.vue";
 import DataTypeTable from "../shared/DataTypeTable.vue";
 
 export default defineComponent({
-  nname: "FunctionComponent",
+  name: "FunctionComponent",
   components: {
     CommonTable,
     DataTypeTable,
@@ -378,116 +378,59 @@ export default defineComponent({
       },
       tableColumns: [
         { name: "name", label: "Name", align: "left", field: "name" },
-        {
-          name: "language",
-          label: "Language",
-          align: "center",
-          field: "language",
-          sortable: true,
-        },
-        {
-          name: "type",
-          label: "Type",
-          align: "center",
-          field: "type",
-          sortable: true,
-        },
-        {
-          name: "parameters",
-          label: "Parameters",
-          align: "left",
-          field: "parameters",
-          width: "200px",
-        },
-        {
-          name: "returnType",
-          label: "Return Type",
-          align: "center",
-          field: "returnType",
-          sortable: true,
-        },
+        { name: "language", label: "Language", align: "center", field: "language", sortable: true },
+        { name: "type", label: "Type", align: "center", field: "type", sortable: true },
+        { name: "parameters", label: "Parameters", align: "left", field: "parameters", width: "200px" },
+        { name: "returnType", label: "Return Type", align: "center", field: "returnType", sortable: true },
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
-      eventTables: [],
+      functionData: [],
+      zFunctionData: [],
       functionTypeRow: [{ name: "", type: "" }],
       functionParmaTypeRow: [{ type: "" }],
       functionDetails: [],
       functionTypeColumns: [
-        {
-          name: "name",
-          required: true,
-          label: "Name",
-          align: "left",
-          field: "name",
-        },
+        { name: "name", required: true, label: "Name", align: "left", field: "name" },
         { name: "type", label: "Type", align: "left", field: "type" },
         { name: "actions", label: "Actions", align: "center" },
       ],
       functionTypeOptions: [
-        "boolean",
-        "smallint",
-        "integer",
-        "bigint",
-        "numeric",
-        "real",
-        "double precision",
-        "varchar",
-        "bytea",
-        "date",
-        "time without time zone",
-        "timestamp without time zone",
-        "timestamp with time zone",
-        "interval",
-        "struct",
-        "array",
-        "map",
-        "JSONB",
+        "boolean", "smallint", "integer", "bigint", "numeric", "real", "double precision",
+        "varchar", "bytea", "date", "time without time zone", "timestamp without time zone",
+        "timestamp with time zone", "interval", "struct", "array", "map", "JSONB",
       ],
     };
   },
   mounted() {
     this.$ws.connect(() => {
-      this.getFunctionInformations();
-      this.$ws.sendMessage(`show tables;`, "get_table");
+      this.loadAllFunctions();
     });
     this.$ws.addMessageHandler((data) => {
-      if (data.type == "get_function_name") {
-        console.log(data.data);
-      }
-      if (data.type == "get_function") {
-        this.tableData = data.data.map((x, i) => ({
+      if (data.type === "get_function") {
+        this.functionData = data.data.map((x, i) => ({
           id: i + 1,
           name: x.Name,
-          zfunction: false,
           type: x.Link ? "External" : "Embedded",
           parameters: x.Arguments,
           returnType: x["Return Type"],
           language: x.Language,
-          rows: x.total_rows,
         }));
+        this.updateTableData();
       }
-      if (data.type == "get_table") {
-        this.eventTables = data.data.map((x) => x.Name);
+      if (data.type === "get_zfunction") {
+        this.zFunctionData = data.data.map((x, i) => ({
+          id: i + 1,
+          name: x.Name,
+          type: "Z Function",
+          parameters: x.Arguments,
+          returnType: x["Return Type"],
+          language: x.Language,
+        }));
+        this.updateTableData();
       }
-      if (data.type == "get_zfunction") {
-        this.tableData = this.tableData.filter((x) => !x.zfunction);
-        this.tableData = [
-          ...this.tableData,
-          ...data.data.map((x, i) => ({
-            id: i + 1,
-            name: x.Name,
-            zfunction: true,
-            type: "Z Function",
-            parameters: x.Arguments,
-            returnType: x["Return Type"],
-            language: x.Language,
-            rows: x.total_rows,
-          })),
-        ];
-      }
-      if (data.type == "create_function" || data.type == "drop_function") {
-        this.getFunctionInformations();
+      if (data.type === "create_function" || data.type === "drop_function") {
+        this.loadAllFunctions();
       }
     });
   },
@@ -496,18 +439,12 @@ export default defineComponent({
   },
   methods: {
     getExternalFunction() {
-      if (this.functionInfo.functionType == "external") {
-        appGetExternalFunctionDetails(this.functionInfo.language).then(
-          ({ data }) => {
-            this.functionDetails = data;
-            const existingFunctions = this.tableData
-              .filter((x) => x.type == "External")
-              .map((x) => x.name);
-            this.functionDetails = this.functionDetails.filter(
-              (x) => !existingFunctions.some((y) => y == x.name)
-            );
-          }
-        );
+      if (this.functionInfo.functionType === "external") {
+        appGetExternalFunctionDetails(this.functionInfo.language).then(({ data }) => {
+          this.functionDetails = data;
+          const existingFunctions = this.tableData.filter((x) => x.type === "External").map((x) => x.name);
+          this.functionDetails = this.functionDetails.filter((x) => !existingFunctions.includes(x.name));
+        });
       }
     },
     addFunction() {
@@ -515,7 +452,7 @@ export default defineComponent({
         (row) => row.name.trim() && row.type.trim()
       );
 
-      if (!hasValidData && this.functionInfo.functionType != "external") {
+      if (!hasValidData && this.functionInfo.functionType !== "external") {
         this.$q.notify({
           type: "negative",
           message: "Please fill in at least one row.",
@@ -525,11 +462,12 @@ export default defineComponent({
       }
 
       const query =
-        this.functionInfo.functionType == "external"
+        this.functionInfo.functionType === "external"
           ? this.generateExternalFunction()
-          : this.functionInfo.functionType == "zfunction"
+          : this.functionInfo.functionType === "zfunction"
           ? this.generateZFunction()
           : this.generateEmbeddedFunction();
+
       this.$ws.sendMessage(query, "create_function");
       this.addNewFunction = false;
       this.$refs.addFunctionForm.reset();
@@ -555,21 +493,24 @@ export default defineComponent({
       });
     },
     dropFunction() {
-      if (this.selectedRow.zfunction) {
-        this.$ws.sendMessage(
-          `DROP ZFUNCTION ${this.selectedRow.name};`,
-          "drop_function"
-        );
-      } else {
-        this.$ws.sendMessage(
-          `DROP FUNCTION ${this.selectedRow.name};`,
-          "drop_function"
-        );
-      }
+      const query = this.selectedRow.type === "Z Function"
+        ? `DROP ZFUNCTION ${this.selectedRow.name};`
+        : `DROP FUNCTION ${this.selectedRow.name};`;
+
+      this.$ws.sendMessage(query, "drop_function");
     },
-    getFunctionInformations() {
+    loadAllFunctions() {
+      this.getFunctions();
+      this.getZFunctions();
+    },
+    getFunctions() {
       this.$ws.sendMessage(`SHOW FUNCTIONS;`, "get_function");
+    },
+    getZFunctions() {
       this.$ws.sendMessage(`SHOW ZFUNCTIONS;`, "get_zfunction");
+    },
+    updateTableData() {
+      this.tableData = [...this.functionData, ...this.zFunctionData];
     },
     generateZFunction() {
       const params = this.$refs.dataTypeTable.rows
@@ -583,51 +524,36 @@ export default defineComponent({
         .join(", ");
 
       return `
-      CREATE ZFUNCTION ${
-        this.functionInfo.name
-      }(${params}) RETURNS TABLE(${this.functionParmaTypeRow
-        .filter((x) => x.type && x.name)
-        .map((x) => `${x.name} ${x.type}`)
-        .join(", ")})
-      LANGUAGE ${this.functionInfo.language}
-      AS $$
-        ${this.functionInfo.body}
-      $$
-      WITH (
-        EVENTS = '${this.functionInfo.eventName}'
-      );`;
+        CREATE ZFUNCTION ${this.functionInfo.name}(${params})
+        RETURNS TABLE(${this.functionParmaTypeRow
+          .filter((x) => x.type && x.name)
+          .map((x) => `${x.name} ${x.type}`)
+          .join(", ")})
+        LANGUAGE ${this.functionInfo.language}
+        AS $$
+          ${this.functionInfo.body}
+        $$;`;
     },
     generateExternalFunction() {
-      const functions = this.functionDetails.find(
-        (x) => x.name == this.functionInfo.name
-      );
+      const functions = this.functionDetails.find((x) => x.name === this.functionInfo.name);
       if (functions) {
         const rows = functions.input_type.map((x) => ({
           name: x.name,
-          type:
-            x.type == "string"
-              ? "varchar"
-              : x.type == "double"
-              ? "double precision"
-              : x.type,
+          type: x.type === "string" ? "varchar" : x.type === "double" ? "double precision" : x.type,
         }));
         const params = rows
           .filter((x) => x.type)
-          .map((param) => {
-            const { name, type } = param;
-            return type;
-          })
+          .map((param) => param.type)
           .join(", ");
 
         return `
-      CREATE FUNCTION ${
-        this.functionInfo.name
-      }(${params}) RETURNS ${functions.result_type[0].type
-          ?.replaceAll("string", "varchar")
-          .replaceAll("double", "double precision")
-          .replaceAll(": ", " ")}
-      LANGUAGE ${this.functionInfo.language}
-      AS '${this.functionInfo.name}';`;
+          CREATE FUNCTION ${this.functionInfo.name}(${params})
+          RETURNS ${functions.result_type[0].type
+            ?.replaceAll("string", "varchar")
+            .replaceAll("double", "double precision")
+            .replaceAll(": ", " ")}
+          LANGUAGE ${this.functionInfo.language}
+          AS '${this.functionInfo.name}';`;
       }
     },
     generateEmbeddedFunction() {
@@ -642,24 +568,23 @@ export default defineComponent({
         .join(", ");
 
       return `
-      CREATE FUNCTION ${
-        this.functionInfo.name
-      }(${params}) RETURNS ${this.functionParmaTypeRow
-        .filter((x) => x.type)
-        .map((x) => x.type)
-        .join(", ")}
+        CREATE FUNCTION ${this.functionInfo.name}(${params})
+        RETURNS ${this.functionParmaTypeRow
+          .filter((x) => x.type)
+          .map((x) => x.type)
+          .join(", ")}
         LANGUAGE ${this.functionInfo.language}
-      AS $$
-        ${this.functionInfo.body}
-      $$;`;
+        AS $$
+          ${this.functionInfo.body}
+        $$;`;
     },
     openEditDialog(row) {
       this.functionInfo = {
         name: row.name,
         returnType: row.returnType,
         language: row.language,
-        functionType: row.link ? "external" : "embedded",
-        body: row.link,
+        functionType: row.type === "External" ? "external" : row.type === "Z Function" ? "zfunction" : "embedded",
+        body: row.type === "Embedded" ? row.body : "",
       };
       this.functionTypeRow = [{ name: "", type: "", defaultValue: "" }];
       const parameters = row.parameters?.split(",");
