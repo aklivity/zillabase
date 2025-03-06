@@ -1,3 +1,5 @@
+import {showError} from "src/services/notification";
+
 const WebSocketService = {
     ws: null,
     messageHandlers: null,
@@ -11,12 +13,15 @@ const WebSocketService = {
     },
 
     async sendMessage(message, type) {
-        console.log(message, type)
-        const res = await window.zillabaseActions.executeQuery(message, type);
-        this.messageHandlers({
-            data: res.data,
-            type
-        });
+        try {
+            const res = await window.zillabaseActions.executeQuery(message, type);
+            this.messageHandlers({
+                data: res.data,
+                type
+            });
+        } catch (error) {
+            showError(error.message);
+        }
     },
 
     addMessageHandler(handler) {

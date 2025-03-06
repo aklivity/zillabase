@@ -205,7 +205,7 @@
                 props.row.type === 'Real-time Synced' ||
                 props.row.type === 'ZTable' ||
                 props.row.type === 'ZView' ||
-                props.row.type === 'ZFunction', 
+                props.row.type === 'ZFunction',
 
             }"
           >
