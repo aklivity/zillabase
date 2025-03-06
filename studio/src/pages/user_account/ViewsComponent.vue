@@ -250,57 +250,51 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
+      viewsData: [],
+      materializedViewsData: [],
+      zViewsData: [],
     };
   },
   mounted() {
     this.$ws.connect(() => {
-      this.getViews();
+      this.loadAllViews();
     });
     this.$ws.addMessageHandler((data) => {
-      if (data.type == "get_view_name") {
-        console.log(data.data);
+      if (data.type === "get_views") {
+        this.viewsData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "View",
+        }));
+        this.updateTableData();
       }
-      if (data.type == "get_views") {
-        data.data.forEach((item) => {
-          this.tableData.push({
-            ...item,
-            name: item.Name,
-            type: "View",
-          });
-        });
+      if (data.type === "get_materialized_views") {
+        this.materializedViewsData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "Materialized View",
+        }));
+        this.updateTableData();
       }
-      if (data.type == "get_materialized_views") {
-        data.data.forEach((item) => {
-          this.tableData.push({
-            ...item,
-            name: item.Name,
-            type: "Materialized View",
-          });
-        });
+      if (data.type === "get_z_views") {
+        this.zViewsData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "ZView",
+        }));
+        this.updateTableData();
       }
-      if (data.type == "get_z_views") {
-        data.data.forEach((item) => {
-          const existingItem = this.tableData.find(
-            (x) => x.name.toLowerCase() === item.Name.toLowerCase()
-          );
-          if (existingItem) {
-            existingItem.type = "ZView";
-          } else {
-            this.tableData.push({
-              ...item,
-              name: item.Name,
-              type: "ZView",
-            });
-          }
-        });
-      }
-      if (
-        data.type == "create_view" ||
-        data.type == "create_zview" ||
-        data.type == "create_materialized_view" ||
-        data.type == "drop_view"
-      ) {
+
+      if (data.type === "create_view" || data.type === "drop_view") {
         this.getViews();
+      }
+
+      if (data.type === "create_zview" || data.type === "drop_zview") {
+        this.getZViews();
+      }
+
+      if (data.type === "create_materialized_view" || data.type === "drop_materialized_view") {
+        this.getMaterializedViews();
       }
     });
   },
@@ -309,9 +303,9 @@ export default defineComponent({
   },
   methods: {
     createViews() {
-      if (this.viewInfo.selectionType == "material") {
+      if (this.viewInfo.selectionType === "material") {
         this.createMaterializedView();
-      } else if (this.viewInfo.selectionType == "zview") {
+      } else if (this.viewInfo.selectionType === "zview") {
         this.createZView();
       } else {
         this.createView();
@@ -340,19 +334,21 @@ export default defineComponent({
       this.$ws.sendMessage(query, "create_view");
     },
     getViews() {
-      this.tableData = [];
       this.$ws.sendMessage(`show views;`, "get_views");
-      this.getMaterializedViews();
     },
     getMaterializedViews() {
-      this.$ws.sendMessage(
-        `show materialized views;`,
-        "get_materialized_views"
-      );
-      this.getZViews();
+      this.$ws.sendMessage(`show materialized views;`, "get_materialized_views");
     },
     getZViews() {
       this.$ws.sendMessage(`show zviews;`, "get_z_views");
+    },
+    loadAllViews() {
+      this.getViews();
+      this.getZViews();
+      this.getMaterializedViews();
+    },
+    updateTableData() {
+      this.tableData = [...this.viewsData, ...this.materializedViewsData, ...this.zViewsData];
     },
     openEditDialog(row) {
       this.$ws.sendMessage(`describe ${row.name};`, "get_view_name");
@@ -362,21 +358,12 @@ export default defineComponent({
       this.isDeleteDialogOpen = true;
     },
     confirmDelete() {
-      if (this.selectedRow.zview) {
-        this.$ws.sendMessage(
-          `DROP ZVIEW ${this.selectedRow.name};`,
-          "drop_view"
-        );
-      } else if (this.selectedRow.materialized) {
-        this.$ws.sendMessage(
-          `DROP MATERIALIZED VIEW ${this.selectedRow.name};`,
-          "drop_view"
-        );
-      } else {
-        this.$ws.sendMessage(
-          `DROP VIEW ${this.selectedRow.name};`,
-          "drop_view"
-        );
+      if (this.selectedRow.type === "ZView") {
+        this.$ws.sendMessage(`DROP ZVIEW ${this.selectedRow.name};`, "drop_zview");
+      } else if (this.selectedRow.type === "Materialized View") {
+        this.$ws.sendMessage(`DROP MATERIALIZED VIEW ${this.selectedRow.name};`, "drop_materialized_view");
+      } else if (this.selectedRow.type === "View") {
+        this.$ws.sendMessage(`DROP VIEW ${this.selectedRow.name};`, "drop_view");
       }
       this.isDeleteDialogOpen = false;
       this.selectedRow = null;

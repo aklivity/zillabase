@@ -269,6 +269,7 @@ import { defineComponent } from "vue";
 import CommonTable from "../shared/CommonTable.vue";
 import DataTypeTable from "../shared/DataTypeTable.vue";
 import { showError } from "./../../services/notification";
+
 export default defineComponent({
   name: "TableComponent",
   components: {
@@ -294,84 +295,29 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
-      zTableData: [],
-      tablesLoaded: false,
-      zTablesLoaded: false,
+      tablesData: [],
+      zTablesData: [],
       dataTypeRow: [
         { name: "", type: "", defaultValue: "", primary: false, id: 1 },
-        {
-          name: "",
-          type: "",
-          defaultValue: "",
-          primary: false,
-          id: 2,
-        },
-        {
-          name: "",
-          type: "",
-          defaultValue: "",
-          primary: false,
-          id: 3,
-        },
+        { name: "", type: "", defaultValue: "", primary: false, id: 2 },
+        { name: "", type: "", defaultValue: "", primary: false, id: 3 },
         { name: "", type: "", defaultValue: "", primary: false, id: 4 },
       ],
       dataTypeColumns: [
-        {
-          name: "name",
-          required: true,
-          label: "Name",
-          align: "left",
-          field: "name",
-        },
+        { name: "name", required: true, label: "Name", align: "left", field: "name" },
         { name: "type", label: "Type", align: "left", field: "type" },
-        {
-          name: "defaultValue",
-          label: "Default Value",
-          align: "left",
-          field: "defaultValue",
-        },
-        {
-          name: "primary",
-          label: "Primary",
-          align: "center",
-          field: "primary",
-        },
+        { name: "defaultValue", label: "Default Value", align: "left", field: "defaultValue" },
+        { name: "primary", label: "Primary", align: "center", field: "primary" },
         { name: "actions", label: "Actions", align: "center" },
       ],
       dataTypeOptions: [
-        "boolean",
-        "smallint",
-        "integer",
-        "bigint",
-        "numeric",
-        "real",
-        "double precision",
-        "varchar",
-        "bytea",
-        "date",
-        "time without time zone",
-        "timestamp without time zone",
-        "timestamp with time zone",
-        "interval",
-        "struct",
-        "array",
-        "map",
-        "JSONB",
+        "boolean", "smallint", "integer", "bigint", "numeric", "real", "double precision",
+        "varchar", "bytea", "date", "time without time zone", "timestamp without time zone",
+        "timestamp with time zone", "interval", "struct", "array", "map", "JSONB",
       ],
       rowSettingData: [
-        {
-          id: 1,
-          primary: true,
-          label: "Identity",
-          description: "Identity value will be auto populated.",
-        },
-        {
-          id: 2,
-          primary: false,
-          label: "Now",
-          description:
-            "Timestamp value will be auto populated.",
-        },
+        { id: 1, primary: true, label: "Identity", description: "Identity value will be auto populated." },
+        { id: 2, primary: false, label: "Now", description: "Timestamp value will be auto populated." },
       ],
     };
   },
@@ -382,87 +328,68 @@ export default defineComponent({
   },
   mounted() {
     this.$ws.connect(() => {
-      this.getTableInformations();
-      this.getZTables()
+      this.loadAllTables();
     });
     this.$ws.addMessageHandler((data) => {
-      if (
-        data.type == "create_table" ||
-        data.type == "create_ztable" ||
-        data.type == "drop_ztable"
-      ) {
-        this.getTableInformations();
+      if (data.type === "get_tables") {
+        this.tablesData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "Table",
+        }));
+        this.updateTableData();
+      }
+      if (data.type === "get_ztables") {
+        this.zTablesData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "ZTable",
+        }));
+        this.updateTableData();
+      }
+      if (data.type === "create_table" || data.type === "drop_table") {
+        this.getTables();
+      }
+      if (data.type === "create_ztable" || data.type === "drop_ztable") {
         this.getZTables();
       }
-
-      this.handleReceivedData(data);
     });
   },
   beforeUnmount() {
     this.$ws.removeAll();
   },
   methods: {
-    handleReceivedData(data) {
-      if (data.type == "get_table") {
-        this.tableData = data.data.map((x, i) => ({
-          id: i + 1,
-          name: x.Name,
-          description: x.table_description,
-          columns: x.total_columns,
-          rows: x.total_rows,
-          type: "Table",
-        }));
-        this.tablesLoaded = true;
-        this.updateTableTypes();
-      }
-
-      if (data.type == "get_ztables") {
-        this.zTableData = data.data.filter((x) => x.Name).map((item) => item.Name.toLowerCase());
-        this.zTablesLoaded = true;
-        this.updateTableTypes();
-      }
-    },
-    updateTableTypes() {
-      if (this.tablesLoaded && this.zTablesLoaded) {
-        this.tableData.forEach((item) => {
-          if (this.zTableData.includes(item.name.toLowerCase())) {
-            item.type = "ZTable";
-          }
-        });
-      }
-    },
     setEditTableInfo(data) {
       this.addNewTable = true;
       this.tableInfo = {
-        name: data.find((x) => x.Name == "table description")?.Type,
-        description: data.find((x) => x.Name == "table description")
-          ?.Description,
-        zTableType: this.selectedRow.type == "ZTable",
+        name: data.find((x) => x.Name === "table description")?.Type,
+        description: data.find((x) => x.Name === "table description")?.Description,
+        zTableType: this.selectedRow.type === "ZTable",
       };
-      const excludeIds = [
-        "primary key",
-        "distribution key",
-        "table description",
-      ];
+      const excludeIds = ["primary key", "distribution key", "table description"];
       this.dataTypeRow = [];
-      data
-        .filter((x) => !excludeIds.includes(x.Name))
-        .forEach((item, index) => {
-          this.dataTypeRow.push({
-            name: item.Name,
-            type: item.Type,
-            defaultValue: "",
-            primary: data.some((x) => x.Type == item.Name),
-            id: index + 1,
-          });
+      data.filter((x) => !excludeIds.includes(x.Name)).forEach((item, index) => {
+        this.dataTypeRow.push({
+          name: item.Name,
+          type: item.Type,
+          defaultValue: "",
+          primary: data.some((x) => x.Type === item.Name),
+          id: index + 1,
         });
+      });
     },
-    getTableInformations() {
-      this.tableData = [];
-      this.$ws.sendMessage(`show tables;`, "get_table");
+    getTables() {
+      this.$ws.sendMessage(`SHOW TABLES;`, "get_tables");
     },
     getZTables() {
-      this.$ws.sendMessage(`show ztables;`, "get_ztables");
+      this.$ws.sendMessage(`SHOW ZTABLES;`, "get_ztables");
+    },
+    loadAllTables() {
+      this.getTables();
+      this.getZTables();
+    },
+    updateTableData() {
+      this.tableData = [...this.tablesData, ...this.zTablesData];
     },
     addTable() {
       const hasValidData = this.dataTypeRow.some(
@@ -487,38 +414,39 @@ export default defineComponent({
             columnDef += ` DEFAULT '${field.defaultValue}'`;
           }
 
-          if (field.constraints == "identity") {
+          if (field.constraints === "identity") {
             columnDef += " GENERATED ALWAYS AS IDENTITY";
           }
 
           return columnDef;
         });
+
       if (
         this.tableInfo.zTableType &&
         this.$refs.dataTypeTable.rows.some(
-          (field) => field.constraints == "identity" && field.type == "integer"
+          (field) => field.constraints === "identity" && field.type === "integer"
         )
       ) {
         showError("Integer is not allowed for Identity Column");
         return;
       }
+
       const primaryKey = this.$refs.dataTypeTable.rows
         .filter((field) => field.primary)
         .map((field) => field.name);
+
       if (primaryKey.length > 0) {
         columns.push(`PRIMARY KEY (${primaryKey.join(", ")})`);
       }
+
       if (this.tableInfo.zTableType) {
-        const zTableQuery = `CREATE ZTABLE ${
-          this.tableInfo.name
-        } (${columns.join(",\n    ")});`;
+        const zTableQuery = `CREATE ZTABLE ${this.tableInfo.name} (${columns.join(",\n    ")});`;
         this.$ws.sendMessage(zTableQuery, "create_ztable");
       } else {
-        const query = `CREATE TABLE ${this.tableInfo.name} (${columns.join(
-          ",\n    "
-        )});`;
+        const query = `CREATE TABLE ${this.tableInfo.name} (${columns.join(",\n    ")});`;
         this.$ws.sendMessage(query, "create_table");
       }
+
       this.addNewTable = false;
       this.$refs.addTableForm.reset();
     },
@@ -530,18 +458,9 @@ export default defineComponent({
       };
 
       this.dataTypeRow = [
-        {
-          name: "",
-          type: "",
-          defaultValue: "",
-          primary: false,
-          isNullable: true,
-          id: 1,
-        },
+        { name: "", type: "", defaultValue: "", primary: false, isNullable: true, id: 1 },
       ];
 
-      this.zTablesLoaded = false;
-      this.tablesLoaded = false;
       this.$nextTick(() => {
         if (this.$refs.dataTypeTable) {
           this.$refs.dataTypeTable.rows = this.dataTypeRow;
@@ -550,7 +469,7 @@ export default defineComponent({
     },
     openEditDialog(row) {
       this.selectedRow = row;
-      this.$ws.sendMessage(`describe ${row.name};`, "get_table_name");
+      this.$ws.sendMessage(`DESCRIBE ${row.name};`, "get_table_name");
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
@@ -559,15 +478,9 @@ export default defineComponent({
     confirmDelete() {
       this.isDeleteDialogOpen = false;
       if (this.selectedRow.type === "ZTable") {
-        this.$ws.sendMessage(
-          `DROP ZTABLE ${this.selectedRow.name};`,
-          "drop_ztable"
-        );
+        this.$ws.sendMessage(`DROP ZTABLE ${this.selectedRow.name};`, "drop_ztable");
       } else {
-        this.$ws.sendMessage(
-          `DROP TABLE ${this.selectedRow.name};`,
-          "drop_table"
-        );
+        this.$ws.sendMessage(`DROP TABLE ${this.selectedRow.name};`, "drop_table");
       }
       this.selectedRow = null;
     },
@@ -580,12 +493,9 @@ export default defineComponent({
       this.isRowSettingDialogOpen = !this.isRowSettingDialogOpen;
     },
     closeSettings() {
-      this.activeRowSetting.unique =
-        this.rowSettingData.find((x) => x.id == 1)?.primary || false;
-      this.activeRowSetting.nullable =
-        this.rowSettingData.find((x) => x.id == 2)?.primary || false;
-      this.activeRowSetting.identity =
-        this.rowSettingData.find((x) => x.id == 3)?.primary || false;
+      this.activeRowSetting.unique = this.rowSettingData.find((x) => x.id === 1)?.primary || false;
+      this.activeRowSetting.nullable = this.rowSettingData.find((x) => x.id === 2)?.primary || false;
+      this.activeRowSetting.identity = this.rowSettingData.find((x) => x.id === 3)?.primary || false;
     },
     addRow() {
       this.dataTypeRow.push({
