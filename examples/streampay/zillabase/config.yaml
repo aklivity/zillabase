@@ -3,8 +3,6 @@ udf:
   python:
     env:
       - OPENAI_API_KEY=<your OpenAI API key>
-admin:
-  tag: develop-SNAPSHOT
 keycloak:
   realm: zillabase
   users:
