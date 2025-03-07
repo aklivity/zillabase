@@ -469,6 +469,7 @@
   </q-dialog>
 </template>
 <script>
+import { showError } from "src/services/notification";
 import { defineComponent } from "vue";
 import CommonTable from "../shared/CommonTable.vue";
 import {
@@ -587,7 +588,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.getUsers();
         })
-        .catch((err) => {})
+        .catch((err) => {
+          showError("Failed to add user");
+        })
         .finally(() => {
           this.addNewUser = false;
         });
@@ -607,7 +610,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.userTableData = data;
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to get user");
+        });
     },
     getUserById(user) {
       appGetUserById(user.id)
@@ -615,7 +620,9 @@ export default defineComponent({
           this.userInfo = data;
           this.addNewUser = true;
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to get user by id");
+        });
     },
     openDeleteDialog(row) {
       this.userInfo = row;
@@ -627,7 +634,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.getUsers();
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to delete user");
+        });
     },
     // SSO Proovider
     addSSOProvider() {
@@ -635,7 +644,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.getSSOProvider();
         })
-        .catch((err) => {})
+        .catch((err) => {
+          showError("Failed to add provider");
+        })
         .finally(() => {
           this.addNewProvider = false;
         });
@@ -657,7 +668,9 @@ export default defineComponent({
           this.ssoTableData = data;
           this.isPasswordVisible = false;
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to get provider");
+        });
     },
     getSSOProviderById(user) {
       appGetSSOProvidersById(user.alias)
@@ -680,7 +693,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.getSSOProvider();
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to delete provider");
+        });
     },
   },
   computed: {

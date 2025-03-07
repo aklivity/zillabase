@@ -12,7 +12,7 @@ const showSuccess = (message, timeout = 5000) => {
         })
 }
 
-const showError = (message, timeout = 5000) => {
+const showError = (message, timeout = 2000) => {
     if (typeof Notify.create === 'function')
         Notify.create({
             type: 'negative',

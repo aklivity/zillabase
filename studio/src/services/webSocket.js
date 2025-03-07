@@ -1,4 +1,4 @@
-import {showError} from "src/services/notification";
+import { showError } from './notification';
 
 const WebSocketService = {
     ws: null,

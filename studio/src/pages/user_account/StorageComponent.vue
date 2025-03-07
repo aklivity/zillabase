@@ -47,7 +47,10 @@
             :name="tab.name.path"
           >
             <!-- Tab name on the left -->
-            <span class="text-custom-gray-dark text-capitalize text-weight-light" style="text-transform: none;">
+            <span
+              class="text-custom-gray-dark text-capitalize text-weight-light"
+              style="text-transform: none"
+            >
               {{ tab.name.path }}
             </span>
             <!-- Buttons on the right -->
@@ -271,9 +274,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section class="q-pb-lg">
-        <p class="text-custom-gray-dark text-weight-light q-pb-sm">
-          Name
-        </p>
+        <p class="text-custom-gray-dark text-weight-light q-pb-sm">Name</p>
         <q-input
           dense
           outlined
@@ -643,7 +644,7 @@ import {
   appUpdateStorageObject,
   appUpdateStorageObjectContent,
 } from "src/services/api";
-import {showError, showSuccess} from "src/services/notification";
+import { showError, showSuccess } from "src/services/notification";
 import app from "src/services/app";
 
 export default defineComponent({
@@ -707,7 +708,7 @@ export default defineComponent({
         { name: "tabActions", label: "Actions", align: "center" },
       ],
       etag: null,
-      tabs: []
+      tabs: [],
     };
   },
   mounted() {
@@ -721,35 +722,43 @@ export default defineComponent({
       }
     },
     getStorageBuckets() {
-      appGetStorageBuckets().then(({ data }) => {
-        this.tabs = data.map((x) => ({
-          name: x,
-          tableData: [],
-        }));
-      });
+      appGetStorageBuckets()
+        .then(({ data }) => {
+          this.tabs = data.map((x) => ({
+            name: x,
+            tableData: [],
+          }));
+        })
+        .catch(() => {
+          showError("Failed to get buckets");
+        });
     },
     getStorageObjects() {
       this.addNewBucketObjectContent = false;
       this.addNewBucketObject = false;
-      appGetStorageObjects(this.selectedTab).then(({ data }) => {
-        const tabs = this.tabs.find((x) => x.name?.path === this.selectedTab);
-        if (tabs) {
-          tabs.tableData = data.map((x, i) => ({
-            name: decodeURIComponent(x.path),
-            url: `${app.apiEndpoint}/storage/objects/${this.selectedTab}/${x.path}`,
-            id: i + 1,
-            tabType: x.type,
-          }));
-        }
-      });
+      appGetStorageObjects(this.selectedTab)
+        .then(({ data }) => {
+          const tabs = this.tabs.find((x) => x.name?.path === this.selectedTab);
+          if (tabs) {
+            tabs.tableData = data.map((x, i) => ({
+              name: decodeURIComponent(x.path),
+              url: `${app.apiEndpoint}/storage/objects/${this.selectedTab}/${x.path}`,
+              id: i + 1,
+              tabType: x.type,
+            }));
+          }
+        })
+        .catch(() => {
+          showError("Failed to get storage objects");
+        });
     },
     deleteStorageObjects() {
       this.deleteMultipleSelectedRows.isDeleted = false;
-      const names = this.deleteMultipleSelectedRows.selectedRows.map(row => row.name);
+      const names = this.deleteMultipleSelectedRows.selectedRows.map(
+        (row) => row.name
+      );
       Promise.all(
-        names.map(name =>
-          appDeleteStorageObject(this.selectedTab, name)
-        )
+        names.map((name) => appDeleteStorageObject(this.selectedTab, name))
       ).then(() => {
         this.getStorageObjects();
       });
@@ -759,48 +768,61 @@ export default defineComponent({
       appDeleteStorageObject(
         this.selectedTab,
         this.isOpenBucketObjectDeleteDialog.selectedRow?.name
-      ).then(({ data }) => {
-        this.getStorageObjects();
-      });
+      )
+        .then(({ data }) => {
+          this.getStorageObjects();
+        })
+        .catch(() => {
+          showError("Failed to delete object");
+        });
     },
     updateStorageObject() {
       this.isRenameRow = false;
-      appUpdateStorageObject(this.selectedTab, this.selectedRow?.name).then(
-        ({ data }) => {
+      appUpdateStorageObject(this.selectedTab, this.selectedRow?.name)
+        .then(({ data }) => {
           this.getStorageObjects();
-        }
-      );
+        })
+        .catch(() => {
+          showError("Failed to update storage");
+        });
     },
     addStorageObject() {
       this.addNewBucketObject = false;
-      appAddStorageObject(
-        this.selectedTab,
-        this.selectedFile
-      ).then(({ data }) => {
-        this.getStorageObjects();
-      });
+      appAddStorageObject(this.selectedTab, this.selectedFile)
+        .then(({ data }) => {
+          this.getStorageObjects();
+        })
+        .catch(() => {
+          showError("Failed to add storage objects");
+        });
     },
     addStorageObjectContent() {
       appAddStorageObjectContent(
         this.selectedTab,
         this.fileName,
         this.fileContent
-      ).then(({ data }) => {
-        this.getStorageObjects();
-      });
+      )
+        .then(({ data }) => {
+          this.getStorageObjects();
+        })
+        .catch(() => {
+          showError("Failed to add object content");
+        });
     },
     openEditFileDialog(row) {
       this.fileName = row.name;
       this.getStorageObjectDetail();
     },
     getStorageObjectDetail() {
-      appGetStorageObjectDetail(this.selectedTab, this.fileName).then(
-        (response) => {
+      appGetStorageObjectDetail(this.selectedTab, this.fileName)
+        .then((response) => {
           this.etag = response.headers["etag"];
           this.fileContent = response.data;
           this.addNewBucketObjectContent = true;
-        }
-      );
+        })
+        .catch(() => {
+          showError("Failed to get storage object");
+        });
     },
     updateStorageObjectContent() {
       appUpdateStorageObjectContent(
@@ -808,30 +830,41 @@ export default defineComponent({
         this.fileName,
         this.fileContent,
         this.etag
-      ).then((response) => {
-        this.addNewBucketObjectContent = false;
-        this.fileName = "";
-        this.fileContent = "";
-        this.etag = null;
-        this.getStorageObjects();
-      });
+      )
+        .then((response) => {
+          this.addNewBucketObjectContent = false;
+          this.fileName = "";
+          this.fileContent = "";
+          this.etag = null;
+          this.getStorageObjects();
+        })
+        .catch(() => {
+          showError("Failed to update storage object");
+        });
     },
     addStorageBuckets() {
       this.addEditBucketDialog.isOpen = false;
-      appAddStorageBuckets(this.newBucketName).then(({ data }) => {
-        this.getStorageBuckets();
-      });
+      appAddStorageBuckets(this.newBucketName)
+        .then(({ data }) => {
+          this.getStorageBuckets();
+        })
+        .catch(() => {
+          showError("Failed to add storage buckets");
+        });
     },
     deleteStorageBuckets() {
       this.deletedBucket.isDeleted = false;
-      appDeleteStorageBuckets(this.deletedBucket.bucketName).then(
-        ({ data }) => {
+      appDeleteStorageBuckets(this.deletedBucket.bucketName)
+        .then(({ data }) => {
           this.getStorageBuckets();
-        }
-      ).catch(error => {
-        const message = error?.status === 409 ? "Bucket is not empty" : "Something went wrong";
-        showError(message);
-      });
+        })
+        .catch((error) => {
+          const message =
+            error?.status === 409
+              ? "Bucket is not empty"
+              : "Something went wrong";
+          showError(message);
+        });
     },
     handleClick() {},
     openMoveDialog(row) {
