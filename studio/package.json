@@ -28,7 +28,7 @@
     "postgres": "^3.4.5"
   },
   "devDependencies": {
-    "@quasar/app-vite": "^1.9.0",
+    "@quasar/app-vite": "^2.0.9",
     "autoprefixer": "^10.4.2",
     "concurrently": "^9.1.0",
     "eslint": "^8.57.0",
