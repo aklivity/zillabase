@@ -13,7 +13,6 @@ const WebSocketService = {
     },
 
     async sendMessage(message, type) {
-        console.log(message, type)
         try {
             const res = await window.zillabaseActions.executeQuery(message, type);
             this.messageHandlers({
@@ -21,8 +20,7 @@ const WebSocketService = {
                 type
             });
         } catch (error) {
-            console.log(type, error);
-            showError('Failed to Run the Query')
+            showError(error.message);
         }
     },
 
