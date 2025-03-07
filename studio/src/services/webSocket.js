@@ -1,3 +1,5 @@
+import { showError } from './notification';
+
 const WebSocketService = {
     ws: null,
     messageHandlers: null,
@@ -12,11 +14,16 @@ const WebSocketService = {
 
     async sendMessage(message, type) {
         console.log(message, type)
-        const res = await window.zillabaseActions.executeQuery(message, type);
-        this.messageHandlers({
-            data: res.data,
-            type
-        });
+        try {
+            const res = await window.zillabaseActions.executeQuery(message, type);
+            this.messageHandlers({
+                data: res.data,
+                type
+            });
+        } catch (error) {
+            console.log(type, error);
+            showError('Failed to Run the Query')
+        }
     },
 
     addMessageHandler(handler) {
