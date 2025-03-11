@@ -26,8 +26,6 @@ This project includes:
   asyncapi-core under Apache License, Version 2.0
   asyncutil under The Apache Software License, Version 2.0
   btf under Lesser General Public License, version 3 or greater or Apache Software License, version 2.0
-  Byte Buddy (without dependencies) under Apache License, Version 2.0
-  Byte Buddy agent under Apache License, Version 2.0
   Core functionality for the Reactor Netty library under The Apache Software License, Version 2.0
   HTTP functionality for the Reactor Netty library under The Apache Software License, Version 2.0
   IntelliJ IDEA Annotations under The Apache Software License, Version 2.0
@@ -60,10 +58,6 @@ This project includes:
   JSON-P Default Provider under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   json-patch under Lesser General Public License, version 3 or greater or Apache Software License, version 2.0
   JUL to SLF4J bridge under MIT License
-  JUnit Jupiter API under Eclipse Public License v2.0
-  JUnit Jupiter Engine under Eclipse Public License v2.0
-  JUnit Platform Commons under Eclipse Public License v2.0
-  JUnit Platform Engine API under Eclipse Public License v2.0
   Keycloak Admin REST Client under Apache License, Version 2.0
   Keycloak Common under Apache License, Version 2.0
   Keycloak Core under Apache License, Version 2.0
@@ -75,7 +69,6 @@ This project includes:
   micrometer-commons under The Apache Software License, Version 2.0
   micrometer-observation under The Apache Software License, Version 2.0
   MicroProfile Config API under Apache-2.0
-  mockito-core under MIT
   msg-simple under Lesser General Public License, version 3 or greater or Apache Software License, version 2.0
   Netty/Buffer under Apache License, Version 2.0
   Netty/Codec under Apache License, Version 2.0
@@ -95,11 +88,9 @@ This project includes:
   Netty/Transport/Native/Epoll under Apache License, Version 2.0
   Netty/Transport/Native/Unix/Common under Apache License, Version 2.0
   Non-Blocking Reactive Foundation for the JVM under Apache License, Version 2.0
-  org.apiguardian:apiguardian-api under The Apache License, Version 2.0
   org.eclipse.yasson under Eclipse Public License v. 2.0 or Eclipse Distribution License v. 1.0
   org.leadpony.joy.core under The Apache Software License, Version 2.0
   org.leadpony.joy.yaml under The Apache Software License, Version 2.0
-  org.opentest4j:opentest4j under The Apache License, Version 2.0
   reactive-streams under MIT-0
   RESTEasy Jackson 2 Provider under Apache License 2.0
   RESTEasy JAX-RS Client under Apache License 2.0
