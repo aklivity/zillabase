@@ -1,0 +1,43 @@
+/*
+ * Copyright 2024 Aklivity Inc
+ *
+ * Licensed under the Aklivity Community License (the "License"); you may not use
+ * this file except in compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *   https://www.aklivity.io/aklivity-community-license/
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package io.aklivity.zillabase.udf.server;
+
+import com.risingwave.functions.UdfServer;
+
+import io.aklivity.zillabase.udf.server.service.ZillabaseUdfService;
+
+public final class ZillabaseUdfServerMain
+{
+    public static void main(String[] args)
+    {
+        ZillabaseUdfService service = new ZillabaseUdfService();
+
+        try (UdfServer server = new UdfServer("0.0.0.0", 8815))
+        {
+            service.run(server);
+
+            server.start();
+            server.awaitTermination();
+        }
+        catch (Exception ex)
+        {
+            System.out.println("Failed to start UdfServer: " + ex.getMessage());
+        }
+    }
+
+    private ZillabaseUdfServerMain()
+    {
+    }
+}

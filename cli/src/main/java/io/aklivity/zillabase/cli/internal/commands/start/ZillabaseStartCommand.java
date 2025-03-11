@@ -14,27 +14,23 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.start;
 
-import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.GET;
-import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.POST;
-import static com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationMethod.PUT;
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.github.dockerjava.api.model.RestartPolicy.unlessStoppedRestart;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.DEFAULT_ADMIN_HTTP_PORT;
 import static io.aklivity.zillabase.cli.config.ZillabaseAdminConfig.ZILLABASE_ADMIN_SERVER_ZILLA_YAML;
+import static io.aklivity.zillabase.cli.config.ZillabaseApicurioConfig.DEFAULT_APICURIO_URL;
+import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_HOST;
+import static io.aklivity.zillabase.cli.config.ZillabaseAuthConfig.DEFAULT_AUTH_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_API_GEN_EVENTS_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_KAFKA_TOPIC;
 import static io.aklivity.zillabase.cli.config.ZillabaseConfigServerConfig.ZILLABASE_CONFIG_SERVER_ZILLA_YAML;
 import static io.aklivity.zillabase.cli.config.ZillabaseKafkaConfig.DEFAULT_KAFKA_BOOTSTRAP_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_CLIENT_KARAPACE_URL;
 import static io.aklivity.zillabase.cli.config.ZillabaseKarapaceConfig.DEFAULT_KARAPACE_URL;
-import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_HOST;
-import static io.aklivity.zillabase.cli.config.ZillabaseSsoConfig.DEFAULT_SSO_PORT;
+import static io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig.DEFAULT_RISINGWAVE_URL;
 import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.kafka.common.config.TopicConfig.CLEANUP_POLICY_CONFIG;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -52,8 +48,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -62,13 +56,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -84,12 +76,7 @@ import jakarta.json.stream.JsonParsingException;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.Config;
-import org.apache.kafka.clients.admin.DescribeConfigsResult;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.admin.TopicListing;
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.config.ConfigResource;
 import org.fusesource.jansi.Ansi;
 import org.leadpony.justify.api.JsonSchema;
 import org.leadpony.justify.api.JsonSchemaReader;
@@ -97,31 +84,10 @@ import org.leadpony.justify.api.JsonValidationService;
 import org.leadpony.justify.api.ProblemHandler;
 import org.postgresql.jdbc.PreferQueryMode;
 
-import com.asyncapi.bindings.http.v0._3_0.operation.HTTPOperationBinding;
-import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelBinding;
-import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicCleanupPolicy;
-import com.asyncapi.bindings.kafka.v0._4_0.channel.KafkaChannelTopicConfiguration;
-import com.asyncapi.bindings.kafka.v0._4_0.server.KafkaServerBinding;
-import com.asyncapi.schemas.asyncapi.Reference;
-import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuth2SecurityScheme;
-import com.asyncapi.schemas.asyncapi.security.v3.oauth2.OAuthFlows;
-import com.asyncapi.v2._6_0.model.channel.message.Message;
-import com.asyncapi.v3._0_0.model.AsyncAPI;
-import com.asyncapi.v3._0_0.model.channel.Channel;
-import com.asyncapi.v3._0_0.model.channel.Parameter;
-import com.asyncapi.v3._0_0.model.component.Components;
-import com.asyncapi.v3._0_0.model.info.Info;
-import com.asyncapi.v3._0_0.model.info.License;
-import com.asyncapi.v3._0_0.model.operation.Operation;
-import com.asyncapi.v3._0_0.model.operation.OperationAction;
-import com.asyncapi.v3._0_0.model.operation.reply.OperationReply;
-import com.asyncapi.v3._0_0.model.server.Server;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -142,31 +108,20 @@ import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.api.model.ResponseItem;
 import com.github.dockerjava.api.model.Volume;
-import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseAdminConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
-import io.aklivity.zillabase.cli.config.ZillabaseKeycloakConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseRisingWaveConfig;
-import io.aklivity.zillabase.cli.internal.asyncapi.AsyncapiKafkaFilter;
-import io.aklivity.zillabase.cli.internal.asyncapi.KafkaTopicSchemaRecord;
-import io.aklivity.zillabase.cli.internal.asyncapi.ZillaHttpOperationBinding;
-import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseKafkaOperationBinding;
-import io.aklivity.zillabase.cli.internal.asyncapi.ZillaSseOperationBinding;
-import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaAsyncApiConfig;
-import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingConfig;
-import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingOptionsConfig;
-import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaBindingRouteConfig;
-import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaCatalogConfig;
-import io.aklivity.zillabase.cli.internal.asyncapi.zilla.ZillaGuardConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
-import io.aklivity.zillabase.cli.internal.commands.asyncapi.add.ZillabaseAsyncapiAddCommand;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
 import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationApplier;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationService;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 @Command(
     name = "start",
@@ -175,7 +130,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 {
     private static final int SERVICE_INITIALIZATION_DELAY_MS = 5000;
     private static final int MAX_RETRIES = 5;
-    private static final Pattern TOPIC_PATTERN = Pattern.compile("(^|-|_)(.)");
     private static final String DEFAULT_KEYCLOAK_ADMIN_CREDENTIAL = "admin";
     private static final String ADMIN_REALMS_PATH = "/admin/realms";
     private static final String ADMIN_REALMS_CLIENTS_PATH = "/admin/realms/%s/clients";
@@ -186,15 +140,17 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
     private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
         Pattern.DOTALL);
-    private static final String KAFKA_ASYNCAPI_ARTIFACT_ID = "kafka-asyncapi";
-    private static final String HTTP_ASYNCAPI_ARTIFACT_ID = "http-asyncapi";
 
-    private final Matcher matcher = TOPIC_PATTERN.matcher("");
+    private static final String ZILLABASE_KAFKA_VOLUME_NAME = "zillabase_kafka";
+    private static final String ZILLABASE_POSTGRES_VOLUME_NAME = "zillabase_postgres";
+    private static final String ZILLABASE_MINIO_VOLUME_NAME = "zillabase_minio";
+    private static final String ZILLABASE_UDF_PYTHON_VOLUME_NAME = "zillabase_udf_python";
+
+    public static final String PROJECT_NAME = ZILLABASE_PATH.toAbsolutePath().getParent().getFileName().toString();
+    public static final String VOLUME_LABEL = "io.aklivity.zillabase.cli.project";
+
     private final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
     private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
-    private final List<String> operations = new ArrayList<>();
-    private final List<KafkaTopicSchemaRecord> records = new ArrayList<>();
-
     private final Path seedSqlPath = ZILLABASE_PATH.resolve("seed.sql");
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
@@ -207,17 +163,38 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
         startContainers(client, config);
 
-        seedKafkaAndRegistry(config);
-
-        processSql(config);
-
         createConfigServerKafkaTopic(config);
 
-        processAsyncApiSpecs(config);
+        seedKafkaAndRegistry(config);
 
         initializeKeycloakService(config);
 
-        publishZillaConfig(config);
+        processInitSql(config);
+
+        processSql(config);
+
+        processSystemSql(config);
+
+        printExposedEndpoints(config);
+
+    }
+
+    private void printExposedEndpoints(
+        ZillabaseConfig config)
+    {
+        int studioPort = config.studio.port;
+        int pgsqlPort = config.admin.pgsqlPort;
+
+        String studioUrl = "Studio UI: http://localhost:%d".formatted(studioPort);
+        String psqlUrl = "Psql: localhost:%d".formatted(pgsqlPort);
+
+        int maxLength = Math.max(studioUrl.length(), psqlUrl.length());
+        String border = "#".repeat(maxLength + 4);
+
+        System.out.println(border);
+        System.out.printf("# %-" + maxLength + "s #\n", studioUrl);
+        System.out.printf("# %-" + maxLength + "s #\n", psqlUrl);
+        System.out.println(border);
     }
 
     private void startContainers(
@@ -227,14 +204,39 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         new CreateNetworkFactory().createNetwork(client);
 
         List<CreateContainerFactory> factories = new LinkedList<>();
-        factories.add(new CreateSsoFactory(config));
+        factories.add(new CreateAuthFactory(config));
         factories.add(new CreateConfigFactory(config));
         factories.add(new CreateZillaFactory(config));
-        factories.add(new CreateKafkaFactory(config));
-        factories.add(new CreateRisingWaveFactory(config));
-        factories.add(new CreateApicurioFactory(config));
-        factories.add(new CreateKeycloakFactory(config));
-        factories.add(new CreateKarapaceFactory(config));
+        factories.add(new CreateMinioFactory(config));
+        factories.add(new CreatePostgresFactory(config));
+        factories.add(new CreateApiGenFactory(config));
+        factories.add(new CreateStudioFactory(config));
+
+        if (config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL))
+        {
+            factories.add(new CreateKafkaFactory(config));
+        }
+
+        if (config.risingwave.url.equals(DEFAULT_RISINGWAVE_URL))
+        {
+            factories.add(new CreateRisingWaveFactory(config));
+        }
+
+        if (config.registry.apicurio.url.equals(DEFAULT_APICURIO_URL))
+        {
+            factories.add(new CreateApicurioFactory(config));
+        }
+
+        if (config.keycloak.realm != null)
+        {
+            factories.add(new CreateKeycloakFactory(config));
+        }
+
+        if (config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL))
+        {
+            factories.add(new CreateKarapaceFactory(config));
+        }
+
         factories.add(new CreateAdminFactory(config));
         factories.add(new CreateUdfServerJavaFactory(config));
         factories.add(new CreateUdfServerPythonFactory(config));
@@ -308,25 +310,80 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         System.out.println("Verified containers are healthy");
     }
 
-    private void processSql(
+    private void processInitSql(
         ZillabaseConfig config)
     {
-        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave);
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave, "postgres");
 
         pgsql.connect();
 
         if (pgsql.connected)
         {
-            ZillabaseMigrationsHelper migrations = new ZillabaseMigrationsHelper();
+            pgsql.process("<initdb>",
+                """
+                CREATE USER zillabase;
+                CREATE SCHEMA zb_catalog AUTHORIZATION postgres;
+                CREATE TABLE zb_catalog.zviews(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR
+                );
+                CREATE TABLE zb_catalog.ztables(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR
+                );
+                CREATE TABLE zb_catalog.zfunctions(
+                    name VARCHAR PRIMARY KEY,
+                    sql VARCHAR
+                );
+                CREATE TABLE zb_catalog.schema_version(
+                    version VARCHAR PRIMARY KEY,
+                    description VARCHAR,
+                    script_name VARCHAR,
+                    checksum VARCHAR,
+                    applied_on TIMESTAMP
+                );
+                """);
+        }
+    }
 
-            migrations.list()
-                .filter(m -> pgsql.connected)
-                .forEach(pgsql::process);
+    private void processSystemSql(
+        ZillabaseConfig config)
+    {
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave, "postgres");
 
-            if (pgsql.connected)
-            {
-                pgsql.process(seedSqlPath);
-            }
+        pgsql.connect();
+
+        if (pgsql.connected)
+        {
+            pgsql.process("<systemdb>",
+                """
+                CREATE ZVIEW zcatalogs AS
+                  SELECT name AS source_id FROM "zb_catalog"."zviews"
+                  UNION ALL
+                  SELECT name AS source_id FROM "zb_catalog"."ztables";
+                """);
+        }
+    }
+
+    private void processSql(
+        ZillabaseConfig config)
+    {
+        PgsqlHelper pgsql = new PgsqlHelper(config.risingwave, "zillabase");
+
+        pgsql.connect();
+
+        if (pgsql.connected)
+        {
+            final int port = ZillabaseAdminConfig.DEFAULT_ADMIN_PGSQL_PORT;
+            final String db = config.risingwave.db;
+
+            ZillabaseMigrationService migrationService = new ZillabaseMigrationService(port, db);
+            List<ZillabaseMigrationFile> unappliedFiles = migrationService.unappliedFiles();
+
+            ZillabaseMigrationApplier applier = new ZillabaseMigrationApplier(port, db);
+            applier.apply(unappliedFiles);
+
+            pgsql.process(seedSqlPath);
         }
     }
 
@@ -524,6 +581,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     {
         String realm = config.keycloak.realm;
         String clientId = config.keycloak.client.clientId;
+
         HttpResponse<String> response;
         HttpRequest request;
         try
@@ -692,303 +750,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         return config;
     }
 
-    private void publishZillaConfig(
-        ZillabaseConfig config)
-    {
-        String zillaConfig = null;
-
-        try
-        {
-            Path zillaConfigPath = Paths.get("zillabase/zilla/zilla.yaml");
-            if (Files.exists(zillaConfigPath))
-            {
-                zillaConfig = Files.readString(zillaConfigPath);
-            }
-            else if (!operations.isEmpty())
-            {
-                List<String> suffixes = Arrays.asList("ReadItem", "Update", "Read", "Create", "Delete",
-                    "Get", "GetItem");
-
-                ZillaAsyncApiConfig zilla = new ZillaAsyncApiConfig();
-                ZillaCatalogConfig apicurioCatalog = new ZillaCatalogConfig();
-                apicurioCatalog.type = "apicurio";
-                apicurioCatalog.options = Map.of(
-                    "url", config.registry.apicurio.url,
-                    "group-id", config.registry.apicurio.groupId);
-
-                ZillaCatalogConfig karapaceCatalog = new ZillaCatalogConfig();
-                karapaceCatalog.type = "karapace";
-                karapaceCatalog.options = Map.of("url", config.registry.karapace.url);
-
-                ZillabaseKeycloakConfig keycloak = config.keycloak;
-                String realm = keycloak.realm;
-                String authnJwt = "jwt0";
-                if (realm != null)
-                {
-                    ZillaGuardConfig guard = new ZillaGuardConfig();
-                    guard.type = "jwt";
-                    guard.options.issuer = "%s/realms/%s".formatted(keycloak.url, realm);
-                    guard.options.audience = keycloak.audience;
-                    guard.options.keys = keycloak.jwks.formatted(realm);
-                    guard.options.identity = "preferred_username";
-
-                    zilla.guards = Map.of(authnJwt, guard);
-                }
-
-                Map<String, Map<String, Map<String, String>>> httpApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", HTTP_ASYNCAPI_ARTIFACT_ID,
-                        "version", "latest")));
-                Map<String, Map<String, Map<String, String>>> kafkaApi = Map.of(
-                    "catalog", Map.of("apicurio_catalog", Map.of("subject", KAFKA_ASYNCAPI_ARTIFACT_ID,
-                        "version", "latest")));
-
-                List<ZillaBindingRouteConfig> routes = new ArrayList<>();
-
-                for (String operation : operations)
-                {
-                    if (operation.endsWith("Replies"))
-                    {
-                        continue;
-                    }
-                    ZillaBindingRouteConfig route = new ZillaBindingRouteConfig();
-                    route.when = List.of(Map.of("api-id", "http_api", "operation-id", operation));
-                    route.with = Map.of("api-id", "kafka_api", "operation-id", suffixes.stream()
-                        .filter(operation::endsWith)
-                        .map(suffix -> operation.substring(0, operation.length() - suffix.length()))
-                        .findFirst()
-                        .orElse(operation));
-                    route.exit = "south_kafka_client";
-                    routes.add(route);
-                }
-
-                Map<String, ZillaBindingConfig> bindings = new HashMap<>();
-
-                ZillaBindingConfig northHttpServer = new ZillaBindingConfig();
-                northHttpServer.type = "asyncapi";
-                northHttpServer.kind = "server";
-                ZillaBindingOptionsConfig optionsConfig = new ZillaBindingOptionsConfig();
-                optionsConfig.specs = Map.of("http_api", httpApi);
-                if (realm != null)
-                {
-                    optionsConfig.http = new ZillaBindingOptionsConfig.HttpAuthorizationOptionsConfig();
-                    optionsConfig.http.authorization = Map.of(authnJwt,
-                        Map.of("credentials",
-                            Map.of("headers",
-                                Map.of("authorization", "Bearer {credentials}"),
-                                "query", Map.of("access_token", "{credentials}"))));
-                }
-                northHttpServer.options = optionsConfig;
-                northHttpServer.exit = "south_kafka_proxy";
-                bindings.put("north_http_server", northHttpServer);
-
-                ZillaBindingConfig southKafkaProxy = new ZillaBindingConfig();
-                southKafkaProxy.type = "asyncapi";
-                southKafkaProxy.kind = "proxy";
-                optionsConfig = new ZillaBindingOptionsConfig();
-                optionsConfig.specs = Map.of("http_api", httpApi, "kafka_api", kafkaApi);
-                southKafkaProxy.options = optionsConfig;
-                southKafkaProxy.routes = routes;
-                bindings.put("south_kafka_proxy", southKafkaProxy);
-
-                ZillaBindingConfig southKafkaClient = new ZillaBindingConfig();
-                southKafkaClient.type = "asyncapi";
-                southKafkaClient.kind = "client";
-                optionsConfig = new ZillaBindingOptionsConfig();
-                optionsConfig.specs = Map.of("kafka_api", kafkaApi);
-                List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig = new ArrayList<>();
-                extractedHeaders(topicsConfig);
-
-                ZillaBindingOptionsConfig.KafkaOptionsConfig kafkaOptionsConfig =
-                    new ZillaBindingOptionsConfig.KafkaOptionsConfig();
-                kafkaOptionsConfig.topics = topicsConfig;
-                optionsConfig.kafka = kafkaOptionsConfig;
-                southKafkaClient.options = optionsConfig;
-                bindings.put("south_kafka_client", southKafkaClient);
-
-                zilla.name = "zilla-http-kafka-asyncapi";
-                zilla.catalogs = Map.of(
-                    "apicurio_catalog", apicurioCatalog,
-                    "karapace_catalog", karapaceCatalog);
-                zilla.bindings = bindings;
-                zilla.telemetry = Map.of("exporters", Map.of("stdout_logs_exporter", Map.of("type", "stdout")));
-
-                ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
-                    .setSerializationInclusion(NON_NULL);
-
-                zillaConfig = mapper.writeValueAsString(zilla);
-                zillaConfig = zillaConfig.replaceAll("(:status|zilla:correlation-id)", "'$1'");
-
-            }
-
-            if (zillaConfig != null)
-            {
-                HttpRequest httpRequest = HttpRequest
-                    .newBuilder(toURI("http://localhost:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
-                        "/v1/config/zilla.yaml"))
-                    .PUT(HttpRequest.BodyPublishers.ofString(zillaConfig))
-                    .build();
-
-                HttpClient client = HttpClient.newHttpClient();
-                HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
-                if (httpResponse.statusCode() == 204)
-                {
-                    System.out.println("Config Server is populated with zilla.yaml");
-
-                    Path zillaFilesPath = Paths.get("zillabase/zilla/");
-
-                    if (Files.exists(zillaFilesPath))
-                    {
-                        Files.walk(zillaFilesPath)
-                            .filter(Files::isRegularFile)
-                            .filter(file -> !(file.endsWith("zilla.yaml") || file.getFileName().toString().startsWith(".")))
-                            .forEach(file ->
-                            {
-                                try
-                                {
-                                    Path relativePath = zillaFilesPath.relativize(file);
-                                    byte[] content = Files.readAllBytes(file);
-                                    HttpRequest zillaFileRequest = HttpRequest
-                                        .newBuilder(toURI("http://localhost:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
-                                            "/v1/config/%s".formatted(relativePath)))
-                                        .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
-                                        .build();
-
-                                    if (client.send(zillaFileRequest, HttpResponse.BodyHandlers.ofString()).statusCode() == 204)
-                                    {
-                                        System.out.println("Config Server is populated with %s".formatted(relativePath));
-                                    }
-                                }
-                                catch (IOException | InterruptedException ex)
-                                {
-                                    System.err.println("Failed to process file: %s : %s".formatted(file, ex.getMessage()));
-                                    ex.printStackTrace();
-                                }
-                            });
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.printStackTrace(System.err);
-        }
-    }
-
-    private void extractedHeaders(
-        List<ZillaBindingOptionsConfig.KafkaTopicConfig> topicsConfig)
-    {
-        for (KafkaTopicSchemaRecord record : records)
-        {
-            if (record.name.endsWith("_replies"))
-            {
-                ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
-                    new ZillaBindingOptionsConfig.KafkaTopicConfig();
-                topicConfig.name = record.name;
-                ZillaBindingOptionsConfig.TransformConfig transforms =
-                    new ZillaBindingOptionsConfig.TransformConfig();
-                transforms.headers = Map.of(":status", "${message.value.status}",
-                    "zilla:correlation-id", "${message.value.correlation_id}");
-                ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
-                value.model = record.type;
-                value.catalog = Map.of("catalog0",
-                    List.of(Map.of("subject", record.subject, "version", "latest")));
-                topicConfig.value = value;
-                topicConfig.transforms = List.of(transforms);
-                topicsConfig.add(topicConfig);
-            }
-            else
-            {
-                String identity = record.type.equals("protobuf")
-                    ? extractIdentityFieldFromProtobufSchema(record.schema)
-                    : extractIdentityFieldFromSchema(record.schema);
-                if (identity != null)
-                {
-                    ZillaBindingOptionsConfig.KafkaTopicConfig topicConfig =
-                        new ZillaBindingOptionsConfig.KafkaTopicConfig();
-                    topicConfig.name = record.name;
-                    ZillaBindingOptionsConfig.ModelConfig value = new ZillaBindingOptionsConfig.ModelConfig();
-                    value.model = record.type;
-                    value.catalog = Map.of("catalog0",
-                        List.of(Map.of("subject", record.subject, "version", "latest")));
-                    topicConfig.value = value;
-                    ZillaBindingOptionsConfig.TransformConfig transforms =
-                        new ZillaBindingOptionsConfig.TransformConfig();
-                    transforms.headers = Map.of("identity", "${message.value.%s}".formatted(identity));
-                    topicConfig.transforms = List.of(transforms);
-                    topicsConfig.add(topicConfig);
-                }
-            }
-        }
-    }
-
-    private String extractIdentityFieldFromProtobufSchema(
-        String schema)
-    {
-        String identity = null;
-        String[] parts = schema.split(";");
-        for (String part : parts)
-        {
-            part = part.trim();
-            if (part.contains("message") || part.contains("syntax"))
-            {
-                continue;
-            }
-            String[] tokens = part.split("\\s+");
-            if (tokens.length >= 2)
-            {
-                String fieldName = tokens[1];
-                if (fieldName.endsWith("_identity"))
-                {
-                    identity = fieldName;
-                    break;
-                }
-            }
-        }
-        return identity;
-    }
-
-    private String extractIdentityFieldFromSchema(
-        String schema)
-    {
-        AtomicReference<String> identity = new AtomicReference<>(null);
-        try
-        {
-            ObjectMapper schemaMapper = new ObjectMapper();
-            JsonNode schemaObject = schemaMapper.readTree(schema);
-            if (schemaObject.has("fields"))
-            {
-                JsonNode fieldsNode = schemaObject.get("fields");
-                StreamSupport.stream(fieldsNode.spliterator(), false)
-                    .forEach(field ->
-                    {
-                        String fieldName = field.has("name")
-                            ? field.get("name").asText()
-                            : fieldsNode.fieldNames().next();
-                        if (fieldName.endsWith("_identity"))
-                        {
-                            identity.set(fieldName);
-                        }
-                    });
-            }
-            else if (schemaObject.has("properties"))
-            {
-                JsonNode fieldsNode = schemaObject.get("properties");
-                fieldsNode.fieldNames().forEachRemaining(fieldName ->
-                {
-                    if (fieldName.endsWith("_identity"))
-                    {
-                        identity.set(fieldName);
-                    }
-                });
-            }
-        }
-        catch (JsonProcessingException ex)
-        {
-        }
-        return identity.get();
-    }
-
     private void createConfigServerKafkaTopic(
         ZillabaseConfig config)
     {
@@ -1006,7 +767,9 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 {
                     NewTopic configTopic = new NewTopic(ZILLABASE_CONFIG_KAFKA_TOPIC, 1, (short) 1);
                     configTopic.configs(Map.of("cleanup.policy", "compact"));
-                    adminClient.createTopics(List.of(configTopic)).all().get();
+                    NewTopic eventTopic = new NewTopic(ZILLABASE_API_GEN_EVENTS_KAFKA_TOPIC, 1, (short) 1);
+                    eventTopic.configs(Map.of("cleanup.policy", "delete"));
+                    adminClient.createTopics(List.of(configTopic, eventTopic)).all().get();
                     break;
                 }
             }
@@ -1018,67 +781,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 {
                     System.err.println("Error creating Zillabase Config Server topic : %s".formatted(ex.getMessage()));
                 }
-            }
-        }
-    }
-
-    private void processAsyncApiSpecs(
-        ZillabaseConfig config)
-    {
-        Path kafkaSpecPath = Paths.get("zillabase/specs/kafka-asyncapi.yaml");
-        String kafkaSpec = null;
-        if (Files.exists(kafkaSpecPath))
-        {
-            try
-            {
-                kafkaSpec = Files.readString(kafkaSpecPath);
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
-            }
-        }
-        else
-        {
-            resolveKafkaTopicsAndSchemas(config);
-            if (!records.isEmpty())
-            {
-                kafkaSpec = generateKafkaAsyncApiSpecs(config);
-            }
-        }
-
-        if (kafkaSpec != null)
-        {
-            registerAsyncApiSpec(KAFKA_ASYNCAPI_ARTIFACT_ID, kafkaSpec);
-        }
-
-        Path httpSpecPath = Paths.get("zillabase/specs/http-asyncapi.yaml");
-        String httpSpec = null;
-        if (Files.exists(kafkaSpecPath))
-        {
-            try
-            {
-                httpSpec = Files.readString(httpSpecPath);
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
-            }
-        }
-        else if (kafkaSpec != null)
-        {
-            httpSpec = generateHttpAsyncApiSpecs(config, kafkaSpec);
-        }
-
-        if (httpSpec != null)
-        {
-            registerAsyncApiSpec(HTTP_ASYNCAPI_ARTIFACT_ID, httpSpec);
-
-            JsonValue jsonValue = Json.createReader(new StringReader(httpSpec)).readValue();
-            JsonObject operations = jsonValue.asJsonObject().getJsonObject("operations");
-            for (Map.Entry<String, JsonValue> operation : operations.entrySet())
-            {
-                this.operations.add(operation.getKey());
             }
         }
     }
@@ -1220,565 +922,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
     }
 
-    private void registerAsyncApiSpec(
-        String id,
-        String spec)
-    {
-        if (spec != null)
-        {
-            try
-            {
-                File tempFile = File.createTempFile("zillabase-asyncapi-spec", ".tmp");
-
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile)))
-                {
-                    writer.write(spec);
-                }
-
-                ZillabaseAsyncapiAddCommand command = new ZillabaseAsyncapiAddCommand();
-                command.helpOption = new HelpOption<>();
-                command.spec = tempFile.getPath();
-                command.id = id;
-                command.run();
-                tempFile.delete();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
-            }
-        }
-    }
-
-    private void resolveKafkaTopicsAndSchemas(
-        ZillabaseConfig config)
-    {
-        try (AdminClient adminClient = AdminClient.create(Map.of(
-            AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
-                ? "localhost:9092" : config.kafka.bootstrapUrl)))
-        {
-            final HttpClient client = HttpClient.newHttpClient();
-
-            KafkaFuture<Collection<TopicListing>> topics = adminClient.listTopics().listings();
-            for (TopicListing topic : topics.get())
-            {
-                if (!topic.isInternal())
-                {
-                    String topicName = topic.name();
-
-                    ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, topicName);
-                    DescribeConfigsResult result = adminClient.describeConfigs(List.of(resource));
-                    Map<ConfigResource, Config> configMap = result.all().get();
-
-                    Config topicConfig = configMap.get(resource);
-                    String[] policies = topicConfig.get(CLEANUP_POLICY_CONFIG).value().split(",");
-
-                    String subject = "%s-value".formatted(topicName);
-                    String schema = resolveSchema(config, client, subject);
-                    if (schema != null)
-                    {
-                        JsonReader reader = Json.createReader(new StringReader(schema));
-                        JsonObject object = reader.readObject();
-
-                        if (object.containsKey("schema"))
-                        {
-                            String schemaStr = object.getString("schema");
-                            String type = resolveType(schemaStr);
-                            records.add(new KafkaTopicSchemaRecord(topicName, policies,
-                                matcher.reset(topicName.replace("%s.".formatted(config.risingwave.db), ""))
-                                    .replaceAll(match -> match.group(2).toUpperCase()),
-                                subject, type, schemaStr));
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.err.println("Error resolving Kafka Topics & Schemas Info");
-        }
-    }
-
-    private String generateKafkaAsyncApiSpecs(
-        ZillabaseConfig config)
-    {
-        String spec = null;
-        try
-        {
-            final Components components = new Components();
-            final Map<String, Object> schemas = new HashMap<>();
-            final Map<String, Object> messages = new HashMap<>();
-            final Map<String, Object> channels = new HashMap<>();
-            final Map<String, Object> operations = new HashMap<>();
-
-            Message message;
-            Channel channel;
-            Operation operation;
-            Reference reference;
-
-            Info info = new Info();
-            info.setTitle("API Document for Kafka Cluster");
-            info.setVersion("1.0.0");
-            License license = new License("Aklivity Community License",
-                "https://github.com/aklivity/zillabase/blob/develop/LICENSE");
-            info.setLicense(license);
-
-            Server server = new Server();
-            server.setHost(config.kafka.bootstrapUrl);
-            server.setProtocol("kafka");
-
-            KafkaServerBinding kafkaServerBinding = new KafkaServerBinding();
-            kafkaServerBinding.setSchemaRegistryUrl(config.registry.karapace.url);
-            kafkaServerBinding.setSchemaRegistryVendor("karapace");
-            server.setBindings(Map.of("kafka", kafkaServerBinding));
-
-            for (KafkaTopicSchemaRecord record : records)
-            {
-                String topicName = record.name;
-                String label = record.label;
-                String subject = record.subject;
-                String messageName = "%sMessage".formatted(label);
-
-                String name = topicName;
-                if (name.startsWith(config.risingwave.db))
-                {
-                    name = name.replace("%s.".formatted(config.risingwave.db), "");
-                }
-
-                channel = new Channel();
-                channel.setAddress(topicName);
-                KafkaChannelBinding kafkaChannelBinding = new KafkaChannelBinding();
-                KafkaChannelTopicConfiguration topicConfiguration = new KafkaChannelTopicConfiguration();
-                List<KafkaChannelTopicCleanupPolicy> policies = new ArrayList<>();
-                for (String policy : record.cleanupPolicies)
-                {
-                    policies.add(KafkaChannelTopicCleanupPolicy.valueOf(policy.toUpperCase()));
-                }
-                topicConfiguration.setCleanupPolicy(policies);
-                kafkaChannelBinding.setTopicConfiguration(topicConfiguration);
-                channel.setBindings(Map.of("kafka", kafkaChannelBinding));
-                reference = new Reference("#/components/messages/%s".formatted(messageName));
-                channel.setMessages(Map.of(messageName, reference));
-                channels.put(name, channel);
-
-                ObjectMapper schemaMapper = new ObjectMapper();
-                JsonNode schemaObject = schemaMapper.readTree(record.schema);
-                if ("record".equals(schemaObject.get("type").asText()))
-                {
-                    ((ObjectNode) schemaObject).put("type", "object");
-                }
-                schemas.put(subject, schemaObject);
-
-                message = new Message();
-                message.setName(messageName);
-                message.setContentType("application/%s".formatted(record.type));
-
-                reference = new Reference("#/components/schemas/%s".formatted(subject));
-                message.setPayload(reference);
-                messages.put(messageName, message);
-
-                operation = new Operation();
-                operation.setAction(OperationAction.SEND);
-                reference = new Reference("#/channels/%s".formatted(name));
-                operation.setChannel(reference);
-                reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
-                operation.setMessages(Collections.singletonList(reference));
-                if (name.endsWith("_commands"))
-                {
-                    String replyTopic = name.replace("_commands", "_replies");
-                    OperationReply reply = new OperationReply();
-                    reference = new Reference("#/channels/%s".formatted(replyTopic));
-                    reply.setChannel(reference);
-                    operation.setReply(reply);
-                }
-
-                operations.put("do%s".formatted(label), operation);
-
-                operation = new Operation();
-                operation.setAction(OperationAction.RECEIVE);
-                reference = new Reference("#/channels/%s".formatted(name));
-                operation.setChannel(reference);
-                reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
-                operation.setMessages(Collections.singletonList(reference));
-                operations.put("on%s".formatted(label), operation);
-            }
-
-            components.setSchemas(schemas);
-            components.setMessages(messages);
-
-            spec = buildAsyncApiSpec(info, components, channels, operations, Map.of("plain", server));
-        }
-        catch (Exception ex)
-        {
-            System.err.println("Error generating Kafka AsyncApi Spec");
-            ex.printStackTrace(System.err);
-        }
-        return spec;
-    }
-
-    private String generateHttpAsyncApiSpecs(
-        ZillabaseConfig config,
-        String kafkaSpec)
-    {
-        String spec = null;
-        try
-        {
-            final Components components = new Components();
-            final Map<String, Object> schemas = new HashMap<>();
-            final Map<String, Object> messages = new HashMap<>();
-            final Map<String, Object> channels = new HashMap<>();
-            final Map<String, Object> operations = new HashMap<>();
-            final Map<String, Object> servers = new HashMap<>();
-
-            Info info = new Info();
-            info.setTitle("API Document for REST APIs");
-            info.setVersion("1.0.0");
-            License license = new License("Aklivity Community License",
-                "https://github.com/aklivity/zillabase/blob/develop/LICENSE");
-            info.setLicense(license);
-
-            boolean secure = config.keycloak.realm != null;
-
-            String securitySchemaName = "httpOauth";
-            Reference security = new Reference("#/components/securitySchemes/%s".formatted(securitySchemaName));
-
-            Server server = new Server();
-            server.setHost("localhost:8080");
-            server.setProtocol("http");
-            if (secure)
-            {
-                server.setSecurity(List.of(security));
-            }
-            servers.put("http", server);
-
-            JsonValue jsonValue = Json.createReader(new StringReader(kafkaSpec)).readValue();
-            ObjectMapper schemaMapper = new ObjectMapper();
-
-            JsonObject channelsJson = jsonValue.asJsonObject().getJsonObject("channels");
-            for (Map.Entry<String, JsonValue> channelJson : channelsJson.entrySet())
-            {
-                String name = channelJson.getKey();
-                if (name.endsWith("_replies"))
-                {
-                    continue;
-                }
-
-                String label = matcher.reset(name).replaceAll(match -> match.group(2).toUpperCase());
-                if (secure)
-                {
-                    String scope = label.toLowerCase();
-                    config.keycloak.scopes.add("%s:read".formatted(scope));
-                    config.keycloak.scopes.add("%s:write".formatted(scope));
-                }
-                String messageName = "%sMessage".formatted(label);
-                JsonValue channelValue = channelJson.getValue();
-                Channel channel = new Channel();
-                channel.setAddress("/%s".formatted(name));
-                Map<String, Object> messagesRef = new HashMap<>();
-                Map<String, Object> itemMessagesRef = new HashMap<>();
-                for (Map.Entry<String, JsonValue> entry : channelValue.asJsonObject().getJsonObject("messages").entrySet())
-                {
-                    messagesRef.put(entry.getKey(), schemaMapper.readTree(entry.getValue().toString()));
-                    itemMessagesRef.put(entry.getKey(), schemaMapper.readTree(entry.getValue().toString()));
-
-                    ObjectNode arrayMessageRef = (ObjectNode) schemaMapper.readTree(entry.getValue().toString());
-                    arrayMessageRef.put("$ref", "#/components/messages/" + entry.getKey() + "s");
-                    messagesRef.put(entry.getKey() + "s", arrayMessageRef);
-                }
-                channel.setMessages(messagesRef);
-                channels.put(name, channel);
-
-                channel = new Channel();
-                channel.setAddress("/%s/{id}".formatted(name));
-                Parameter parameter = new Parameter();
-                parameter.setDescription("Id of the item.");
-                channel.setParameters(Map.of("id", parameter));
-                channel.setMessages(itemMessagesRef);
-                channels.put("%s-item".formatted(name), channel);
-
-                // Channel for SSE endpoints
-                channel = new Channel();
-                channel.setAddress("/%s-stream".formatted(name));
-                channel.setMessages(itemMessagesRef);
-                channels.put("%s-stream".formatted(name), channel);
-
-                channel = new Channel();
-                channel.setAddress("/%s-stream-identity".formatted(name));
-                channel.setMessages(itemMessagesRef);
-                channels.put("%s-stream-identity".formatted(name), channel);
-
-                JsonObject channelBinding = channelValue.asJsonObject().getJsonObject("bindings");
-                boolean compact = false;
-                if (channelBinding.containsKey("kafka"))
-                {
-                    JsonObject kafka = channelBinding.getJsonObject("kafka");
-                    JsonObject topic = kafka.getJsonObject("topicConfiguration");
-                    JsonArray policies = topic != null ? topic.getJsonArray("cleanup.policy") : null;
-
-                    if (policies != null)
-                    {
-                        for (JsonValue policy : policies)
-                        {
-                            if (policy.getValueType() == JsonValue.ValueType.STRING &&
-                                "compact".equals(policy.toString().replace("\"", "")))
-                            {
-                                compact = true;
-                            }
-                        }
-                    }
-                }
-
-                generateHttpOperations(operations, secure, security, name, label, messageName, compact);
-            }
-
-            JsonObject componentsJson = jsonValue.asJsonObject().getJsonObject("components");
-            JsonObject messagesJson = componentsJson.getJsonObject("messages");
-            JsonObject schemasJson = componentsJson.getJsonObject("schemas");
-            for (Map.Entry<String, JsonValue> messageJson : messagesJson.entrySet())
-            {
-                JsonNode originalMessage = schemaMapper.readTree(messageJson.getValue().toString());
-                String key = messageJson.getKey();
-                messages.put(key, originalMessage);
-
-                String contentType = originalMessage.has("contentType") ?
-                    originalMessage.get("contentType").asText() : "application/json";
-
-                String arrayMessageKey = key + "s";
-                ObjectNode arrayMessage = schemaMapper.createObjectNode();
-
-                ObjectNode payloadNode = schemaMapper.createObjectNode();
-                payloadNode.put("$ref", originalMessage.get("payload").get("$ref").asText() + "s");
-
-                arrayMessage.set("payload", payloadNode);
-                arrayMessage.put("contentType", contentType);
-                arrayMessage.put("name", arrayMessageKey);
-
-                messages.put(arrayMessageKey, arrayMessage);
-            }
-
-            for (Map.Entry<String, JsonValue> schemaJson : schemasJson.entrySet())
-            {
-                schemas.put(schemaJson.getKey(), schemaMapper.readTree(schemaJson.getValue().toString()));
-
-                String arraySchemaKey = schemaJson.getKey() + "s";
-                ObjectNode arraySchema = schemaMapper.createObjectNode();
-                arraySchema.put("type", "array");
-
-                ObjectNode itemsNode = schemaMapper.createObjectNode();
-                itemsNode.put("$ref", "#/components/schemas/" + schemaJson.getKey());
-
-                arraySchema.set("items", itemsNode);
-                arraySchema.put("name",
-                    arraySchemaKey.replace("%s.".formatted(config.risingwave.db), ""));
-                arraySchema.put("namespace", config.risingwave.db);
-                schemas.put(arraySchemaKey, arraySchema);
-            }
-
-            if (secure)
-            {
-                OAuth2SecurityScheme securityScheme = OAuth2SecurityScheme.oauth2Builder()
-                    .flows(new OAuthFlows())
-                    .scopes(config.keycloak.scopes)
-                    .build();
-                components.setSecuritySchemes(Map.of(securitySchemaName, securityScheme));
-            }
-
-            components.setSchemas(schemas);
-            components.setMessages(messages);
-
-            spec = buildAsyncApiSpec(info, components, channels, operations, servers);
-        }
-        catch (Exception ex)
-        {
-            System.err.println("Error generating Http AsyncApi Spec");
-            ex.printStackTrace(System.err);
-        }
-
-        return spec;
-    }
-
-    private void generateHttpOperations(
-        Map<String, Object> operations,
-        boolean secure,
-        Reference security,
-        String name,
-        String label,
-        String messageName,
-        boolean compact)
-    {
-        String identity = null;
-        for (KafkaTopicSchemaRecord record : records)
-        {
-            if (label.equals(record.label))
-            {
-                identity = record.type.equals("protobuf")
-                    ? extractIdentityFieldFromProtobufSchema(record.schema)
-                    : extractIdentityFieldFromSchema(record.schema);
-            }
-        }
-
-        // HTTP Operations
-        Operation operation = new Operation();
-        operation.setAction(OperationAction.SEND);
-        Reference reference = new Reference("#/channels/%s".formatted(name));
-        operation.setChannel(reference);
-        reference = new Reference("#/channels/%s/messages/%s".formatted(name, messageName));
-        operation.setMessages(Collections.singletonList(reference));
-        HTTPOperationBinding httpBinding = new HTTPOperationBinding();
-        httpBinding.setMethod(POST);
-        Map<String, Object> bindings = new HashMap<>();
-        bindings.put("http", httpBinding);
-        if (secure)
-        {
-            ZillaHttpOperationBinding zillaHttpBinding =
-                new ZillaHttpOperationBinding(POST, Map.of("zilla:identity", "{identity}"), null);
-            bindings.put("x-zilla-http-kafka", zillaHttpBinding);
-            operation.setSecurity(List.of(security));
-        }
-        operation.setBindings(bindings);
-        operations.put(compact ? "do%sCreate".formatted(label) : "do%s".formatted(label), operation);
-
-        if (compact)
-        {
-            operation = new Operation();
-            operation.setAction(OperationAction.SEND);
-            reference = new Reference("#/channels/%s-item".formatted(name));
-            operation.setChannel(reference);
-            reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
-            operation.setMessages(Collections.singletonList(reference));
-            httpBinding = new HTTPOperationBinding();
-            httpBinding.setMethod(PUT);
-            bindings = new HashMap<>();
-            bindings.put("http", httpBinding);
-
-            if (secure)
-            {
-                ZillaHttpOperationBinding zillaHttpBinding = new ZillaHttpOperationBinding(PUT,
-                    Map.of("zilla:identity", "{identity}"), null);
-                bindings.put("x-zilla-http-kafka", zillaHttpBinding);
-                operation.setSecurity(List.of(security));
-            }
-            operation.setBindings(bindings);
-            operations.put("do%sUpdate".formatted(label), operation);
-        }
-
-        operation = new Operation();
-        operation.setAction(OperationAction.RECEIVE);
-        reference = new Reference("#/channels/%s".formatted(name));
-        operation.setChannel(reference);
-        reference = new Reference("#/channels/%s/messages/%ss".formatted(name, messageName));
-        operation.setMessages(List.of(reference));
-        httpBinding = new HTTPOperationBinding();
-        httpBinding.setMethod(GET);
-        bindings = new HashMap<>();
-        bindings.put("http", httpBinding);
-        if (identity != null)
-        {
-            AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
-            filter.headers = Map.of("identity", "{identity}");
-            ZillaHttpOperationBinding zillaHttpBinding = new ZillaHttpOperationBinding(GET, null,
-                List.of(filter));
-            bindings.put("x-zilla-http-kafka", zillaHttpBinding);
-        }
-        operation.setBindings(bindings);
-        if (secure)
-        {
-            operation.setSecurity(List.of(security));
-        }
-        operations.put("on%sGet".formatted(label), operation);
-
-        operation = new Operation();
-        operation.setAction(OperationAction.RECEIVE);
-        reference = new Reference("#/channels/%s-item".formatted(name));
-        operation.setChannel(reference);
-        reference = new Reference("#/channels/%s-item/messages/%s".formatted(name, messageName));
-        operation.setMessages(List.of(reference));
-        operation.setBindings(bindings);
-        if (secure)
-        {
-            operation.setSecurity(List.of(security));
-        }
-        operations.put("on%sGetItem".formatted(label), operation);
-
-        // SSE Operations
-        operation = new Operation();
-        operation.setAction(OperationAction.RECEIVE);
-        reference = new Reference("#/channels/%s-stream-identity".formatted(name));
-        operation.setChannel(reference);
-        reference = new Reference("#/channels/%s-stream-identity/messages/%s".formatted(name, messageName));
-        operation.setMessages(List.of(reference));
-        ZillaSseOperationBinding sseBinding = new ZillaSseOperationBinding();
-        AsyncapiKafkaFilter filter = new AsyncapiKafkaFilter();
-        if (secure)
-        {
-            filter.key = "{identity}";
-        }
-        ZillaSseKafkaOperationBinding sseKafkaBinding = new ZillaSseKafkaOperationBinding(List.of(filter));
-        Map<String, Object> operationBindings = Map.of(
-            "x-zilla-sse", sseBinding,
-            "x-zilla-sse-kafka", sseKafkaBinding);
-        operation.setBindings(operationBindings);
-        if (secure)
-        {
-            operation.setSecurity(List.of(security));
-        }
-        operations.put("on%sReadItem".formatted(label), operation);
-
-
-        operation = new Operation();
-        operation.setAction(OperationAction.RECEIVE);
-        reference = new Reference("#/channels/%s-stream".formatted(name));
-        operation.setChannel(reference);
-        reference = new Reference("#/channels/%s-stream/messages/%s".formatted(name, messageName));
-        operation.setMessages(List.of(reference));
-        bindings = new HashMap<>();
-        filter = new AsyncapiKafkaFilter();
-        if (identity != null)
-        {
-            filter.headers = Map.of("identity", "{identity}");
-            sseKafkaBinding = new ZillaSseKafkaOperationBinding(List.of(filter));
-            bindings.put("x-zilla-sse-kafka", sseKafkaBinding);
-        }
-        bindings.put("x-zilla-sse", sseBinding);
-        operation.setBindings(bindings);
-        if (secure)
-        {
-            operation.setSecurity(List.of(security));
-        }
-        operations.put("on%sRead".formatted(label), operation);
-    }
-
-    private String buildAsyncApiSpec(
-        Info info,
-        Components components,
-        Map<String, Object> channels,
-        Map<String, Object> operations,
-        Map<String, Object> servers)
-    {
-        String spec = null;
-        try
-        {
-            final AsyncAPI asyncAPI = new AsyncAPI();
-
-            asyncAPI.setAsyncapi("3.0.0");
-            asyncAPI.setInfo(info);
-            asyncAPI.setServers(servers);
-            asyncAPI.setComponents(components);
-            asyncAPI.setChannels(channels);
-            asyncAPI.setOperations(operations);
-
-            ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
-                    .setSerializationInclusion(NON_NULL);
-
-            spec = mapper.writeValueAsString(asyncAPI);
-        }
-        catch (JsonProcessingException ex)
-        {
-            System.err.println("Error building AsyncApi Spec");
-            ex.printStackTrace(System.err);
-        }
-        return spec;
-    }
-
     private String resolveType(
         String schema)
     {
@@ -1815,31 +958,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             System.err.format("Failed to parse schema type: %s:\n", ex.getMessage());
         }
         return type;
-    }
-
-    private String resolveSchema(
-        ZillabaseConfig config,
-        HttpClient client,
-        String subject)
-    {
-        String responseBody;
-        try
-        {
-            HttpRequest httpRequest = HttpRequest
-                .newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
-                        ? DEFAULT_CLIENT_KARAPACE_URL : config.registry.karapace.url,
-                    "/subjects/%s/versions/latest".formatted(subject)))
-                .GET()
-                .build();
-
-            HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            responseBody = httpResponse.statusCode() == 200 ? httpResponse.body() : null;
-        }
-        catch (Exception ex)
-        {
-            responseBody = null;
-        }
-        return responseBody;
     }
 
     private URI toURI(
@@ -2030,6 +1148,52 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
+    private static final class CreateStudioFactory extends CreateContainerFactory
+    {
+        CreateStudioFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "studio", "ghcr.io/aklivity/zillabase/studio:%s".formatted(config.studio.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            int port = config.studio.port;
+
+            List<ExposedPort> exposedPorts = List.of(ExposedPort.tcp(port));
+
+            List<PortBinding> portBindings = List.of(new PortBinding(Ports.Binding.bindPort(port),
+                ExposedPort.tcp(port)));
+
+            List<String> env = Optional.ofNullable(config.zilla.env).orElse(List.of());
+
+            CreateContainerCmd container = client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withPortBindings(portBindings)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withExposedPorts(exposedPorts)
+                .withCmd("start", "-v", "-e")
+                .withTty(true)
+                .withEnv(env)
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(5L))
+                    .withTimeout(SECONDS.toNanos(3L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c",
+                        "echo -n '' > /dev/tcp/127.0.0.1/%d".formatted(port))));
+
+            mountZillaConfig(container, config.studio.zillaConfig());
+
+            return container;
+        }
+    }
+
     private static final class CreateKafkaFactory extends CreateContainerFactory
     {
         CreateKafkaFactory(
@@ -2043,6 +1207,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             ExposedPort exposedPort = ExposedPort.tcp(9092);
+            String volume = "/bitnami/kafka";
+
+            client.createVolumeCmd()
+                .withName(ZILLABASE_KAFKA_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
 
             return client
                 .createContainerCmd(image)
@@ -2051,7 +1221,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 .withHostName(hostname)
                 .withHostConfig(HostConfig.newHostConfig()
                     .withNetworkMode(network)
-                    .withRestartPolicy(unlessStoppedRestart()))
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(ZILLABASE_KAFKA_VOLUME_NAME, new Volume(volume))))
                 .withPortBindings(new PortBinding(Ports.Binding.bindPort(9092), exposedPort))
                 .withExposedPorts(exposedPort)
                 .withTty(true)
@@ -2063,7 +1234,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     "KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093",
                     "KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT",
                     "KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER",
-                    "KAFKA_CFG_LOG_DIRS=/tmp/logs",
+                    "KAFKA_CFG_LOG_DIRS=%s/logs".formatted(volume),
                     "KAFKA_CFG_PROCESS_ROLES=broker,controller",
                     "KAFKA_CFG_LISTENERS=CLIENT://:9092,INTERNAL://:29092,CONTROLLER://:9093",
                     "KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL",
@@ -2082,7 +1253,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         CreateApicurioFactory(
             ZillabaseConfig config)
         {
-            super(config, "apicurio", "apicurio/apicurio-registry-mem:%s".formatted(config.registry.apicurio.tag));
+            super(config, "apicurio", "apicurio/apicurio-registry:%s".formatted(config.registry.apicurio.tag));
         }
 
         @Override
@@ -2098,6 +1269,10 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
+                .withEnv(
+                    "QUARKUS_HTTP_CORS_ORIGINS=*",
+                    "APICURIO_STORAGE_KIND=kafkasql",
+                    "APICURIO_KAFKASQL_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl))
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
@@ -2151,6 +1326,89 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
+    private static final class CreatePostgresFactory extends CreateContainerFactory
+    {
+        CreatePostgresFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "postgres", "postgres:15-alpine");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            client.createVolumeCmd()
+                .withName(ZILLABASE_POSTGRES_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(
+                        ZILLABASE_POSTGRES_VOLUME_NAME, new Volume("/var/lib/postgresql/data"))))
+                .withEnv(
+                    "POSTGRES_USER=postgres",
+                    "POSTGRES_DB=metadata",
+                    "POSTGRES_HOST_AUTH_METHOD=trust",
+                    "POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C")
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(2L))
+                    .withTimeout(SECONDS.toNanos(5L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD-SHELL", "pg_isready -U postgres")));
+        }
+    }
+
+    private static final class CreateMinioFactory extends CreateContainerFactory
+    {
+        CreateMinioFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "minio", "quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z");
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            client.createVolumeCmd()
+                .withName(ZILLABASE_MINIO_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart())
+                    .withBinds(new Bind(ZILLABASE_MINIO_VOLUME_NAME, new Volume("/data"))))
+                .withTty(true)
+                .withCmd("server", "--address", "0.0.0.0:9301", "/data")
+                .withEnv("MINIO_ROOT_PASSWORD=hummockadmin",
+                    "MINIO_ROOT_USER=hummockadmin")
+                .withEntrypoint(
+                    "/bin/sh", "-c",
+                    String.join(" && ",
+                        "set -e",
+                        "mkdir -p /data/hummock001",
+                        "/usr/bin/docker-entrypoint.sh \"$0\" \"$@\""))
+                .withHealthcheck(new HealthCheck()
+                    .withInterval(SECONDS.toNanos(1L))
+                    .withTimeout(SECONDS.toNanos(5L))
+                    .withRetries(5)
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/9301")));
+        }
+    }
 
     private static final class CreateRisingWaveFactory extends CreateContainerFactory
     {
@@ -2173,7 +1431,29 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withNetworkMode(network)
                     .withRestartPolicy(unlessStoppedRestart()))
                 .withTty(true)
-                .withCmd("playground")
+                .withEnv("RW_STANDALONE_META_OPTS=" +
+                        "--listen-addr 0.0.0.0:5690 " +
+                        "--advertise-addr 0.0.0.0:5690 " +
+                        "--dashboard-host 0.0.0.0:5691 " +
+                        "--backend sql " +
+                        "--sql-endpoint postgres://postgres:@postgres.zillabase.dev:5432/metadata " +
+                        "--state-store hummock+minio://hummockadmin:hummockadmin@minio.zillabase.dev:9301/hummock001 " +
+                        "--data-directory hummock_001",
+                    "RW_STANDALONE_COMPUTE_OPTS=" +
+                        "--listen-addr 0.0.0.0:5688 " +
+                        "--advertise-addr 0.0.0.0:5688 " +
+                        "--meta-address http://0.0.0.0:5690 ",
+                    "RW_STANDALONE_FRONTEND_OPTS=" +
+                        "--listen-addr 0.0.0.0:4566 " +
+                        "--advertise-addr 0.0.0.0:4566 " +
+                        "--health-check-listener-addr 0.0.0.0:6786 " +
+                        "--meta-addr http://0.0.0.0:5690 ",
+                    "RW_STANDALONE_COMPACTOR_OPTS=" +
+                        "--listen-addr 0.0.0.0:6660 " +
+                        "--advertise-addr 0.0.0.0:6660 " +
+                        "--meta-address http://0.0.0.0:5690"
+                )
+                .withCmd("standalone")
                 .withHealthcheck(new HealthCheck()
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
@@ -2222,12 +1502,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private static final class CreateSsoFactory extends CreateContainerFactory
+    private static final class CreateApiGenFactory extends CreateContainerFactory
     {
-        CreateSsoFactory(
+        CreateApiGenFactory(
             ZillabaseConfig config)
         {
-            super(config, "sso", "ghcr.io/aklivity/zillabase/sso:%s".formatted(config.sso.tag));
+            super(config, "api-gen", "ghcr.io/aklivity/zillabase/api-gen:%s".formatted(config.apiGen.tag));
         }
 
         @Override
@@ -2235,7 +1515,41 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             List<String> envVars = Arrays.asList(
-                "ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
+                "ADMIN_HTTP_URL=http://admin.zillabase.dev:%d".formatted(DEFAULT_ADMIN_HTTP_PORT),
+                "KAFKA_BOOTSTRAP_SERVERS=%s".formatted(config.kafka.bootstrapUrl),
+                "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
+                "APICURIO_REGISTRY_URL=%s".formatted(config.registry.apicurio.url),
+                "KEYLOAK_JWT_SECRET=%s".formatted(config.keycloak.jwks),
+                "DEBUG=%s".formatted(true));
+
+            return client
+                .createContainerCmd(image)
+                .withLabels(project)
+                .withName(name)
+                .withHostName(hostname)
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode(network)
+                    .withRestartPolicy(unlessStoppedRestart()))
+                .withEnv(envVars)
+                .withTty(true);
+        }
+    }
+
+    private static final class CreateAuthFactory extends CreateContainerFactory
+    {
+        CreateAuthFactory(
+            ZillabaseConfig config)
+        {
+            super(config, "auth", "ghcr.io/aklivity/zillabase/auth:%s".formatted(config.auth.tag));
+        }
+
+        @Override
+        CreateContainerCmd createContainer(
+            DockerClient client)
+        {
+            List<String> envVars = Arrays.asList(
+                "AUTH_SERVER_PORT=%d".formatted(DEFAULT_AUTH_PORT),
+                "KEYCLOAK_REALM=%s".formatted(config.keycloak.realm),
                 "DEBUG=%s".formatted(true));
 
             return client
@@ -2252,7 +1566,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withInterval(SECONDS.toNanos(5L))
                     .withTimeout(SECONDS.toNanos(3L))
                     .withRetries(5)
-                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s".formatted(DEFAULT_SSO_PORT))));
+                    .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/%s".formatted(DEFAULT_AUTH_PORT))));
         }
     }
 
@@ -2278,6 +1592,8 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
             URI apicurio = URI.create(config.registry.apicurio.url);
             URI configServer = URI.create(config.admin.configServerUrl);
+            URI udfPythonApiUrl = URI.create(config.udf.python.apiUrl);
+            URI udfJavaApiUrl = URI.create(config.udf.java.apiUrl);
             String risingwaveUrl = config.risingwave.url;
             String[] risingwave = risingwaveUrl.split(":");
 
@@ -2287,15 +1603,19 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                 "RISINGWAVE_PORT=%s".formatted(risingwave[1]),
                 "CONFIG_SERVER_HOST=%s".formatted(configServer.getHost()),
                 "CONFIG_SERVER_PORT=%d".formatted(configServer.getPort()),
+                "PYTHON_UDF_SERVER_HOST=%s".formatted(udfPythonApiUrl.getHost()),
+                "PYTHON_UDF_SERVER_PORT=%d".formatted(udfPythonApiUrl.getPort()),
+                "JAVA_UDF_SERVER_HOST=%s".formatted(udfJavaApiUrl.getHost()),
+                "JAVA_UDF_SERVER_PORT=%d".formatted(udfJavaApiUrl.getPort()),
                 "APICURIO_HOST=%s".formatted(apicurio.getHost()),
                 "APICURIO_PORT=%d".formatted(apicurio.getPort()),
                 "REGISTRY_GROUP_ID=%s".formatted(config.registry.apicurio.groupId),
-                "SSO_ADMIN_HOST=%s".formatted(DEFAULT_SSO_HOST),
-                "SSO_ADMIN_PORT=%d".formatted(DEFAULT_SSO_PORT),
+                "AUTH_ADMIN_HOST=%s".formatted(DEFAULT_AUTH_HOST),
+                "AUTH_ADMIN_PORT=%d".formatted(DEFAULT_AUTH_PORT),
                 "KARAPACE_URL=%s".formatted(config.registry.karapace.url),
                 "KAFKA_BOOTSTRAP_SERVER=%s".formatted(config.kafka.bootstrapUrl),
-                "UDF_JAVA_SERVER=%s".formatted("http://udf-server-java.zillabase.dev:8815"),
-                "UDF_PYTHON_SERVER=%s".formatted("http://udf-server-python.zillabase.dev:8816"));
+                "UDF_JAVA_SERVER=%s".formatted(config.udf.java.serverUrl),
+                "UDF_PYTHON_SERVER=%s".formatted(config.udf.python.serverUrl));
 
             CreateContainerCmd container = client
                 .createContainerCmd(image)
@@ -2316,20 +1636,28 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
                     .withRetries(5)
                     .withTest(List.of("CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184")));
 
+            mountZillaConfig(container, ZILLABASE_ADMIN_SERVER_ZILLA_YAML);
 
-            try
-            {
-                File tempFile = File.createTempFile("zillabase-admin-server-zilla", ".yaml");
-                Path configPath = Paths.get(tempFile.getPath());
-                Files.writeString(configPath, ZILLABASE_ADMIN_SERVER_ZILLA_YAML);
-                container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")));
-                tempFile.deleteOnExit();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace(System.err);
-            }
             return container;
+        }
+    }
+
+    private static void mountZillaConfig(
+        CreateContainerCmd container,
+        String content)
+    {
+        try
+        {
+            File tempFile = File.createTempFile("zillabase-zilla", ".yaml");
+            Path configPath = Paths.get(tempFile.getPath());
+            Files.writeString(configPath, content);
+            container.withBinds(new Bind(configPath.toAbsolutePath().toString(), new Volume("/etc/zilla/zilla.yaml")),
+                new Bind("/var/storage", new Volume("/var/storage")));
+            tempFile.deleteOnExit();
+        }
+        catch (IOException ex)
+        {
+            ex.printStackTrace(System.err);
         }
     }
 
@@ -2394,7 +1722,7 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             DockerClient client)
         {
             List<String> envVars = new ArrayList<>();
-            envVars.add("CLASSPATH=udf-server.jar:/opt/udf/lib/*");
+            envVars.add("CLASSPATH=service-udf-java.jar:/opt/udf/lib/*");
 
             List<String> env = config.udf.java.env;
             if (env != null)
@@ -2485,6 +1813,12 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             File projectsDirectory = new File(projectsBasePath);
             List<Bind> binds = new ArrayList<>();
 
+            client.createVolumeCmd()
+                .withName(ZILLABASE_UDF_PYTHON_VOLUME_NAME)
+                .withLabels(Map.of(VOLUME_LABEL, PROJECT_NAME))
+                .exec();
+            binds.add(new Bind(ZILLABASE_UDF_PYTHON_VOLUME_NAME, new Volume("/usr/local/lib")));
+
             if (projectsDirectory.exists() && projectsDirectory.isDirectory())
             {
                 importModule(projectsDirectory, binds);
@@ -2537,12 +1871,13 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
 
 
         PgsqlHelper(
-            ZillabaseRisingWaveConfig config)
+            ZillabaseRisingWaveConfig config,
+            String user)
         {
             this.config = config;
 
             Properties props = new Properties();
-            props.setProperty("user", "root");
+            props.setProperty("user", user);
             props.setProperty("preferQueryMode", PreferQueryMode.SIMPLE.value());
 
             this.url = "jdbc:postgresql://localhost:4567/%s".formatted(config.db);
@@ -2586,11 +1921,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
             String content = readSql(sql);
             if (content != null)
             {
-                execute(sql.getFileName().toString(), content);
+                process(sql.getFileName().toString(), content);
             }
         }
 
-        private void execute(
+        void process(
             String filename,
             String content)
         {

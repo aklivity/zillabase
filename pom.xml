@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.aklivity.zillabase</groupId>
   <artifactId>zillabase</artifactId>
-  <version>0.5.2</version>
+  <version>0.5.3</version>
   <packaging>pom</packaging>
   <name>zillabase</name>
   <url>https://github.com/aklivity/zillabase</url>
@@ -50,31 +50,33 @@
     <checkstyle.config.location>io/aklivity/zilla/conf/checkstyle/configuration.xml</checkstyle.config.location>
     <checkstyle.suppressions.location>io/aklivity/zilla/conf/checkstyle/suppressions.xml</checkstyle.suppressions.location>
     <k3po.version>3.2.0</k3po.version>
+    <kafka.version>3.9.0</kafka.version>
+    <serializer.version>7.8.0</serializer.version>
+    <junit.version>4.13.2</junit.version>
   </properties>
 
   <modules>
-    <module>service</module>
-    <module>udf-server-java</module>
-    <module>udf-server-python</module>
     <module>cli</module>
+    <module>services</module>
+    <module>studio</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <version>5.10.2</version>
+        <groupId>org.agrona</groupId>
+        <artifactId>agrona</artifactId>
+        <version>2.0.1</version>
       </dependency>
       <dependency>
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-core</artifactId>
-        <version>3.3.6</version>
+        <version>3.4.1</version>
       </dependency>
       <dependency>
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-transport-httpclient5</artifactId>
-        <version>3.3.6</version>
+        <version>3.4.1</version>
       </dependency>
       <dependency>
         <groupId>jakarta.json.bind</groupId>
@@ -85,6 +87,11 @@
         <groupId>org.leadpony.joy</groupId>
         <artifactId>joy-yaml</artifactId>
         <version>2.1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.json</groupId>
+        <artifactId>jakarta.json-api</artifactId>
+        <version>2.1.3</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse</groupId>
@@ -104,12 +111,12 @@
       <dependency>
         <groupId>com.asyncapi</groupId>
         <artifactId>asyncapi-core</artifactId>
-        <version>1.0.0-RC2</version>
+        <version>1.0.0-RC3</version>
       </dependency>
       <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>2.14.0</version>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-admin-client</artifactId>
+        <version>21.0.1</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -117,9 +124,19 @@
         <version>2.14.0</version>
       </dependency>
       <dependency>
+      <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>1.29</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-streams</artifactId>
+        <version>3.8.1</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.kafka</groupId>
         <artifactId>kafka-clients</artifactId>
-        <version>2.6.3</version>
+        <version>3.8.1</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -135,6 +152,29 @@
         <groupId>io.aklivity.k3po</groupId>
         <artifactId>control-junit</artifactId>
         <version>${k3po.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+          <version>2.14.1</version>
+      </dependency>
+      <dependency>
+          <groupId>io.confluent</groupId>
+          <artifactId>kafka-json-serializer</artifactId>
+          <version>${serializer.version}</version>
+          <exclusions>
+              <exclusion>
+                  <groupId>com.fasterxml.jackson.core</groupId>
+                  <artifactId>jackson-databind</artifactId>
+              </exclusion>
+          </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>5.9.1</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -189,6 +229,8 @@
                   <exclude>src/conf/**</exclude>
                   <exclude>src/test/**/asyncapi.yaml</exclude>
                   <exclude>src/test/**/seed-kafka.yaml</exclude>
+                  <exclude>src/test/**/kafka-asyncapi.yaml</exclude>
+                  <exclude>src/test/**/http-asyncapi.yaml</exclude>
                 </excludes>
               </licenseSet>
             </licenseSets>
@@ -360,6 +402,12 @@
           <value>!true</value>
         </property>
       </activation>
+
+      <properties>
+        <docker.skip.push>true</docker.skip.push>
+        <docker.skip.tag>true</docker.skip.tag>
+        <docker.latest.tag></docker.latest.tag>
+      </properties>
 
       <build>
         <plugins>

@@ -14,20 +14,19 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.sso.add;
 
-import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.restrictions.Required;
 
 import io.aklivity.zillabase.cli.internal.commands.sso.ZillabaseSsoCommand;
+import io.aklivity.zillabase.cli.internal.commands.sso.add.model.ZillabaseAuthSsoRequest;
 
 @Command(
     name = "add",
@@ -43,11 +42,6 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
     @Option(name = {"-a", "--alias"},
         description = "Identity Provider Alias")
     public String alias;
-
-    @Required
-    @Option(name = {"-r", "--realm"},
-        description = "Keycloak Realm")
-    public String realm;
 
     @Required
     @Option(name = {"-c", "--client"},
@@ -66,28 +60,17 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
     @Override
     protected void invoke()
     {
-        try
-        {
-            Map<String, String> config = new HashMap<>();
-            config.put("clientId", clientId);
-            config.put("clientSecret", secret);
+        Jsonb jsonb = JsonbBuilder.newBuilder().build();
+        ZillabaseAuthSsoRequest request = new ZillabaseAuthSsoRequest(
+            providerId,
+            alias,
+            clientId,
+            secret);
 
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode idpNode = mapper.createObjectNode();
-            idpNode.put("alias", alias);
-            idpNode.put("providerId", providerId);
-            idpNode.put("enabled", true);
-            idpNode.putPOJO("config", config);
-
-            HttpClient client = HttpClient.newHttpClient();
-            if (sendHttpRequest(mapper.writeValueAsString(idpNode), client))
-            {
-                System.out.println("Identity Provider added successfully");
-            }
-        }
-        catch (IOException ex)
+        HttpClient client = HttpClient.newHttpClient();
+        if (sendHttpRequest(jsonb.toJson(request), client))
         {
-            ex.printStackTrace(System.err);
+            System.out.println("Identity Provider added successfully");
         }
     }
 
@@ -97,7 +80,6 @@ public final class ZillabaseSsoAddCommand extends ZillabaseSsoCommand
     {
         HttpRequest httpRequest = HttpRequest
             .newBuilder(ADMIN_SERVER_DEFAULT.resolve(SSO_PATH))
-            .header("Keycloak-Realm", realm)
             .POST(HttpRequest.BodyPublishers.ofString(content))
             .build();
 

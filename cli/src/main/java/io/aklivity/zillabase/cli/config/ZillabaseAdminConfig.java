@@ -72,6 +72,8 @@ public final class ZillabaseAdminConfig
                 when:
                   - commands:
                       - "CREATE TOPIC"
+                      - "ALTER TOPIC"
+                      - "DROP TOPIC"
             exit: pgsql_client
           pgsql_client:
             type: pgsql
@@ -103,7 +105,36 @@ public final class ZillabaseAdminConfig
           http_server:
             type: http
             kind: server
+            options:
+              access-control:
+                policy: cross-origin
             routes:
+              - when:
+                  - headers:
+                      upgrade: websocket
+                exit: ws_server
+              - when:
+                - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/udf/python
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.PYTHON_UDF_SERVER_HOST}}:${{env.PYTHON_UDF_SERVER_PORT}}
+                      :path: /python/functions
+                exit: python_udf_http_client
+              - when:
+                - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/udf/java
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.JAVA_UDF_SERVER_HOST}}:${{env.JAVA_UDF_SERVER_PORT}}
+                      :path: /java/functions
+                exit: java_udf_http_client
               - when:
                   - headers:
                       :scheme: http
@@ -141,48 +172,48 @@ public final class ZillabaseAdminConfig
                 exit: apicurio_http_client
               - when:
                   - headers:
-                      :method: PUT
                       :scheme: http
                       :authority: localhost:7184
-                      :path: /v1/asyncapis/{id}
+                      :path: /v1/auth/sso/providers
                 with:
                   headers:
                     overrides:
-                      :authority: ${{env.APICURIO_HOST}}:${{env.APICURIO_PORT}}
-                      :path: /apis/registry/v2/groups/${{env.REGISTRY_GROUP_ID}}/artifacts/${params.id}
-                exit: apicurio_http_client
-              - when:
-                  - headers:
-                      :method: DELETE
-                      :scheme: http
-                      :authority: localhost:7184
-                      :path: /v1/asyncapis/{id}
-                with:
-                  headers:
-                    overrides:
-                      :authority: ${{env.APICURIO_HOST}}:${{env.APICURIO_PORT}}
-                      :path: /apis/registry/v2/groups/${{env.REGISTRY_GROUP_ID}}/artifacts/${params.id}
-                exit: apicurio_http_client
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
               - when:
                   - headers:
                       :scheme: http
                       :authority: localhost:7184
-                      :path: /v1/sso
+                      :path: /v1/auth/sso/providers/*
                 with:
                   headers:
                     overrides:
-                      :authority: ${{env.SSO_ADMIN_HOST}}:${{env.SSO_ADMIN_PORT}}
-                exit: sso_http_client
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
               - when:
                   - headers:
                       :scheme: http
                       :authority: localhost:7184
-                      :path: /v1/sso/*
+                      :path: /v1/auth/users
                 with:
                   headers:
                     overrides:
-                      :authority: ${{env.SSO_ADMIN_HOST}}:${{env.SSO_ADMIN_PORT}}
-                exit: sso_http_client
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
+              - when:
+                  - headers:
+                      :scheme: http
+                      :authority: localhost:7184
+                      :path: /v1/auth/users/*
+                with:
+                  headers:
+                    overrides:
+                      :authority: ${{env.AUTH_ADMIN_HOST}}:${{env.AUTH_ADMIN_PORT}}
+                exit: auth_http_client
+              - when:
+                  - headers:
+                      :path: /v1/storage/*
+                exit: http_filesystem_proxy
           config_http_client:
             type: http
             kind: client
@@ -193,6 +224,26 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.CONFIG_SERVER_HOST}}
               port: ${{env.CONFIG_SERVER_PORT}}
+          python_udf_http_client:
+            type: http
+            kind: client
+            exit: python_udf_tcp_client
+          python_udf_tcp_client:
+            type: tcp
+            kind: client
+            options:
+              host: ${{env.PYTHON_UDF_SERVER_HOST}}
+              port: ${{env.PYTHON_UDF_SERVER_PORT}}
+          java_udf_http_client:
+            type: http
+            kind: client
+            exit: java_udf_tcp_client
+          java_udf_tcp_client:
+            type: tcp
+            kind: client
+            options:
+              host: ${{env.JAVA_UDF_SERVER_HOST}}
+              port: ${{env.JAVA_UDF_SERVER_PORT}}
           apicurio_http_client:
             type: http
             kind: client
@@ -203,16 +254,54 @@ public final class ZillabaseAdminConfig
             options:
               host: ${{env.APICURIO_HOST}}
               port: ${{env.APICURIO_PORT}}
-          sso_http_client:
+          auth_http_client:
             type: http
             kind: client
-            exit: sso_tcp_client
-          sso_tcp_client:
+            exit: auth_tcp_client
+          auth_tcp_client:
             type: tcp
             kind: client
             options:
-              host: ${{env.SSO_ADMIN_HOST}}
-              port: ${{env.SSO_ADMIN_PORT}}
+              host: ${{env.AUTH_ADMIN_HOST}}
+              port: ${{env.AUTH_ADMIN_PORT}}
+          http_filesystem_proxy:
+            type: http-filesystem
+            kind: proxy
+            routes:
+              - when:
+                  - method: GET
+                    path: /v1/storage/buckets
+                  - method: POST
+                    path: /v1/storage/buckets/{bucket}
+                  - method: DELETE
+                    path: /v1/storage/buckets/{bucket}
+                exit: filesystem_server
+                with:
+                  directory: ${params.bucket}
+              - when:
+                  - method: GET
+                    path: /v1/storage/objects/{bucket}/{path}
+                  - method: GET
+                    path: /v1/storage/objects/{bucket}
+                  - method: POST
+                    path: /v1/storage/objects/{bucket}/{path}
+                  - method: PUT
+                    path: /v1/storage/objects/{bucket}/{path}
+                  - method: DELETE
+                    path: /v1/storage/objects/{bucket}/{path}
+                exit: filesystem_server
+                with:
+                  directory: ${params.bucket}
+                  path: ${params.path}
+          ws_server:
+            type: ws
+            kind: server
+            exit: pgsql_server
+          filesystem_server:
+            type: filesystem
+            kind: server
+            options:
+              location: /var/storage/
         telemetry:
           exporters:
             stdout_logs_exporter:
@@ -222,6 +311,8 @@ public final class ZillabaseAdminConfig
 
     private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
 
+    public int httpPort = DEFAULT_ADMIN_HTTP_PORT;
+    public int pgsqlPort = DEFAULT_ADMIN_PGSQL_PORT;
     public String tag = DEFAULT_ADMIN_TAG;
     public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
 }

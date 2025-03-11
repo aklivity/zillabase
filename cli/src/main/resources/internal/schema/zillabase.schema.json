@@ -24,7 +24,7 @@
       },
       "additionalProperties": false
     },
-    "sso":
+    "auth":
     {
       "type": "object",
       "properties":

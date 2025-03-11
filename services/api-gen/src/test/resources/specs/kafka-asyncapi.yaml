@@ -1,0 +1,151 @@
+---
+asyncapi: "3.0.0"
+info:
+  title: "API Document for Kafka Cluster"
+  version: "1.0.0"
+  license:
+    name: "Aklivity Community License"
+    url: "https://github.com/aklivity/zillabase/blob/develop/LICENSE"
+servers:
+  plain:
+    host: "kafka.zillabase.dev:29092"
+    protocol: "kafka"
+    bindings:
+      kafka:
+        bindingVersion: "0.4.0"
+        schemaRegistryUrl: "http://karapace.zillabase.dev:8081"
+        schemaRegistryVendor: "karapace"
+channels:
+  public.petstore_verified_customers:
+    address: "public.petstore_verified_customers"
+    messages:
+      petstoreVerifiedCustomersMessage:
+        $ref: "#/components/messages/petstoreVerifiedCustomersMessage"
+    bindings:
+      kafka:
+        bindingVersion: "0.4.0"
+        topicConfiguration:
+          cleanup.policy:
+          - "compact"
+  public.petstore_customers:
+    address: "public.petstore_customers"
+    messages:
+      petstoreCustomersMessage:
+        $ref: "#/components/messages/petstoreCustomersMessage"
+    bindings:
+      kafka:
+        bindingVersion: "0.4.0"
+        topicConfiguration:
+          cleanup.policy:
+          - "compact"
+  public.petstore_pets:
+    address: "public.petstore_pets"
+    messages:
+      petstorePetsMessage:
+        $ref: "#/components/messages/petstorePetsMessage"
+    bindings:
+      kafka:
+        bindingVersion: "0.4.0"
+        topicConfiguration:
+          cleanup.policy:
+          - "compact"
+operations:
+  doPetstoreVerifiedCustomers:
+    action: "send"
+    channel:
+      $ref: "#/channels/public.petstore_verified_customers"
+    messages:
+    - $ref: "#/channels/public.petstore_verified_customers/messages/petstoreVerifiedCustomersMessage"
+  doPetstorePets:
+    action: "send"
+    channel:
+      $ref: "#/channels/public.petstore_pets"
+    messages:
+    - $ref: "#/channels/public.petstore_pets/messages/petstorePetsMessage"
+  onPetstoreCustomers:
+    action: "receive"
+    channel:
+      $ref: "#/channels/public.petstore_customers"
+    messages:
+    - $ref: "#/channels/public.petstore_customers/messages/petstoreCustomersMessage"
+  doPetstoreCustomers:
+    action: "send"
+    channel:
+      $ref: "#/channels/public.petstore_customers"
+    messages:
+    - $ref: "#/channels/public.petstore_customers/messages/petstoreCustomersMessage"
+  onPetstorePets:
+    action: "receive"
+    channel:
+      $ref: "#/channels/public.petstore_pets"
+    messages:
+    - $ref: "#/channels/public.petstore_pets/messages/petstorePetsMessage"
+  onPetstoreVerifiedCustomers:
+    action: "receive"
+    channel:
+      $ref: "#/channels/public.petstore_verified_customers"
+    messages:
+    - $ref: "#/channels/public.petstore_verified_customers/messages/petstoreVerifiedCustomersMessage"
+components:
+  schemas:
+    public.petstore_verified_customers-value:
+      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
+      schema:
+        fields:
+        - name: "id"
+          type:
+          - "null"
+          - type: "string"
+        - name: "points"
+          type:
+          - "null"
+          - type: "string"
+        name: "petstore_verified_customers"
+        namespace: "public"
+        type: "record"
+    public.petstore_customers-value:
+      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
+      schema:
+        fields:
+        - name: "name"
+          type:
+          - "null"
+          - type: "string"
+        - name: "status"
+          type:
+          - "null"
+          - type: "string"
+        name: "petstore_customers"
+        namespace: "public"
+        type: "record"
+    public.petstore_pets-value:
+      schemaFormat: "application/vnd.apache.avro;version=1.9.0"
+      schema:
+        fields:
+        - name: "id"
+          type:
+          - "null"
+          - type: "string"
+        - name: "breed"
+          type:
+          - "null"
+          - type: "string"
+        name: "petstore_pets"
+        namespace: "public"
+        type: "record"
+  messages:
+    petstoreVerifiedCustomersMessage:
+      payload:
+        $ref: "#/components/schemas/public.petstore_verified_customers-value"
+      contentType: "application/avro"
+      name: "petstoreVerifiedCustomersMessage"
+    petstoreCustomersMessage:
+      payload:
+        $ref: "#/components/schemas/public.petstore_customers-value"
+      contentType: "application/avro"
+      name: "petstoreCustomersMessage"
+    petstorePetsMessage:
+      payload:
+        $ref: "#/components/schemas/public.petstore_pets-value"
+      contentType: "application/avro"
+      name: "petstorePetsMessage"

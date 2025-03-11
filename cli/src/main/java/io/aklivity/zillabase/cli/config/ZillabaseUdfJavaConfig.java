@@ -21,7 +21,11 @@ import io.aklivity.zillabase.cli.internal.Zillabase;
 public final class ZillabaseUdfJavaConfig
 {
     public static final String DEFAULT_UDF_JAVA_TAG = Zillabase.version();
+    public static final String DEFAULT_UDF_JAVA_API_URL = "http://udf-server-java.zillabase.dev:5001";
+    public static final String DEFAULT_UDF_JAVA_SERVER_URL = "http://udf-server-java.zillabase.dev:8815";
 
     public String tag = DEFAULT_UDF_JAVA_TAG;
     public List<String> env;
+    public String apiUrl = DEFAULT_UDF_JAVA_API_URL;
+    public String serverUrl = DEFAULT_UDF_JAVA_SERVER_URL;
 }

@@ -22,8 +22,8 @@ import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 
 public abstract class ZillabaseSsoCommand extends ZillabaseCommand
 {
-    protected static final String SSO_PATH = "sso";
-    protected static final String SSO_ALIAS_PATH = "sso/%s";
+    protected static final String SSO_PATH = "auth/sso/providers";
+    protected static final String SSO_ALIAS_PATH = "auth/sso/providers/%s";
     protected static final URI ADMIN_SERVER_DEFAULT = URI.create("http://localhost:7184/v1/");
 
     @Command(

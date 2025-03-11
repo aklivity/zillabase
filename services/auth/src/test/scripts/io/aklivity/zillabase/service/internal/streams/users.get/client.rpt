@@ -1,0 +1,45 @@
+#
+# Copyright 2024 Aklivity Inc
+#
+# Licensed under the Aklivity Community License (the "License"); you may not use
+# this file except in compliance with the License.  You may obtain a copy of the
+# License at
+#
+#   https://www.aklivity.io/aklivity-community-license/
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations under the License.
+#
+
+connect "http://localhost:7184/v1/auth/users"
+connected
+
+write http:method "GET"
+write http:version "HTTP/1.1"
+write http:content-length
+
+write close
+
+read http:version "HTTP/1.1"
+read http:status "200" "OK"
+
+read '['
+         '{'
+             '"email":"greg.doe@example.com",'
+             '"firstName":"Greg",'
+             '"id":"f5ab96b6-354d-4965-8441-74c14299f374",'
+             '"lastName":"Doe",'
+             '"username":"greg"'
+         '},'
+         '{'
+             '"email":"john.doe@example.com",'
+             '"firstName":"John",'
+             '"id":"66844793-5a2e-4cb0-8c0e-082d06cf186f",'
+             '"lastName":"Doe",'
+             '"username":"john_doe"'
+         '}'
+     ']'
+
+read closed

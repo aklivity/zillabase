@@ -1,22 +1,17 @@
 -- create_balances
 
-CREATE STREAM streampay_balance_histories(
-    balance DOUBLE PRECISION,
-    zilla_timestamp TIMESTAMP
-);
-
 CREATE VIEW user_transactions AS
   SELECT
-      encode(zilla_identity, 'escape') AS user_id,
+      owner_id AS user_id,
       -amount AS net_amount
-  FROM streampay_commands
-  WHERE type = 'SendPayment'
+  FROM streampay_events
+  WHERE event = 'PaymentSent'
   UNION ALL
   SELECT
       user_id AS user_id,
       amount AS net_amount
-  FROM streampay_commands
-  WHERE type = 'SendPayment';
+  FROM streampay_events
+  WHERE event = 'PaymentSent';
 
 CREATE VIEW all_user_transactions AS
   SELECT
@@ -31,7 +26,7 @@ CREATE VIEW all_user_transactions AS
   FROM
       user_transactions;
 
-CREATE MATERIALIZED VIEW streampay_balances AS
+CREATE ZVIEW streampay_balances AS
   SELECT
       user_id,
       SUM(net_amount) AS balance

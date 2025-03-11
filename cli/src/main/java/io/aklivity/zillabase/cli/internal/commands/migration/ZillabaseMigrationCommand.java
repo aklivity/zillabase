@@ -15,37 +15,35 @@
 package io.aklivity.zillabase.cli.internal.commands.migration;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseAdminConfig;
+import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
-import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationsHelper;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationApplier;
+import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationService;
+import io.aklivity.zillabase.cli.internal.migrations.model.ZillabaseMigrationFile;
 
 public abstract class ZillabaseMigrationCommand extends ZillabaseCommand
 {
-    protected static final Path MIGRATIONS_PATH = ZillabaseMigrationsHelper.MIGRATIONS_PATH;
-
-    protected static final Pattern MIGRATION_FILE_PATTERN = ZillabaseMigrationsHelper.MIGRATION_FILE_PATTERN;
-    protected static final String MIGRATION_FILE_FORMAT = ZillabaseMigrationsHelper.MIGRATION_FILE_FORMAT;
-
-    protected final Matcher matcher;
-
-    private final ZillabaseMigrationsHelper helper;
+    protected final ZillabaseMigrationService service;
+    protected final ZillabaseMigrationApplier applier;
 
     protected ZillabaseMigrationCommand()
     {
-        this.helper = new ZillabaseMigrationsHelper();
-        this.matcher = helper.matcher;
+        ZillabaseConfig config = new ZillabaseConfig();
+        int port = ZillabaseAdminConfig.DEFAULT_ADMIN_PGSQL_PORT;
+        String db = config.risingwave.db;
+
+        this.service = new ZillabaseMigrationService(port, db);
+        this.applier = new ZillabaseMigrationApplier(port, db);
     }
 
     protected final Stream<String> listMigrations() throws IOException
     {
-        return helper.list()
-            .map(p -> p.getFileName().toString());
+        return service.allMigrationFiles().stream().map(ZillabaseMigrationFile::scriptName);
     }
 
     @Command(

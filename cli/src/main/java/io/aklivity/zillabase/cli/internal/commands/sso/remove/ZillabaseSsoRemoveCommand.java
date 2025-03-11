@@ -36,11 +36,6 @@ public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
         description = "Identity Provider Alias")
     public String alias;
 
-    @Required
-    @Option(name = {"-r", "--realm"},
-        description = "Keycloak Realm")
-    public String realm;
-
     @Option(name = {"-v", "--verbose"},
         description = "Show verbose output")
     public boolean verbose;
@@ -62,7 +57,6 @@ public final class ZillabaseSsoRemoveCommand extends ZillabaseSsoCommand
     {
         HttpRequest httpRequest = HttpRequest
             .newBuilder(ADMIN_SERVER_DEFAULT.resolve(SSO_ALIAS_PATH.formatted(alias)))
-            .header("Keycloak-Realm", realm)
             .DELETE()
             .build();
 

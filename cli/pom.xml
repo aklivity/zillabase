@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.aklivity.zillabase</groupId>
     <artifactId>zillabase</artifactId>
-    <version>0.5.2</version>
+    <version>0.5.3</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -21,6 +21,10 @@
   </properties>
 
   <dependencies>
+    <dependency>
+        <groupId>org.agrona</groupId>
+        <artifactId>agrona</artifactId>
+      </dependency>
     <dependency>
       <groupId>com.github.rvesse</groupId>
       <artifactId>airline</artifactId>
@@ -60,16 +64,8 @@
       <artifactId>postgresql</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.asyncapi</groupId>
-      <artifactId>asyncapi-core</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
@@ -80,18 +76,8 @@
       <artifactId>slf4j-simple</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.aklivity.k3po</groupId>
       <artifactId>control-junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.aklivity.k3po</groupId>
-      <artifactId>lang</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
