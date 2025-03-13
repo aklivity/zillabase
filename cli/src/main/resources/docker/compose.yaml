@@ -2,7 +2,7 @@ name: zillabase
 
 services:
   zilla:
-    image: "ghcr.io/aklivity/zilla:0.9.122"
+    image: "ghcr.io/aklivity/zilla:${ZILLA_VERSION}"
     hostname: "zilla.zillabase.dev"
     ports:
       - ${ZILLA_HTTP_PORT}:${ZILLA_HTTP_PORT}
@@ -32,7 +32,7 @@ services:
       retries: 5
 
   kafka:
-    image: "bitnami/kafka:3.2.3"
+    image: "bitnami/kafka:${KAFKA_VERSION}"
     hostname: "kafka.zillabase.dev"
     ports:
       - ${KAFKA_PORT}:${KAFKA_PORT}
@@ -62,7 +62,7 @@ services:
       retries: 5
 
   apicurio:
-    image: "apicurio/apicurio-registry:3.0.4"
+    image: "apicurio/apicurio-registry:${APICURIO_VERSION}"
     hostname: "apicurio.zillabase.dev"
     environment:
       QUARKUS_HTTP_CORS_ORIGINS: ${QUARKUS_HTTP_CORS_ORIGINS}
@@ -78,7 +78,7 @@ services:
       retries: 5
 
   karapace:
-    image: "ghcr.io/aiven/karapace:3.7.1"
+    image: "ghcr.io/aiven/karapace:${KARAPACE_VERSION}"
     hostname: "karapace.zillabase.dev"
     ports:
       - ${KARAPACE_PORT}:${KARAPACE_PORT}
@@ -104,7 +104,7 @@ services:
       retries: 5
 
   postgres:
-    image: "postgres:15-alpine"
+    image: "postgres:${POSTGRES_VERSION}"
     hostname: "postgres.zillabase.dev"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -123,7 +123,7 @@ services:
       retries: 5
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z
+    image: quay.io/minio/minio:${MINIO_VERSION}
     hostname: minio.zillabase.dev
     networks:
       - zillabase_default
@@ -142,7 +142,7 @@ services:
     restart: unless-stopped
 
   risingwave:
-    image: risingwavelabs/risingwave:v2.0.2 
+    image: risingwavelabs/risingwave:${RISINGWAVE_VERSION}
     hostname: risingwave.zillabase.dev
     networks:
       - zillabase_default
@@ -160,7 +160,7 @@ services:
     restart: unless-stopped
 
   postgres-init:
-    image: postgres:15-alpine
+    image: postgres:${POSTGRES_VERSION}
     container_name: postgres-init
     networks:
       - zillabase_default
@@ -182,7 +182,7 @@ services:
         echo "SQL execution completed."
 
   keycloak:
-    image: bitnami/keycloak:26
+    image: bitnami/keycloak:${KEYCLOAK_VERSION}
     hostname: keycloak.zillabase.dev
     ports:
       - ${KEYCLOAK_PORT}:${KEYCLOAK_PORT}
@@ -203,7 +203,7 @@ services:
     restart: unless-stopped
 
   api-gen:
-    image: ghcr.io/aklivity/zillabase/api-gen:develop-SNAPSHOT
+    image: ghcr.io/aklivity/zillabase/api-gen:${ZILLABASE_VERSION}
     hostname: api-gen.zillabase.dev
     networks:
       - zillabase_default
@@ -216,7 +216,7 @@ services:
     restart: unless-stopped
 
   auth:
-    image: ghcr.io/aklivity/zillabase/auth:develop-SNAPSHOT
+    image: ghcr.io/aklivity/zillabase/auth:${ZILLABASE_VERSION}
     hostname: auth.zillabase.dev
     networks:
       - zillabase_default
@@ -231,7 +231,7 @@ services:
     restart: unless-stopped
 
   admin:
-    image: ghcr.io/aklivity/zilla:develop-SNAPSHOT
+    image: ghcr.io/aklivity/zilla:${ZILLABASE_VERSION}
     hostname: admin.zillabase.dev
     networks:
       - zillabase_default
@@ -267,7 +267,7 @@ services:
     restart: unless-stopped
 
   config:
-    image: ghcr.io/aklivity/zilla:develop-SNAPSHOT
+    image: ghcr.io/aklivity/zilla:${ZILLA_VERSION}
     hostname: config.zillabase.dev
     environment:
       KAFKA_BOOTSTRAP_SERVER: ${KAFKA_BOOTSTRAP_SERVER}
@@ -282,7 +282,7 @@ services:
     restart: unless-stopped
 
   udf-server-java:
-    image: ghcr.io/aklivity/zillabase/udf-server-java:develop-SNAPSHOT
+    image: ghcr.io/aklivity/zillabase/udf-server-java:${ZILLABASE_VERSION}
     hostname: udf-server-java.zillabase.dev
     networks:
       - zillabase_default
@@ -298,7 +298,7 @@ services:
     restart: unless-stopped
 
   udf-server-python:
-    image: ghcr.io/aklivity/zillabase/udf-server-python:develop-SNAPSHOT
+    image: ghcr.io/aklivity/zillabase/udf-server-python:${ZILLABASE_VERSION}
     container_name: udf-server-python
     hostname: udf-server-python
     environment:
