@@ -29,7 +29,7 @@ import io.aklivity.zillabase.service.api.gen.internal.asyncapi.KafkaTopicSchemaR
 import io.aklivity.zillabase.service.api.gen.internal.config.ApiGenConfig;
 import io.aklivity.zillabase.service.api.gen.internal.config.KafkaConfig;
 
-public class KafkaAsyncApiBuilderTest
+public class KafkaAsyncApiGeneratorTest
 {
 
     @Mock
