@@ -31,8 +31,6 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -48,17 +46,11 @@ import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
 import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
-import jakarta.json.stream.JsonParsingException;
-
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.leadpony.justify.api.JsonSchema;
 import org.leadpony.justify.api.JsonSchemaReader;
 import org.leadpony.justify.api.JsonValidationService;
 import org.leadpony.justify.api.ProblemHandler;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -69,9 +61,6 @@ import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakClientConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseKeycloakUserConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
-import io.aklivity.zillabase.cli.internal.kafka.KafkaBootstrapRecords;
-import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicRecord;
-import io.aklivity.zillabase.cli.internal.kafka.KafkaTopicSchema;
 
 @Command(
     name = "start",
@@ -88,14 +77,11 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
     private static final String ADMIN_REALMS_USERS_PATH = "/admin/realms/%s/users";
     private static final Pattern EXPRESSION_PATTERN =
         Pattern.compile("\\$\\{\\{\\s*([^\\s\\}]*)\\.([^\\s\\}]*)\\s*\\}\\}");
-    private static final Pattern PROTO_MESSAGE_PATTERN = Pattern.compile("message\\s+\\w+\\s*\\{[^}]*\\}",
-        Pattern.DOTALL);
 
     public static final String PROJECT_NAME = ZILLABASE_PATH.toAbsolutePath().getParent().getFileName().toString();
     public static final String VOLUME_LABEL = "io.aklivity.zillabase.cli.project";
 
     private final Matcher envMatcher = EXPRESSION_PATTERN.matcher("");
-    private final Matcher protoMatcher = PROTO_MESSAGE_PATTERN.matcher("");
 
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
 
@@ -104,10 +90,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         DockerClient client)
     {
         final ZillabaseConfig config = readZillabaseConfig();
-
-        createConfigServerKafkaTopic(config);
-
-        seedKafkaAndRegistry(config);
 
         initializeKeycloakService(config);
 
@@ -118,17 +100,14 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         ZillabaseConfig config)
     {
         int studioPort = config.studio.port;
-        int pgsqlPort = config.admin.pgsqlPort;
 
         String studioUrl = "Studio UI: http://localhost:%d".formatted(studioPort);
-        String psqlUrl = "Psql: localhost:%d".formatted(pgsqlPort);
 
-        int maxLength = Math.max(studioUrl.length(), psqlUrl.length());
+        int maxLength = studioUrl.length();
         String border = "#".repeat(maxLength + 4);
 
         System.out.println(border);
         System.out.printf("# %-" + maxLength + "s #\n", studioUrl);
-        System.out.printf("# %-" + maxLength + "s #\n", psqlUrl);
         System.out.println(border);
     }
 
@@ -428,27 +407,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
     }
 
-    private KafkaBootstrapRecords readKafkaBootstrapRecords()
-    {
-        KafkaBootstrapRecords records = null;
-        Path kafkaSeedPath = Paths.get(kafkaSeedFilePath);
-        try
-        {
-            if (Files.exists(kafkaSeedPath) && Files.size(kafkaSeedPath) != 0 && Files.readAllLines(kafkaSeedPath)
-                .stream().anyMatch(line -> !line.trim().isEmpty() && !line.trim().startsWith("#")))
-            {
-                String content = Files.readString(kafkaSeedPath);
-                Jsonb jsonb = JsonbBuilder.create();
-                records = jsonb.fromJson(content, KafkaBootstrapRecords.class);
-            }
-        }
-        catch (IOException | JsonParsingException ex)
-        {
-            System.err.println("Failed to process seed-kafka.yaml : %s".formatted(ex.getMessage()));
-        }
-        return records;
-    }
-
     private ZillabaseConfig readZillabaseConfig()
     {
         ZillabaseConfig config;
@@ -494,216 +452,6 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         }
 
         return config;
-    }
-
-    private void createConfigServerKafkaTopic(
-        ZillabaseConfig config)
-    {
-        int retries = 0;
-        int delay = SERVICE_INITIALIZATION_DELAY_MS;
-
-        while (retries < MAX_RETRIES)
-        {
-            try
-            {
-                Thread.sleep(delay);
-                try (AdminClient adminClient = AdminClient.create(Map.of(
-                    AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
-                        ? "localhost:9092" : config.kafka.bootstrapUrl)))
-                {
-                    NewTopic configTopic = new NewTopic(ZILLABASE_CONFIG_KAFKA_TOPIC, 1, (short) 1);
-                    configTopic.configs(Map.of("cleanup.policy", "compact"));
-                    NewTopic eventTopic = new NewTopic(ZILLABASE_API_GEN_EVENTS_KAFKA_TOPIC, 1, (short) 1);
-                    eventTopic.configs(Map.of("cleanup.policy", "delete"));
-                    adminClient.createTopics(List.of(configTopic, eventTopic)).all().get();
-                    break;
-                }
-            }
-            catch (Exception ex)
-            {
-                retries++;
-                delay *= 2;
-                if (retries >= MAX_RETRIES)
-                {
-                    System.err.println("Error creating Zillabase Config Server topic : %s".formatted(ex.getMessage()));
-                }
-            }
-        }
-    }
-
-    private void seedKafkaAndRegistry(
-        ZillabaseConfig config)
-    {
-        KafkaBootstrapRecords records = readKafkaBootstrapRecords();
-        if (records != null && !records.topics.isEmpty())
-        {
-            final HttpClient client = HttpClient.newBuilder()
-                .version(HTTP_1_1)
-                .build();
-
-            boolean status = false;
-            int retries = 0;
-            int delay = SERVICE_INITIALIZATION_DELAY_MS;
-
-            while (retries < MAX_RETRIES)
-            {
-                try
-                {
-                    Thread.sleep(delay);
-                    try (AdminClient adminClient = AdminClient.create(Map.of(
-                        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.kafka.bootstrapUrl.equals(DEFAULT_KAFKA_BOOTSTRAP_URL)
-                            ? "localhost:9092" : config.kafka.bootstrapUrl)))
-                    {
-                        List<NewTopic> topics = new ArrayList<>();
-                        for (KafkaTopicRecord record : records.topics)
-                        {
-                            String name = record.name;
-                            Map<String, String> topicConfig = record.config;
-                            int partition = 1;
-                            short replication = 1;
-
-                            Map<String, String> configs = new HashMap<>();
-                            if (topicConfig != null && !topicConfig.isEmpty())
-                            {
-                                for (Map.Entry<String, String> entry : topicConfig.entrySet())
-                                {
-                                    String key = entry.getKey();
-                                    switch (key)
-                                    {
-                                    case "partitions":
-                                        partition = Integer.parseInt(topicConfig.get("partitions"));
-                                        break;
-                                    case "replication_factor":
-                                        replication = Short.parseShort(topicConfig.get("replication_factor"));
-                                        break;
-                                    default:
-                                        configs.put(key, entry.getValue());
-                                        break;
-                                    }
-                                }
-                            }
-                            NewTopic newTopic = new NewTopic(name, partition, replication);
-                            newTopic.configs(configs);
-                            topics.add(newTopic);
-
-                            KafkaTopicSchema schema = record.schema;
-                            if (schema != null)
-                            {
-                                if (schema.key != null)
-                                {
-                                    registerKafkaTopicSchema(config, client, "%s-key".formatted(name), schema.key,
-                                        resolveType(schema.key));
-                                }
-
-                                if (schema.value != null)
-                                {
-                                    registerKafkaTopicSchema(config, client, "%s-value".formatted(name), schema.value,
-                                        resolveType(schema.value));
-                                }
-                            }
-                        }
-                        status = adminClient.createTopics(topics).all().get() == null;
-                        break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    retries++;
-                    delay *= 2;
-                    if (retries >= MAX_RETRIES)
-                    {
-                        System.err.println("Error creating Kafka topics : %s".formatted(ex.getMessage()));
-                    }
-                }
-            }
-
-            if (status)
-            {
-                System.out.println("seed-kafka.yaml processed successfully!");
-            }
-            else
-            {
-                System.err.println("Failed to process seed-kafka.yaml");
-            }
-
-        }
-    }
-
-    private void registerKafkaTopicSchema(
-        ZillabaseConfig config,
-        HttpClient client,
-        String subject,
-        String schema,
-        String schemaType) throws IOException, InterruptedException
-    {
-        int retries = 0;
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode idpNode = mapper.createObjectNode();
-        idpNode.put("schema", schema);
-        if (schemaType != null)
-        {
-            idpNode.put("schemaType", schemaType.toUpperCase());
-        }
-
-        HttpRequest request = HttpRequest.newBuilder(toURI(config.registry.karapace.url.equals(DEFAULT_KARAPACE_URL)
-                    ? DEFAULT_CLIENT_KARAPACE_URL : config.registry.karapace.url,
-                "/subjects/%s/versions".formatted(subject)))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(idpNode)))
-            .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() == 503 && retries == 0)
-        {
-            retries++;
-            Thread.sleep(SERVICE_INITIALIZATION_DELAY_MS);
-            registerKafkaTopicSchema(config, client, subject, schema, schemaType);
-        }
-        else if (response.statusCode() != 200)
-        {
-            System.err.println("Error registering schema for %s. Error code: %s"
-                .formatted(subject, response.statusCode()));
-            System.err.println(response.body());
-        }
-
-    }
-
-    private String resolveType(
-        String schema)
-    {
-        String type = null;
-        try
-        {
-            if (protoMatcher.reset(schema.toLowerCase()).matches())
-            {
-                type = "protobuf";
-            }
-            else
-            {
-                ObjectMapper schemaMapper = new ObjectMapper();
-                JsonNode schemaObject = schemaMapper.readTree(schema);
-                if (schemaObject.has("type"))
-                {
-                    String schemaType = schemaObject.get("type").asText();
-                    switch (schemaType)
-                    {
-                    case "record":
-                    case "enum":
-                    case "fixed":
-                        type = "avro";
-                        break;
-                    default:
-                        type = "json";
-                        break;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.err.format("Failed to parse schema type: %s:\n", ex.getMessage());
-        }
-        return type;
     }
 
     private URI toURI(
