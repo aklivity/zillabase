@@ -182,27 +182,7 @@ services:
       retries: 5
     restart: unless-stopped
 
-  postgres-init:
-    image: postgres:${POSTGRES_VERSION}
-    container_name: postgres-init
-    networks:
-      - zillabase_default
-    volumes:
-      - ./volumes/db/:/sql/
-    environment:
-      - DB_URL=postgresql://postgres@admin.zillabase.dev:4567/dev
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        apk add --no-cache gettext
-        echo "Waiting for database..."
-        until envsubst < /dev/null | psql "$${DB_URL}" -c 'SELECT 1' &>/dev/null; do sleep 2; done;
-        echo "Database is ready, executing scripts..."
-        for file in /sql/*.sql; do
-          echo "Running $${file}"
-          envsubst < /dev/null | psql "$${DB_URL}" -f "$${file}";
-        done;
-        echo "SQL execution completed."
+
 
   keycloak:
     image: bitnami/keycloak:${KEYCLOAK_VERSION}
@@ -216,8 +196,8 @@ services:
       KEYCLOAK_HTTP_PORT: ${KEYCLOAK_PORT}
       KEYCLOAK_ACCESS_TOKEN_LIFESPAN: ${KEYCLOAK_ACCESS_TOKEN_LIFESPAN}
       KEYCLOAK_ACCESS_TOKEN_LIFESPAN_IMPLICIT: ${KEYCLOAK_ACCESS_TOKEN_LIFESPAN_IMPLICIT}
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8180" ]
       interval: 5s
@@ -354,6 +334,29 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+
+  postgres-init:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: postgres-init
+    networks:
+      - zillabase_default
+    volumes:
+      - ./volumes/db/:/sql/
+    environment:
+      - DB_POSTGRES_URL=postgresql://postgres@admin.zillabase.dev:4567/dev
+      - DB_ZILLABASE_URL=postgresql://zillabase@admin.zillabase.dev:4567/dev
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        apk add --no-cache gettext
+        echo "Waiting for database..."
+        until envsubst < /dev/null | psql "$${DB_POSTGRES_URL}" -c 'SELECT 1' &>/dev/null; do sleep 2; done;
+        echo "Database is ready, executing scripts..."
+        for z_file in /sql/*.sql; do
+          echo "Running $${z_file}"
+          envsubst < /dev/null | psql "$${DB_POSTGRES_URL}" -f "$${z_file}";
+        done;
+        echo "SQL execution completed."
 
 volumes:
   zillabase_kafka:
