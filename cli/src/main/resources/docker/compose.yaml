@@ -254,7 +254,7 @@ services:
     restart: unless-stopped
 
   admin:
-    image: ghcr.io/aklivity/zilla:${ZILLABASE_VERSION}
+    image: ghcr.io/aklivity/zilla:${ZILLA_VERSION}
     hostname: admin.zillabase.dev
     networks:
       - zillabase_default
@@ -355,6 +355,10 @@ services:
         for z_file in /sql/*.sql; do
           echo "Running $${z_file}"
           envsubst < /dev/null | psql "$${DB_POSTGRES_URL}" -f "$${z_file}";
+        done;
+        for m_file in /sql/migrations/*.sql; do
+          echo "Running $${m_file}"
+          envsubst < /dev/null | psql "$${DB_ZILLABASE_URL}" -f "$${m_file}";
         done;
         echo "SQL execution completed."
 

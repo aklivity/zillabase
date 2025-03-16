@@ -2,17 +2,17 @@ CREATE USER zillabase;
 
 CREATE SCHEMA zb_catalog AUTHORIZATION postgres;
 
-CREATE TABLE zb_catalog.zviews(
+CREATE TABLE IF NOT EXISTS zb_catalog.zviews(
     name VARCHAR PRIMARY KEY,
     sql VARCHAR
 );
 
-CREATE TABLE zb_catalog.ztables(
+CREATE TABLE  IF NOT EXISTS zb_catalog.ztables(
     name VARCHAR PRIMARY KEY,
     sql VARCHAR
 );
 
-CREATE TABLE zb_catalog.zfunctions(
+CREATE TABLE  IF NOT EXISTS zb_catalog.zfunctions(
     name VARCHAR PRIMARY KEY,
     sql VARCHAR
 );
