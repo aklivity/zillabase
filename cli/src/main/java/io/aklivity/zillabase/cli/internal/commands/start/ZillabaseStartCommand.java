@@ -14,54 +14,121 @@
  */
 package io.aklivity.zillabase.cli.internal.commands.start;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbException;
-import jakarta.json.spi.JsonProvider;
-import jakarta.json.stream.JsonParser;
-import org.leadpony.justify.api.JsonSchema;
-import org.leadpony.justify.api.JsonSchemaReader;
-import org.leadpony.justify.api.JsonValidationService;
-import org.leadpony.justify.api.ProblemHandler;
-
-import com.github.dockerjava.api.DockerClient;
 import com.github.rvesse.airline.annotations.Command;
 
-import io.aklivity.zillabase.cli.config.ZillabaseConfig;
-import io.aklivity.zillabase.cli.internal.commands.ZillabaseDockerCommand;
+import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 
 @Command(
     name = "start",
     description = "Start containers for local development")
-public final class ZillabaseStartCommand extends ZillabaseDockerCommand
+public final class ZillabaseStartCommand extends ZillabaseCommand
 {
-    public static final String PROJECT_NAME = ZILLABASE_PATH.toAbsolutePath().getParent().getFileName().toString();
-    public static final String VOLUME_LABEL = "io.aklivity.zillabase.cli.project";
-
     public String kafkaSeedFilePath = "zillabase/seed-kafka.yaml";
 
     @Override
-    protected void invoke(
-        DockerClient client)
+    protected void invoke()
     {
-        final ZillabaseConfig config = readZillabaseConfig();
-
-        printExposedEndpoints(config);
+        try
+        {
+            unpackResourcesDocker();
+            copyMigrations();
+            runDockerCompose();
+            printExposedEndpoints();
+        }
+        catch (Exception e)
+        {
+            System.out.println("Failed to start containers: " + e.getMessage());
+        }
     }
 
-    private void printExposedEndpoints(
-        ZillabaseConfig config)
+    private void unpackResourcesDocker() throws IOException
     {
-        int studioPort = config.studio.port;
+        Path target = Paths.get(".docker");
+
+        if (Files.exists(target))
+        {
+            Files.walk(target)
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
+        }
+
+        try (ZipFile zipFile = new ZipFile(getClass().getProtectionDomain().getCodeSource().getLocation().getPath()))
+        {
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements())
+            {
+                ZipEntry entry = entries.nextElement();
+                if (entry.getName().startsWith("docker/"))
+                {
+                    Path entryDestination = target.resolve(entry.getName().substring("docker/".length()));
+                    if (entry.isDirectory())
+                    {
+                        Files.createDirectories(entryDestination);
+                    }
+                    else
+                    {
+                        try (InputStream in = zipFile.getInputStream(entry))
+                        {
+                            Files.copy(in, entryDestination, REPLACE_EXISTING);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void copyMigrations() throws IOException
+    {
+        Path source = Paths.get("zillabase/migrations");
+        Path target = Paths.get(".docker/volumes/db/migrations");
+
+        Files.createDirectories(target);
+
+        Files.walk(source)
+            .filter(Files::isRegularFile)
+            .forEach(file ->
+            {
+                try
+                {
+                    Files.copy(file, target.resolve(source.relativize(file)), REPLACE_EXISTING);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+    }
+
+    private void runDockerCompose() throws IOException, InterruptedException
+    {
+        ProcessBuilder builder = new ProcessBuilder("docker", "compose", "up", "-d");
+        builder.directory(new File(".docker"));
+        builder.inheritIO();
+        Process process = builder.start();
+        int exitCode = process.waitFor();
+        if (exitCode != 0)
+        {
+            throw new RuntimeException("Failed to run docker-compose");
+        }
+    }
+
+    private void printExposedEndpoints()
+    {
+        int studioPort = 7184;
 
         String studioUrl = "Studio UI: http://localhost:%d".formatted(studioPort);
 
@@ -71,52 +138,5 @@ public final class ZillabaseStartCommand extends ZillabaseDockerCommand
         System.out.println(border);
         System.out.printf("# %-" + maxLength + "s #\n", studioUrl);
         System.out.println(border);
-    }
-
-    private ZillabaseConfig readZillabaseConfig()
-    {
-        ZillabaseConfig config;
-
-        Path configPath = Paths.get("zillabase/config.yaml");
-        try
-        {
-            if (Files.size(configPath) == 0 || Files.readAllLines(configPath)
-                .stream().allMatch(line -> line.trim().isEmpty() || line.trim().startsWith("#")))
-            {
-                config = new ZillabaseConfig();
-            }
-            else
-            {
-                try (InputStream inputStream = Files.newInputStream(configPath);
-                     InputStream schemaStream = getClass().getResourceAsStream("/internal/schema/zillabase.schema.json"))
-                {
-                    JsonProvider schemaProvider = JsonProvider.provider();
-                    JsonReader schemaReader = schemaProvider.createReader(schemaStream);
-                    JsonObject schemaObject = schemaReader.readObject();
-
-                    JsonParser schemaParser = schemaProvider.createParserFactory(null)
-                        .createParser(new StringReader(schemaObject.toString()));
-
-                    JsonValidationService service = JsonValidationService.newInstance();
-                    JsonSchemaReader reader = service.createSchemaReader(schemaParser);
-                    JsonSchema schema = reader.read();
-
-                    JsonProvider provider = service.createJsonProvider(schema, parser -> ProblemHandler.throwing());
-
-                    Jsonb jsonb = JsonbBuilder.newBuilder()
-                        .withProvider(provider)
-                        .build();
-                    config = jsonb.fromJson(inputStream, ZillabaseConfig.class);
-                }
-            }
-        }
-        catch (IOException | JsonbException ex)
-        {
-            System.err.println("Error resolving config, reverting to default.");
-            ex.printStackTrace(System.err);
-            config = new ZillabaseConfig();
-        }
-
-        return config;
     }
 }

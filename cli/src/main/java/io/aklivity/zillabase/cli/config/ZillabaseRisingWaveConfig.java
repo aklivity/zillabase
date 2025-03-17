@@ -16,12 +16,7 @@ package io.aklivity.zillabase.cli.config;
 
 public final class ZillabaseRisingWaveConfig
 {
-    private static final String DEFAULT_RISINGWAVE_TAG = "v2.0.2";
-    private static final String DEFAULT_RISINGWAVE_DB = "dev";
+    public static final String DEFAULT_RISINGWAVE_DB = "dev";
 
-    public static final String DEFAULT_RISINGWAVE_URL = "risingwave.zillabase.dev:4566";
-
-    public String tag = DEFAULT_RISINGWAVE_TAG;
-    public String url = DEFAULT_RISINGWAVE_URL;
     public String db = DEFAULT_RISINGWAVE_DB;
 }

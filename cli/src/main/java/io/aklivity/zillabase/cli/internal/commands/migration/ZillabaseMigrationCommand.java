@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 
 import com.github.rvesse.airline.annotations.Command;
 
+import io.aklivity.zillabase.cli.config.ZillabaseAdminConfig;
 import io.aklivity.zillabase.cli.config.ZillabaseConfig;
 import io.aklivity.zillabase.cli.internal.commands.ZillabaseCommand;
 import io.aklivity.zillabase.cli.internal.migrations.ZillabaseMigrationApplier;

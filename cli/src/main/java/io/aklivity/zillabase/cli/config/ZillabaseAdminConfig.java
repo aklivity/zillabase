@@ -16,16 +16,16 @@ package io.aklivity.zillabase.cli.config;
 
 import java.util.List;
 
-import io.aklivity.zillabase.cli.internal.Zillabase;
-
-public final class ZillabaseUdfPythonConfig
+public final class ZillabaseAdminConfig
 {
-    public static final String DEFAULT_UDF_PYTHON_TAG = Zillabase.version();
-    public static final String DEFAULT_UDF_PYTHON_API_URL = "http://udf-server-python.zillabase.dev:5000";
-    public static final String DEFAULT_UDF_JAVA_SERVER_URL = "http://udf-server-python.zillabase.dev:8816";
+    public static final int DEFAULT_ADMIN_HTTP_PORT = 7184;
+    public static final int DEFAULT_ADMIN_PGSQL_PORT = 4567;
 
-    public String tag = DEFAULT_UDF_PYTHON_TAG;
-    public List<String> env;
-    public String apiUrl = DEFAULT_UDF_PYTHON_API_URL;
-    public String serverUrl = DEFAULT_UDF_JAVA_SERVER_URL;
+
+    public static final List<Integer> PORTS = List.of(DEFAULT_ADMIN_HTTP_PORT, DEFAULT_ADMIN_PGSQL_PORT);
+
+    private static final String DEFAULT_CONFIG_SERVER_URL = "http://config.zillabase.dev:7114";
+
+    public int pgsqlPort = DEFAULT_ADMIN_PGSQL_PORT;
+    public String configServerUrl = DEFAULT_CONFIG_SERVER_URL;
 }
