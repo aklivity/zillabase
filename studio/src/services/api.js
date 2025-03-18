@@ -166,9 +166,43 @@ const appGetStorageObjectDetail = (bucketName, fileName) => {
     })
 }
 
-const appAddStorageObject = (bucketName, fileName) => {
+const appAddStorageObject = (bucketName, file) => {
     return new Promise((resolve, reject) => {
-        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}`)
+        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${file.name}`, file, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        })
+        .then(response => {
+            resolve(response)
+        }).catch(error => {
+            reject(error)
+        })
+    })
+}
+
+const appAddStorageObjectContent = (bucketName, name, body) => {
+    return new Promise((resolve, reject) => {
+        axios.post(`${app.apiEndpoint}/storage/objects/${bucketName}/${name}`, { content: body })
+            .then(response => {
+                resolve(response)
+            }).catch(error => {
+                reject(error)
+            })
+    })
+}
+
+const appUpdateStorageObjectContent = (bucketName, fileName, body, etag) => {
+    return new Promise((resolve, reject) => {
+        axios.put(`${app.apiEndpoint}/storage/objects/${bucketName}/${fileName}`,
+            `${body}`,
+            {
+                headers: {
+                    'if-match': etag
+                }
+            })
             .then(response => {
                 resolve(response)
             }).catch(error => {
@@ -201,6 +235,7 @@ const appDeleteStorageObject = (bucketName, fileName) => {
 
 export {
     appApiDocs,
+    appUpdateStorageObjectContent,
     appUpdateStorageObject,
     appDeleteStorageObject,
     appAddStorageObject,
@@ -217,5 +252,6 @@ export {
     appGetSSOProviders,
     appGetSSOProvidersById,
     appDeleteSSOProvidersById,
-    appGetExternalFunctionDetails
+    appGetExternalFunctionDetails,
+    appAddStorageObjectContent,
 }

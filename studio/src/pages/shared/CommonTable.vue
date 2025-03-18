@@ -60,6 +60,16 @@
 
         <q-btn
           unelevated
+          icon="add"
+          :ripple="false"
+          v-if="showStorage"
+          color="light-green"
+          class="rounded-10 text-white text-capitalize self-center btn-add-new highlighted-border"
+          @click="$emit('add-file')"
+        />
+
+        <q-btn
+          unelevated
           icon="img:/icons/folder-add.svg"
           :ripple="false"
           v-if="showStorage"
@@ -114,27 +124,15 @@
           "
         />
       </template>
-
-      <template v-slot:header-cell-ztable="props">
-        <q-th :props="props">
-          {{ props.col.label }}
-          <q-icon
-            name="img:icons/question-circle.svg"
-            class="fs-lg filter-gray-dark q-ml-xs"
-          />
-          <q-tooltip anchor="bottom middle" self="top middle">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-          </q-tooltip>
-        </q-th>
-      </template>
-      <template v-slot:body-cell-ztable="props">
+      <template v-slot:body-cell-url="props">
         <q-td :props="props">
           <q-icon
             size="sm"
-            :name="props.row.ztable ? 'check_circle' : 'cancel'"
-            :color="props.row.ztable ? '' : 'negative'"
-            :class="props.row.ztable ? 'text-default-light-green' : ''"
+            class="cursor-pointer"
+            @click="copyToClipboard(props.row.url)"
+            :name="'content_copy'"
           />
+          {{ props.row.url }}
         </q-td>
       </template>
 
@@ -185,16 +183,9 @@
         </q-td>
       </template>
 
-      <template v-slot:header-cell-type="props" v-if="showLabelBottom">
+      <template v-slot:header-cell-type="props">
         <q-th :props="props">
           {{ props.col.label }}
-          <q-icon
-            name="img:icons/question-circle.svg"
-            class="fs-lg filter-gray-dark"
-          />
-          <q-tooltip anchor="bottom middle" self="top middle">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-          </q-tooltip>
         </q-th>
       </template>
       <template v-slot:body-cell-type="props">
@@ -203,11 +194,19 @@
             class="function-type-cell inline-block text-white"
             :class="{
               'bg-light-green':
-                props.row.type === 'External' || props.row.type === 'Active',
+                props.row.type === 'External' ||
+                props.row.type === 'Active' ||
+                props.row.type === 'Table' ||
+                props.row.type === 'View' ||
+                props.row.type === 'Materialized View',
               'bg-custom-dark':
                 props.row.type === 'Embedded' ||
                 props.row.zfunction === true ||
-                props.row.type === 'Real-time Synced',
+                props.row.type === 'Real-time Synced' ||
+                props.row.type === 'ZTable' ||
+                props.row.type === 'ZView' ||
+                props.row.type === 'ZFunction',
+
             }"
           >
             {{ props.row.type }}
@@ -267,75 +266,10 @@
           <q-btn
             flat
             dense
-            round
-            icon="img:/icons/more.svg"
-            ref="menuButton"
+            icon="img:/icons/edit.svg"
             class="filter-text-secondary"
-          >
-            <q-menu class="zillabase-menu">
-              <q-list style="min-width: 150px">
-                <q-item clickable v-close-popup @click="onMoveRow(props.row)">
-                  <q-item-section>
-                    <div class="flex">
-                      <q-icon
-                        name="img:/icons/more-menu-move.svg"
-                        size="sm"
-                        class="q-pr-md filter-gray-dark"
-                      />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Move</span
-                      >
-                    </div>
-                  </q-item-section>
-                </q-item>
-                <q-separator />
-                <q-item clickable v-close-popup>
-                  <q-item-section>
-                    <div class="flex">
-                      <q-icon
-                        name="img:/icons/more-menu-copy.svg"
-                        size="sm"
-                        class="q-pr-md filter-gray-dark"
-                      />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Copy URL</span
-                      >
-                    </div>
-                  </q-item-section>
-                </q-item>
-                <q-separator />
-                <q-item clickable v-close-popup @click="onRenameRow(props.row)">
-                  <q-item-section>
-                    <div class="flex">
-                      <q-icon
-                        name="img:/icons/more-menu-rename.svg"
-                        size="sm"
-                        class="q-pr-md filter-gray-dark"
-                      />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Rename</span
-                      >
-                    </div>
-                  </q-item-section>
-                </q-item>
-                <q-separator />
-                <q-item clickable v-close-popup>
-                  <q-item-section>
-                    <div class="flex">
-                      <q-icon
-                        name="img:/icons/more-menu-download.svg"
-                        size="sm"
-                        class="q-pr-md filter-gray-dark"
-                      />
-                      <span class="text-custom-gray-dark text-weight-light"
-                        >Download</span
-                      >
-                    </div>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-menu>
-          </q-btn>
+            @click="editRow(props.row)"
+          />
           <q-btn
             flat
             dense
@@ -389,6 +323,7 @@
   </div>
 </template>
 <script>
+import { showSuccess } from "src/services/notification";
 import { defineComponent } from "vue";
 export default defineComponent({
   name: "CommonTable",
@@ -399,7 +334,6 @@ export default defineComponent({
     },
     description: {
       type: String,
-      default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     },
     columns: {
       type: Array,
@@ -500,7 +434,18 @@ export default defineComponent({
       return Math.ceil(rowsLength / this.pagination.rowsPerPage);
     },
   },
+  watch: {
+    searchQuery() {
+      this.pagination.page = 1;
+    },
+  },
   methods: {
+    copyToClipboard(url) {
+      if (url) {
+        navigator.clipboard.writeText(url);
+        showSuccess("Copied!");
+      }
+    },
     viewRow(row) {
       this.$emit("view-row", row);
     },

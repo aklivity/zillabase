@@ -24,6 +24,7 @@
           :columns="ssoTableColumns"
           :rows="ssoTableData"
           buttonLabel=""
+          :isShowEdit="false"
           searchInputPlaceholder="Providers"
           @add-new="openProviderDialog"
           showPagination
@@ -56,7 +57,7 @@
             class="rounded-10"
           />
           <p class="text-custom-text-secondary text-h6 fw-600">
-            Create {{ hasUserInfoValues ? "Edit" : "New" }} User
+            {{ hasUserInfoValues ? "Edit" : "Create New" }} User
           </p>
         </div>
         <q-icon
@@ -173,8 +174,8 @@
           />
           <q-btn
             unelevated
-            label="Add User"
-            icon="add"
+            :label="`${hasUserInfoValues ? 'Edit' : 'Add'} User`"
+            :icon="`${hasUserInfoValues ? 'edit' : 'add'}`"
             :ripple="false"
             type="submit"
             class="bg-light-green rounded-10 text-white text-capitalize self-center"
@@ -227,16 +228,45 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Provider</span
               >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Identity Provider ID
+              </q-tooltip>
             </div>
             <div class="col-9">
-              <q-input
-                dense
-                outlined
-                placeholder="e.g Google"
+              <q-select
                 v-model="providerInfo.providerId"
-                class="rounded-10 self-center text-weight-light rounded-input"
+                :options="providers"
+                class="rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
-              />
+                emit-value
+                map-options
+                option-value="value"
+                option-label="label"
+                outlined
+                dense
+              >
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar>
+                      <q-icon
+                        :class="
+                          scope.opt.value == 'microsoft'
+                            ? 'q-ml-sm q-pl-xs'
+                            : ''
+                        "
+                        :name="scope.opt.icon"
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      {{ scope.opt.label }}
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
             </div>
           </div>
           <div class="row items-start q-mt-sm q-pt-md">
@@ -245,6 +275,13 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Alias</span
               >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Identity Provider Alias
+              </q-tooltip>
             </div>
             <div class="col-9">
               <q-input
@@ -262,6 +299,13 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Client</span
               >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Client ID for the Identity Provider
+              </q-tooltip>
             </div>
             <div class="col-9">
               <q-input
@@ -271,6 +315,39 @@
                 class="rounded-10 self-center text-weight-light rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
               />
+            </div>
+          </div>
+          <div class="row items-start q-mt-sm q-pt-md">
+            <div class="col-3">
+              <span
+                class="text-custom-gray-dark text-subtitle1 text-weight-light"
+                >Secret</span
+              >
+              <q-icon
+                name="img:icons/question-circle.svg"
+                class="fs-lg filter-gray-dark q-ml-sm"
+              />
+              <q-tooltip anchor="bottom middle" self="top middle">
+                Client Secret for the Identity Provider
+              </q-tooltip>
+            </div>
+            <div class="col-9">
+              <q-input
+                dense
+                outlined
+                v-model="providerInfo.secret"
+                :type="isPasswordVisible ? 'text' : 'password'"
+                class="rounded-10 self-center text-weight-light rounded-input"
+                :rules="[(val) => !!val || 'Field is required']"
+              >
+                <template v-slot:append>
+                  <q-icon
+                    :name="isPasswordVisible ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer"
+                    @click="isPasswordVisible = !isPasswordVisible"
+                  />
+                </template>
+              </q-input>
             </div>
           </div>
         </q-card-section>
@@ -392,6 +469,7 @@
   </q-dialog>
 </template>
 <script>
+import { showError } from "src/services/notification";
 import { defineComponent } from "vue";
 import CommonTable from "../shared/CommonTable.vue";
 import {
@@ -414,6 +492,28 @@ export default defineComponent({
     return {
       addNewUser: false,
       addNewProvider: false,
+      providers: [
+        { label: "Bitbucket", value: "bitbucket", icon: "code" },
+        { label: "Facebook", value: "facebook", icon: "public" },
+        { label: "GitHub", value: "github", icon: "hub" },
+        { label: "GitLab", value: "gitlab", icon: "developer_mode" },
+        { label: "Google", value: "google", icon: "language" },
+        { label: "Instagram", value: "instagram", icon: "photo_camera" },
+        {
+          label: "LinkedIn",
+          value: "linkedin-openid-connect",
+          icon: "business_center",
+        },
+        { label: "Microsoft", value: "microsoft", icon: "windows" },
+        { label: "OpenShift", value: "openshift-v4", icon: "cloud" },
+        { label: "PayPal", value: "paypal", icon: "account_balance_wallet" },
+        {
+          label: "Stack Overflow",
+          value: "stackoverflow",
+          icon: "question_answer",
+        },
+        { label: "Twitter", value: "twitter", icon: "chat_bubble" },
+      ],
       providerInfo: {
         providerId: "",
         alias: "",
@@ -460,6 +560,7 @@ export default defineComponent({
         { name: "actions", label: "Actions", align: "center" },
       ],
       ssoTableData: [],
+      isPasswordVisible: false,
     };
   },
   mounted() {
@@ -487,7 +588,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.getUsers();
         })
-        .catch((err) => {})
+        .catch((err) => {
+          showError("Failed to add user");
+        })
         .finally(() => {
           this.addNewUser = false;
         });
@@ -507,7 +610,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.userTableData = data;
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to get user");
+        });
     },
     getUserById(user) {
       appGetUserById(user.id)
@@ -515,7 +620,9 @@ export default defineComponent({
           this.userInfo = data;
           this.addNewUser = true;
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to get user by id");
+        });
     },
     openDeleteDialog(row) {
       this.userInfo = row;
@@ -527,7 +634,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.getUsers();
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to delete user");
+        });
     },
     // SSO Proovider
     addSSOProvider() {
@@ -535,7 +644,9 @@ export default defineComponent({
         .then(({ data }) => {
           this.getSSOProvider();
         })
-        .catch((err) => {})
+        .catch((err) => {
+          showError("Failed to add provider");
+        })
         .finally(() => {
           this.addNewProvider = false;
         });
@@ -549,13 +660,17 @@ export default defineComponent({
         secret: "",
         enabled: false,
       };
+      this.isPasswordVisible = false;
     },
     getSSOProvider() {
       appGetSSOProviders()
         .then(({ data }) => {
           this.ssoTableData = data;
+          this.isPasswordVisible = false;
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to get provider");
+        });
     },
     getSSOProviderById(user) {
       appGetSSOProvidersById(user.alias)
@@ -574,11 +689,13 @@ export default defineComponent({
     },
     confirmSSOProviderDelete() {
       this.isDeleteSSOProviderDialogOpen = false;
-      appDeleteSSOProvidersById(user.alias)
+      appDeleteSSOProvidersById(this.providerInfo.alias)
         .then(({ data }) => {
           this.getSSOProvider();
         })
-        .catch((err) => {});
+        .catch((err) => {
+          showError("Failed to delete provider");
+        });
     },
   },
   computed: {

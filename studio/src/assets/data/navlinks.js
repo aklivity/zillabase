@@ -18,15 +18,16 @@ const NavLinks = [
         href: "/tables",
       },
       {
-        title: "Functions",
-        icon: "/icons/function.svg",
-        href: "/functions",
-      },
-      {
         title: "Views",
         icon: "/icons/view.svg",
         href: "/views",
       },
+      {
+        title: "Functions",
+        icon: "/icons/function.svg",
+        href: "/functions",
+      },
+
       {
         title: "Auth",
         icon: "/icons/auth.svg",

@@ -2,7 +2,7 @@
   <div class="q-pa-lg">
     <common-table
       title="All Views"
-      description="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      description="Create and manage your views."
       :columns="tableColumns"
       :rows="tableData"
       buttonLabel="Add View"
@@ -58,7 +58,7 @@
               <q-input
                 dense
                 outlined
-                placeholder="View Name"
+                placeholder="Name"
                 v-model="viewInfo.name"
                 class="rounded-10 self-center text-weight-light rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
@@ -76,7 +76,7 @@
               <q-input
                 outlined
                 type="textarea"
-                placeholder="Write Query..."
+                placeholder="Write SELECT Query..."
                 v-model="viewInfo.body"
                 rows="8"
                 autogrow
@@ -101,7 +101,7 @@
                   class="fs-lg filter-gray-dark q-ml-sm"
                 />
                 <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  A Stream creates the topic and APIs to fetch and stream data.
                 </q-tooltip>
               </div>
             </div>
@@ -118,17 +118,8 @@
             <div class="col-3 flex items-center">
               <span
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Materialized</span
+                >Materialized View</span
               >
-              <div>
-                <q-icon
-                  name="img:icons/question-circle.svg"
-                  class="fs-lg filter-gray-dark q-ml-sm"
-                />
-                <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                </q-tooltip>
-              </div>
             </div>
             <div class="col-9">
               <q-radio
@@ -145,15 +136,6 @@
                 class="text-custom-gray-dark text-subtitle1 text-weight-light"
                 >Views</span
               >
-              <div>
-                <q-icon
-                  name="img:icons/question-circle.svg"
-                  class="fs-lg filter-gray-dark q-ml-sm"
-                />
-                <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                </q-tooltip>
-              </div>
             </div>
             <div class="col-9">
               <q-radio
@@ -257,67 +239,62 @@ export default defineComponent({
         views: "",
       },
       tableColumns: [
-        { name: "name", label: "View Name", align: "left", field: "name" },
+        { name: "name", label: "Name", align: "left", field: "name" },
         {
-          name: "zview",
-          label: "ZView",
+          name: "type",
+          label: "Type",
           align: "center",
-          field: "zview",
-          sortable: true,
-        },
-        {
-          name: "materialized",
-          label: "Materialized",
-          align: "center",
-          field: "materialized",
+          field: "type",
           sortable: true,
         },
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
+      viewsData: [],
+      materializedViewsData: [],
+      zViewsData: [],
     };
   },
   mounted() {
     this.$ws.connect(() => {
-      this.getViews();
+      this.loadAllViews();
     });
     this.$ws.addMessageHandler((data) => {
-      if (data.type == "get_view_name") {
-        console.log(data.data);
+      if (data.type === "get_views") {
+        this.viewsData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "View",
+        }));
+        this.updateTableData();
       }
-      if (data.type == "get_views") {
-        data.data.forEach((item) => {
-          this.tableData.push({
-            ...item,
-            name: item.Name,
-          });
-        });
+      if (data.type === "get_materialized_views") {
+        this.materializedViewsData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "Materialized View",
+        }));
+        this.updateTableData();
       }
-      if (data.type == "get_materialized_views") {
-        data.data.forEach((item) => {
-          this.tableData.push({
-            ...item,
-            name: item.Name,
-            materialized: true,
-          });
-        });
+      if (data.type === "get_z_views") {
+        this.zViewsData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "ZView",
+        }));
+        this.updateTableData();
       }
-      if (data.type == "get_z_views") {
-        data.data.forEach((item) => {
-          this.tableData.push({
-            ...item,
-            name: item.Name,
-            zview: true,
-          });
-        });
-      }
-      if (
-        data.type == "create_view" ||
-        data.type == "create_zview" ||
-        data.type == "create_materialized_view" ||
-        data.type == "drop_view"
-      ) {
+
+      if (data.type === "create_view" || data.type === "drop_view") {
         this.getViews();
+      }
+
+      if (data.type === "create_zview" || data.type === "drop_zview") {
+        this.getZViews();
+      }
+
+      if (data.type === "create_materialized_view" || data.type === "drop_materialized_view") {
+        this.getMaterializedViews();
       }
     });
   },
@@ -326,9 +303,9 @@ export default defineComponent({
   },
   methods: {
     createViews() {
-      if (this.viewInfo.selectionType == "material") {
+      if (this.viewInfo.selectionType === "material") {
         this.createMaterializedView();
-      } else if (this.viewInfo.selectionType == "zview") {
+      } else if (this.viewInfo.selectionType === "zview") {
         this.createZView();
       } else {
         this.createView();
@@ -357,19 +334,21 @@ export default defineComponent({
       this.$ws.sendMessage(query, "create_view");
     },
     getViews() {
-      this.tableData = [];
       this.$ws.sendMessage(`show views;`, "get_views");
-      this.getMaterializedViews();
     },
     getMaterializedViews() {
-      this.$ws.sendMessage(
-        `show materialized views;`,
-        "get_materialized_views"
-      );
-      this.getZViews();
+      this.$ws.sendMessage(`show materialized views;`, "get_materialized_views");
     },
     getZViews() {
       this.$ws.sendMessage(`show zviews;`, "get_z_views");
+    },
+    loadAllViews() {
+      this.getViews();
+      this.getZViews();
+      this.getMaterializedViews();
+    },
+    updateTableData() {
+      this.tableData = [...this.viewsData, ...this.materializedViewsData, ...this.zViewsData];
     },
     openEditDialog(row) {
       this.$ws.sendMessage(`describe ${row.name};`, "get_view_name");
@@ -379,21 +358,12 @@ export default defineComponent({
       this.isDeleteDialogOpen = true;
     },
     confirmDelete() {
-      if (this.selectedRow.zview) {
-        this.$ws.sendMessage(
-          `DROP ZVIEW ${this.selectedRow.name};`,
-          "drop_view"
-        );
-      } else if (this.selectedRow.materialized) {
-        this.$ws.sendMessage(
-          `DROP MATERIALIZED VIEW ${this.selectedRow.name};`,
-          "drop_view"
-        );
-      } else {
-        this.$ws.sendMessage(
-          `DROP VIEW ${this.selectedRow.name};`,
-          "drop_view"
-        );
+      if (this.selectedRow.type === "ZView") {
+        this.$ws.sendMessage(`DROP ZVIEW ${this.selectedRow.name};`, "drop_zview");
+      } else if (this.selectedRow.type === "Materialized View") {
+        this.$ws.sendMessage(`DROP MATERIALIZED VIEW ${this.selectedRow.name};`, "drop_materialized_view");
+      } else if (this.selectedRow.type === "View") {
+        this.$ws.sendMessage(`DROP VIEW ${this.selectedRow.name};`, "drop_view");
       }
       this.isDeleteDialogOpen = false;
       this.selectedRow = null;

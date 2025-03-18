@@ -1,8 +1,8 @@
 <template>
   <div class="q-pa-lg">
     <common-table
-      title="Example Table"
-      description="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      title="All Tables"
+      description="Create and manage your tables"
       :columns="tableColumns"
       :rows="tableData"
       buttonLabel="Add Table"
@@ -34,7 +34,7 @@
               class="rounded-10"
             />
             <p class="text-custom-text-secondary text-h6 fw-600">
-              Create New Table
+              {{ dialogTitle }}
             </p>
           </div>
           <q-icon
@@ -57,28 +57,9 @@
                 dense
                 outlined
                 v-model="tableInfo.name"
-                placeholder="Table Name"
+                placeholder="Name"
                 class="rounded-10 self-center text-weight-light rounded-input"
                 :rules="[(val) => !!val || 'Field is required']"
-              />
-            </div>
-          </div>
-          <div class="row items-start q-mt-lg">
-            <div class="col-3">
-              <span
-                class="text-custom-gray-dark text-subtitle1 text-weight-light"
-                >Description</span
-              >
-            </div>
-            <div class="col-9">
-              <q-input
-                outlined
-                type="textarea"
-                placeholder="Table Description..."
-                rows="6"
-                v-model="tableInfo.description"
-                autogrow
-                class="rounded-10 self-center text-weight-light rounded-input"
               />
             </div>
           </div>
@@ -97,14 +78,14 @@
                   class="fs-lg filter-gray-dark q-ml-sm"
                 />
                 <q-tooltip anchor="bottom middle" self="top middle">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  A Table creates the topic and CRUD APIs to insert and query data.
                 </q-tooltip>
               </div>
             </div>
             <div class="col-9">
               <q-checkbox
                 dense
-                v-model="tableInfo.zTableVal"
+                v-model="tableInfo.zTableType"
                 color="light-green"
               />
             </div>
@@ -137,7 +118,7 @@
             @add-row="addRow"
             @remove-row="removeRow"
             @setting-row="openRowSettingDialog"
-            :isSettingShow="tableInfo.zTableVal"
+            :isSettingShow="tableInfo.zTableType"
           />
         </q-card-section>
         <q-separator />
@@ -261,7 +242,7 @@
               Identity
             </p>
             <p class="text-custom-gray-dark text-weight-light q-mt-xs">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              Identity value will be auto populated.
             </p>
           </div>
         </div>
@@ -275,7 +256,7 @@
           <div>
             <p class="text-custom-text-secondary text-weight-medium">Now</p>
             <p class="text-custom-gray-dark text-weight-light q-mt-xs">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              Timestamp value will be auto populated.
             </p>
           </div>
         </div>
@@ -288,6 +269,7 @@ import { defineComponent } from "vue";
 import CommonTable from "../shared/CommonTable.vue";
 import DataTypeTable from "../shared/DataTypeTable.vue";
 import { showError } from "./../../services/notification";
+
 export default defineComponent({
   name: "TableComponent",
   components: {
@@ -299,142 +281,77 @@ export default defineComponent({
       isDeleteDialogOpen: false,
       addNewTable: false,
       isRowSettingDialogOpen: false,
-      zTableVal: false,
+      zTableType: false,
       selectedRow: null,
       activeRowSetting: {},
       tableInfo: {
         name: "",
         description: "",
-        zTableVal: false,
+        zTableType: false,
       },
       tableColumns: [
-        { name: "name", label: "Table Name", align: "left", field: "name" },
-        {
-          name: "description",
-          label: "Description",
-          align: "left",
-          field: "description",
-        },
-        { name: "ztable", label: "ZTable", align: "center", field: "ztable" },
+        { name: "name", label: "Name", align: "left", field: "name" },
+        { name: "type", label: "Type", align: "center", field: "type" },
         { name: "actions", label: "Actions", align: "center" },
       ],
       tableData: [],
+      tablesData: [],
+      zTablesData: [],
       dataTypeRow: [
         { name: "", type: "", defaultValue: "", primary: false, id: 1 },
-        {
-          name: "",
-          type: "",
-          defaultValue: "",
-          primary: false,
-          id: 2,
-        },
-        {
-          name: "",
-          type: "",
-          defaultValue: "",
-          primary: false,
-          id: 3,
-        },
+        { name: "", type: "", defaultValue: "", primary: false, id: 2 },
+        { name: "", type: "", defaultValue: "", primary: false, id: 3 },
         { name: "", type: "", defaultValue: "", primary: false, id: 4 },
       ],
       dataTypeColumns: [
-        {
-          name: "name",
-          required: true,
-          label: "Name",
-          align: "left",
-          field: "name",
-        },
+        { name: "name", required: true, label: "Name", align: "left", field: "name" },
         { name: "type", label: "Type", align: "left", field: "type" },
-        {
-          name: "defaultValue",
-          label: "Default Value",
-          align: "left",
-          field: "defaultValue",
-        },
-        {
-          name: "primary",
-          label: "Primary",
-          align: "center",
-          field: "primary",
-        },
+        { name: "defaultValue", label: "Default Value", align: "left", field: "defaultValue" },
+        { name: "primary", label: "Primary", align: "center", field: "primary" },
         { name: "actions", label: "Actions", align: "center" },
       ],
       dataTypeOptions: [
-        "boolean",
-        "smallint",
-        "integer",
-        "bigint",
-        "numeric",
-        "real",
-        "double precision",
-        "varchar",
-        "bytea",
-        "date",
-        "time without time zone",
-        "timestamp without time zone",
-        "timestamp with time zone",
-        "interval",
-        "struct",
-        "array",
-        "map",
-        "JSONB",
+        "boolean", "smallint", "integer", "bigint", "numeric", "real", "double precision",
+        "varchar", "bytea", "date", "time without time zone", "timestamp without time zone",
+        "timestamp with time zone", "interval", "struct", "array", "map", "JSONB",
       ],
       rowSettingData: [
-        {
-          id: 1,
-          primary: true,
-          label: "Identity",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        },
-        {
-          id: 2,
-          primary: false,
-          label: "Now",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        },
+        { id: 1, primary: true, label: "Identity", description: "Identity value will be auto populated." },
+        { id: 2, primary: false, label: "Now", description: "Timestamp value will be auto populated." },
       ],
     };
   },
+  computed: {
+    dialogTitle() {
+      return this.selectedRow ? "Edit Table" : "Create New Table";
+    },
+  },
   mounted() {
     this.$ws.connect(() => {
-      this.getTableInformations();
+      this.loadAllTables();
     });
     this.$ws.addMessageHandler((data) => {
-      if (data.type == "get_table_name") {
-        this.setEditTableInfo(data.data);
-      }
-      if (data.type == "get_table") {
-        this.tableData = data.data.map((x, i) => ({
-          id: i + 1,
-          name: x.Name,
-          description: x.table_description,
-          columns: x.total_columns,
-          rows: x.total_rows,
-          ztable: false,
+      if (data.type === "get_tables") {
+        this.tablesData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "Table",
         }));
+        this.updateTableData();
+      }
+      if (data.type === "get_ztables") {
+        this.zTablesData = data.data.map((item) => ({
+          ...item,
+          name: item.Name,
+          type: "ZTable",
+        }));
+        this.updateTableData();
+      }
+      if (data.type === "create_table" || data.type === "drop_table") {
+        this.getTables();
+      }
+      if (data.type === "create_ztable" || data.type === "drop_ztable") {
         this.getZTables();
-      }
-      if (data.type == "get_ztables") {
-        data.data
-          .filter((x) => x.Name)
-          .forEach((item) => {
-            const itemData = this.tableData.find(
-              (x) => x.name.toLowerCase() == item.Name.toLowerCase()
-            );
-            if (itemData) {
-              itemData.ztable = true;
-            }
-          });
-      }
-      if (
-        data.type == "create_table" ||
-        data.type == "create_ztable" ||
-        data.type == "drop_ztable"
-      ) {
-        this.getTableInformations();
       }
     });
   },
@@ -445,35 +362,34 @@ export default defineComponent({
     setEditTableInfo(data) {
       this.addNewTable = true;
       this.tableInfo = {
-        name: data.find((x) => x.Name == "table description")?.Type,
-        description: data.find((x) => x.Name == "table description")
-          ?.Description,
-        zTableVal: this.selectedRow.ztable,
+        name: data.find((x) => x.Name === "table description")?.Type,
+        description: data.find((x) => x.Name === "table description")?.Description,
+        zTableType: this.selectedRow.type === "ZTable",
       };
-      const excludeIds = [
-        "primary key",
-        "distribution key",
-        "table description",
-      ];
+      const excludeIds = ["primary key", "distribution key", "table description"];
       this.dataTypeRow = [];
-      data
-        .filter((x) => !excludeIds.includes(x.Name))
-        .forEach((item, index) => {
-          this.dataTypeRow.push({
-            name: item.Name,
-            type: item.Type,
-            defaultValue: "",
-            primary: data.some((x) => x.Type == item.Name),
-            id: index + 1,
-          });
+      data.filter((x) => !excludeIds.includes(x.Name)).forEach((item, index) => {
+        this.dataTypeRow.push({
+          name: item.Name,
+          type: item.Type,
+          defaultValue: "",
+          primary: data.some((x) => x.Type === item.Name),
+          id: index + 1,
         });
+      });
     },
-    getTableInformations() {
-      this.tableData = [];
-      this.$ws.sendMessage(`show tables;`, "get_table");
+    getTables() {
+      this.$ws.sendMessage(`SHOW TABLES;`, "get_tables");
     },
     getZTables() {
-      this.$ws.sendMessage(`show ztables;`, "get_ztables");
+      this.$ws.sendMessage(`SHOW ZTABLES;`, "get_ztables");
+    },
+    loadAllTables() {
+      this.getTables();
+      this.getZTables();
+    },
+    updateTableData() {
+      this.tableData = [...this.tablesData, ...this.zTablesData];
     },
     addTable() {
       const hasValidData = this.dataTypeRow.some(
@@ -498,38 +414,39 @@ export default defineComponent({
             columnDef += ` DEFAULT '${field.defaultValue}'`;
           }
 
-          if (field.constraints == "identity") {
+          if (field.constraints === "identity") {
             columnDef += " GENERATED ALWAYS AS IDENTITY";
           }
 
           return columnDef;
         });
+
       if (
-        this.tableInfo.zTableVal &&
+        this.tableInfo.zTableType &&
         this.$refs.dataTypeTable.rows.some(
-          (field) => field.constraints == "identity" && field.type == "integer"
+          (field) => field.constraints === "identity" && field.type === "integer"
         )
       ) {
         showError("Integer is not allowed for Identity Column");
         return;
       }
+
       const primaryKey = this.$refs.dataTypeTable.rows
         .filter((field) => field.primary)
         .map((field) => field.name);
+
       if (primaryKey.length > 0) {
         columns.push(`PRIMARY KEY (${primaryKey.join(", ")})`);
       }
-      if (this.tableInfo.zTableVal) {
-        const zTableQuery = `CREATE ZTABLE ${
-          this.tableInfo.name
-        } (${columns.join(",\n    ")});`;
+
+      if (this.tableInfo.zTableType) {
+        const zTableQuery = `CREATE ZTABLE ${this.tableInfo.name} (${columns.join(",\n    ")});`;
         this.$ws.sendMessage(zTableQuery, "create_ztable");
       } else {
-        const query = `CREATE TABLE ${this.tableInfo.name} (${columns.join(
-          ",\n    "
-        )});`;
+        const query = `CREATE TABLE ${this.tableInfo.name} (${columns.join(",\n    ")});`;
         this.$ws.sendMessage(query, "create_table");
       }
+
       this.addNewTable = false;
       this.$refs.addTableForm.reset();
     },
@@ -537,19 +454,13 @@ export default defineComponent({
       this.tableInfo = {
         name: "",
         description: "",
-        zTableVal: false,
+        zTableType: false,
       };
 
       this.dataTypeRow = [
-        {
-          name: "",
-          type: "",
-          defaultValue: "",
-          primary: false,
-          isNullable: true,
-          id: 1,
-        },
+        { name: "", type: "", defaultValue: "", primary: false, isNullable: true, id: 1 },
       ];
+
       this.$nextTick(() => {
         if (this.$refs.dataTypeTable) {
           this.$refs.dataTypeTable.rows = this.dataTypeRow;
@@ -558,7 +469,7 @@ export default defineComponent({
     },
     openEditDialog(row) {
       this.selectedRow = row;
-      this.$ws.sendMessage(`describe ${row.name};`, "get_table_name");
+      this.$ws.sendMessage(`DESCRIBE ${row.name};`, "get_table_name");
     },
     openDeleteDialog(row) {
       this.selectedRow = row;
@@ -566,16 +477,10 @@ export default defineComponent({
     },
     confirmDelete() {
       this.isDeleteDialogOpen = false;
-      if (this.selectedRow.ztable) {
-        this.$ws.sendMessage(
-          `DROP ZTABLE ${this.selectedRow.name};`,
-          "drop_ztable"
-        );
+      if (this.selectedRow.type === "ZTable") {
+        this.$ws.sendMessage(`DROP ZTABLE ${this.selectedRow.name};`, "drop_ztable");
       } else {
-        this.$ws.sendMessage(
-          `DROP TABLE ${this.selectedRow.name};`,
-          "drop_table"
-        );
+        this.$ws.sendMessage(`DROP TABLE ${this.selectedRow.name};`, "drop_table");
       }
       this.selectedRow = null;
     },
@@ -588,12 +493,9 @@ export default defineComponent({
       this.isRowSettingDialogOpen = !this.isRowSettingDialogOpen;
     },
     closeSettings() {
-      this.activeRowSetting.unique =
-        this.rowSettingData.find((x) => x.id == 1)?.primary || false;
-      this.activeRowSetting.nullable =
-        this.rowSettingData.find((x) => x.id == 2)?.primary || false;
-      this.activeRowSetting.identity =
-        this.rowSettingData.find((x) => x.id == 3)?.primary || false;
+      this.activeRowSetting.unique = this.rowSettingData.find((x) => x.id === 1)?.primary || false;
+      this.activeRowSetting.nullable = this.rowSettingData.find((x) => x.id === 2)?.primary || false;
+      this.activeRowSetting.identity = this.rowSettingData.find((x) => x.id === 3)?.primary || false;
     },
     addRow() {
       this.dataTypeRow.push({

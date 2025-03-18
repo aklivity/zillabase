@@ -29017,13 +29017,13 @@ Script.prototype.runInContext = function (context) {
     if (!(context instanceof Context)) {
         throw new TypeError("needs a 'context' argument.");
     }
-    
+
     var iframe = document.createElement('iframe');
     if (!iframe.style) iframe.style = {};
     iframe.style.display = 'none';
-    
+
     document.body.appendChild(iframe);
-    
+
     var win = iframe.contentWindow;
     var wEval = win.eval, wExecScript = win.execScript;
 
@@ -29032,7 +29032,7 @@ Script.prototype.runInContext = function (context) {
         wExecScript.call(win, 'null');
         wEval = win.eval;
     }
-    
+
     forEach(Object_keys(context), function (key) {
         win[key] = context[key];
     });
@@ -29041,11 +29041,11 @@ Script.prototype.runInContext = function (context) {
             win[key] = context[key];
         }
     });
-    
+
     var winKeys = Object_keys(win);
 
     var res = wEval.call(win, this.code);
-    
+
     forEach(Object_keys(win), function (key) {
         // Avoid copying circular objects like `top` and `window` by only
         // updating existing context properties or new properties in the `win`
@@ -29060,9 +29060,9 @@ Script.prototype.runInContext = function (context) {
             defineProp(context, key, win[key]);
         }
     });
-    
+
     document.body.removeChild(iframe);
-    
+
     return res;
 };
 
@@ -30390,15 +30390,30 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
 }
 
 function parseError(x) {
-  const error = {}
-  let start = 5
-  for (let i = 5; i < x.length - 1; i++) {
-    if (x[i] === 0) {
-      error[errorFields[x[start]]] = x.toString('utf8', start + 1, i)
-      start = i + 1
+  const error = {};
+  let start = 5;
+  const length = x.length;
+
+  while (start < length) {
+    const fieldCode = x[start];
+    const fieldKey = errorFields[fieldCode];
+    start += 1;
+
+    let end = start;
+    while (end < length && x[end] !== 0) {
+      end += 1;
     }
+
+    if (fieldKey) {
+      error[fieldKey] = x.toString('utf8', start, end);
+    } else {
+      console.warn(`Unknown error field: ${fieldCode}`);
+    }
+
+    start = end + 1;
   }
-  return error
+
+  return error;
 }
 
 function md5(x) {

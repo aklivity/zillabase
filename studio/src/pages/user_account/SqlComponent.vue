@@ -153,11 +153,13 @@
                   />
                 </div>
                 <q-separator />
-                <q-card-section
-                  class="text-grey bg-custom-dark-color sql-result"
-                >
-                  <pre>{{ resuleSet }}</pre>
-                </q-card-section>
+                <div>
+                  <q-table
+                    :rows="rows"
+                    :columns="columns"
+                    row-key="id"
+                  />
+                </div>
               </q-card-section>
             </q-card>
           </q-tab-panel>
@@ -230,6 +232,8 @@ export default defineComponent({
         },
       ],
       resuleSet: null,
+      rows: [],
+      columns: [],
       query: "",
     };
   },
@@ -241,7 +245,7 @@ export default defineComponent({
   mounted() {
     this.$ws.addMessageHandler((data) => {
       if (data.type == "execute_queries") {
-        this.resuleSet = JSON.stringify(data.data, null, 4);
+        this.processQueryResult(data.data);
       }
     });
   },
@@ -254,6 +258,20 @@ export default defineComponent({
     },
     runQuery() {
       this.$ws.sendMessage(this.query, "execute_queries");
+    },
+    processQueryResult(data) {
+      if (data.length > 0) {
+        this.columns = Object.keys(data[0]).map((key) => ({
+          name: key,
+          label: key.replace(/_/g, ' ').toUpperCase(), // Optional: format label
+          align: "left",
+          field: key,
+        }));
+        this.rows = data.map((row, index) => ({ id: index + 1, ...row }));
+      } else {
+        this.columns = [];
+        this.rows = [];
+      }
     },
   },
 });
