@@ -8,8 +8,6 @@ services:
       - ${ZILLA_HTTP_PORT}:${ZILLA_HTTP_PORT}
     command: ["start", "-v", "-e", "-c", "http://config.zillabase.dev:7114/config/zilla.yaml", "-Pzilla.engine.verbose.composites=true",
               "-Pzilla.engine.config.poll.interval.seconds=10"]
-    networks:
-      - zillabase_default
     restart: unless-stopped
 
   studio:
@@ -22,8 +20,6 @@ services:
     command: ["start", "-v", "-e"]
     volumes:
       - ./volumes/studio/zilla.yaml:/etc/zilla/zilla.yaml
-    networks:
-      - zillabase_default
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7194"]
@@ -52,8 +48,6 @@ services:
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE:  ${KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE}
     volumes:
       - zillabase_kafka:/bitnami/kafka
-    networks:
-      - zillabase_default
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/29092"]
@@ -64,8 +58,6 @@ services:
   kafka-init:
     image: "bitnami/kafka:${KAFKA_VERSION}"
     user: root
-    networks:
-      - zillabase_default
     depends_on:
       kafka:
         condition: service_healthy
@@ -91,8 +83,6 @@ services:
       QUARKUS_HTTP_CORS_ORIGINS: ${QUARKUS_HTTP_CORS_ORIGINS}
       APICURIO_STORAGE_KIND: ${APICURIO_STORAGE_KIND}
       APICURIO_KAFKASQL_BOOTSTRAP_SERVERS: ${APICURIO_KAFKASQL_BOOTSTRAP_SERVERS}
-    networks:
-      - zillabase_default
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8080"]
@@ -117,8 +107,6 @@ services:
       KARAPACE_LOG_LEVEL: ${KARAPACE_LOG_LEVEL}
       KARAPACE_COMPATIBILITY: ${KARAPACE_COMPATIBILITY}
     command: ["/bin/bash", "/opt/karapace/start.sh", "registry"]
-    networks:
-      - zillabase_default
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8081"]
@@ -136,8 +124,6 @@ services:
       POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS}
     volumes:
       - zillabase_postgres:/var/lib/postgresql/data
-    networks:
-      - zillabase_default
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -148,8 +134,6 @@ services:
   minio:
     image: quay.io/minio/minio:${MINIO_VERSION}
     hostname: minio.zillabase.dev
-    networks:
-      - zillabase_default
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -169,8 +153,6 @@ services:
     hostname: risingwave.zillabase.dev
     ports:
       - 4566:4566
-    networks:
-      - zillabase_default
     environment:
       RW_STANDALONE_META_OPTS: ${RW_STANDALONE_META_OPTS}
       RW_STANDALONE_COMPUTE_OPTS: ${RW_STANDALONE_COMPUTE_OPTS}
@@ -189,8 +171,6 @@ services:
     hostname: keycloak.zillabase.dev
     ports:
       - ${KEYCLOAK_PORT}:${KEYCLOAK_PORT}
-    networks:
-      - zillabase_default
     environment:
       KEYCLOAK_DATABASE_VENDOR: ${KEYCLOAK_DATABASE_VENDOR}
       KEYCLOAK_HTTP_PORT: ${KEYCLOAK_PORT}
@@ -210,8 +190,6 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-    networks:
-      - zillabase_default
     environment:
       KEYCLOAK_URL: ${KEYCLOAK_URL}
       KEYCLOAK_USER: ${KEYCLOAK_ADMIN}
@@ -227,8 +205,6 @@ services:
   api-gen:
     image: ghcr.io/aklivity/zillabase/api-gen:${ZILLABASE_VERSION}
     hostname: api-gen.zillabase.dev
-    networks:
-      - zillabase_default
     environment:
       ADMIN_HTTP_URL: ${ADMIN_HTTP_URL}
       KAFKA_BOOTSTRAP_SERVER: ${KAFKA_BOOTSTRAP_SERVER}
@@ -240,8 +216,6 @@ services:
   auth:
     image: ghcr.io/aklivity/zillabase/auth:${ZILLABASE_VERSION}
     hostname: auth.zillabase.dev
-    networks:
-      - zillabase_default
     environment:
       AUTH_SERVER_PORT: ${AUTH_PORT}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
@@ -255,8 +229,6 @@ services:
   admin:
     image: ghcr.io/aklivity/zilla:${ZILLA_VERSION}
     hostname: admin.zillabase.dev
-    networks:
-      - zillabase_default
     ports:
       - ${ADMIN_PORT}:${ADMIN_PORT}
       - ${ADMIN_PGSQL_PORT}:${ADMIN_PGSQL_PORT}
@@ -307,8 +279,6 @@ services:
   udf-server-java:
     image: ghcr.io/aklivity/zillabase/udf-server-java:${ZILLABASE_VERSION}
     hostname: udf-server-java.zillabase.dev
-    networks:
-      - zillabase_default
     environment:
       CLASSPATH: service-udf-java.jar:/opt/udf/lib/*
     volumes:
@@ -323,8 +293,6 @@ services:
   udf-server-python:
     image: ghcr.io/aklivity/zillabase/udf-server-python:${ZILLABASE_VERSION}
     hostname: udf-server-python.zillabase.dev
-    networks:
-      - zillabase_default
     environment:
       PYTHONPATH: /opt/udf/lib
     volumes:
@@ -338,8 +306,6 @@ services:
 
   postgres-init:
     image: postgres:${POSTGRES_VERSION}
-    networks:
-      - zillabase_default
     volumes:
       - ./volumes/db/:/sql/
     environment:
@@ -374,5 +340,6 @@ volumes:
       ${VOLUME_LABEL}: ${PROJECT_NAME}
 
 networks:
-  zillabase_default:
+  default:
+    name: zillabase_default
     driver: bridge
