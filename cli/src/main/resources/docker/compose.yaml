@@ -167,6 +167,8 @@ services:
   risingwave:
     image: risingwavelabs/risingwave:${RISINGWAVE_VERSION}
     hostname: risingwave.zillabase.dev
+    ports:
+      - 4566:4566
     networks:
       - zillabase_default
     environment:

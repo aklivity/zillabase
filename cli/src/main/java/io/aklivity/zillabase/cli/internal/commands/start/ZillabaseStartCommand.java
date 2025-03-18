@@ -57,7 +57,7 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
 
     private void unpackResourcesDocker() throws IOException
     {
-        Path target = Paths.get(".docker");
+        Path target = Paths.get("/tmp/zillabase-docker");
 
         if (Files.exists(target))
         {
@@ -95,7 +95,7 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
     private void copyMigrations() throws IOException
     {
         Path source = Paths.get("zillabase/migrations");
-        Path target = Paths.get(".docker/volumes/db/migrations");
+        Path target = Paths.get("/tmp/zillabase-docker/volumes/db/migrations");
 
         Files.createDirectories(target);
 
@@ -117,7 +117,7 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
     private void copyJavaFunctions() throws IOException
     {
         Path source = Paths.get("zillabase/functions/java/target");
-        Path target = Paths.get(".docker/volumes/functions/java");
+        Path target = Paths.get("/tmp/zillabase-docker/volumes/functions/java");
 
         Files.walk(source)
             .filter(f -> f.toString().endsWith(".jar"))
@@ -137,7 +137,7 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
     private void runDockerCompose() throws IOException, InterruptedException
     {
         ProcessBuilder builder = new ProcessBuilder("docker", "compose", "up", "-d");
-        builder.directory(new File(".docker"));
+        builder.directory(new File("/tmp/zillabase-docker"));
         builder.inheritIO();
         Process process = builder.start();
         int exitCode = process.waitFor();
@@ -149,7 +149,7 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
 
     private void printExposedEndpoints()
     {
-        int studioPort = 7184;
+        int studioPort = 7194;
 
         String studioUrl = "Studio UI: http://localhost:%d".formatted(studioPort);
 
