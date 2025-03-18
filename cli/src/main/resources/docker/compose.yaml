@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
 
   studio:
-    image: "ghcr.io/aklivity/zillabase/studio:develop-SNAPSHOT"
+    image: "ghcr.io/aklivity/zillabase/studio:${ZILLABASE_VERSION}"
     hostname: "studio.zillabase.dev"
     ports:
       - ${STUDIO_PORT}:${STUDIO_PORT}
@@ -205,7 +205,6 @@ services:
 
   keycloak-config-cli:
     image: quay.io/adorsys/keycloak-config-cli:latest
-    container_name: keycloak_config_cli
     depends_on:
       keycloak:
         condition: service_healthy
@@ -258,6 +257,7 @@ services:
       - zillabase_default
     ports:
       - ${ADMIN_PORT}:${ADMIN_PORT}
+      - ${ADMIN_PGSQL_PORT}:${ADMIN_PGSQL_PORT}
     environment:
       ZILLA_INCUBATOR_ENABLED: "true"
       RISINGWAVE_HOST: ${RISINGWAVE_HOST}
@@ -310,7 +310,7 @@ services:
     environment:
       CLASSPATH: service-udf-java.jar:/opt/udf/lib/*
     volumes:
-      - ./functions/java:/opt/udf/lib
+      - ./volumes/functions/java:/opt/udf/lib
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8815" ]
       interval: 5s
@@ -320,12 +320,13 @@ services:
 
   udf-server-python:
     image: ghcr.io/aklivity/zillabase/udf-server-python:${ZILLABASE_VERSION}
-    container_name: udf-server-python
-    hostname: udf-server-python
+    hostname: udf-server-python.zillabase.dev
+    networks:
+      - zillabase_default
     environment:
       PYTHONPATH: /opt/udf/lib
     volumes:
-      - ./functions/python:/opt/udf/lib
+      - ./volumes/functions/python:/opt/udf/lib
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8816" ]
       interval: 5s
@@ -335,7 +336,6 @@ services:
 
   postgres-init:
     image: postgres:${POSTGRES_VERSION}
-    container_name: postgres-init
     networks:
       - zillabase_default
     volumes:

@@ -48,7 +48,7 @@ public final class ZillabaseStopCommand extends ZillabaseCommand
     private void stopDockerCompose(
         boolean noBackup) throws IOException, InterruptedException
     {
-        String[] commands = noBackup
+        final String[] commands = noBackup
             ? new String[] { "docker", "compose", "down", "--volumes" }
             : new String[] { "docker", "compose", "down" };
 
