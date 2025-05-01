@@ -427,8 +427,7 @@ export default defineComponent({
   }
 
 .sql-editor-area {
-  /* allow textarea to scroll while keeping header fixed */
-  max-height: 400px;      /* adjust as needed */
+  max-height: 400px;
   overflow-y: auto;
 }
 
