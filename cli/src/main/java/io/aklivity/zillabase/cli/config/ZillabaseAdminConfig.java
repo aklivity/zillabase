@@ -212,11 +212,11 @@ public final class ZillabaseAdminConfig
                 exit: auth_http_client
               - when:
                   - headers:
-                      :path: /v1/snippet
+                      :path: /v1/snippets
                 exit: http_filesystem_proxy
               - when:
                   - headers:
-                      :path: /v1/snippet/*
+                      :path: /v1/snippets/*
                 exit: http_filesystem_proxy
               - when:
                   - headers:
@@ -300,20 +300,20 @@ public final class ZillabaseAdminConfig
                 exit: storage_filesystem_server
                 with:
                   directory: ${params.bucket}
-                  path: ${params.path}
+                  path: ${params.path}  
               - when:
                   - method: GET
-                    path: /v1/snippet
+                    path: /v1/snippets
                   - method: GET
-                    path: /v1/snippet/{path}
+                    path: /v1/snippets/{path}
                   - method: GET
-                    path: /v1/snippet/
+                    path: /v1/snippets/
                   - method: POST
-                    path: /v1/snippet/{path}
+                    path: /v1/snippets/{path}
                   - method: PUT
-                    path: /v1/snippet/{path}
+                    path: /v1/snippets/{path}
                   - method: DELETE
-                    path: /v1/snippet/{path}
+                    path: /v1/snippets/{path}
                 exit: snippet_filesystem_server
                 with:
                   path: ${params.path}
@@ -330,7 +330,7 @@ public final class ZillabaseAdminConfig
             type: filesystem
             kind: server
             options:
-              location: /var/snippet/
+              location: /var/snippets/
         telemetry:
           exporters:
             stdout_logs_exporter:

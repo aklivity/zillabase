@@ -365,7 +365,7 @@ paths:
           description: Object deleted successfully
         "404":
           description: Not found
-  /snippet:
+  /snippets:
     get:
       tags:
         - snippet
@@ -385,7 +385,7 @@ paths:
           description: Invalid request parameters
         "404":
           description: Bucket not found
-  /snippet/{snippet-name}:
+  /snippets/{snippet-name}:
     get:
       tags:
         - snippet

@@ -268,7 +268,7 @@ export default defineComponent({
     async deleteTab(index) {
       const snippetName = this.tabs[index].name;
       try {
-        await axios.delete(`${this.baseUrl}/snippet/${encodeURIComponent(snippetName)}`);
+        await axios.delete(`${this.baseUrl}/snippets/${encodeURIComponent(snippetName)}`);
         this.tabs.splice(index, 1);
         if (this.tabs.length === 0) {
           this.selectedTab = "initialTab";
@@ -299,7 +299,7 @@ export default defineComponent({
     },
     async fetchSnippets() {
       try {
-        const { data } = await axios.get(`${this.baseUrl}/snippet`);
+        const { data } = await axios.get(`${this.baseUrl}/snippets`);
         this.tabs = data
           .filter((item) => item.type === "file")
           .map((item) => ({ name: item.path }));
@@ -317,7 +317,7 @@ export default defineComponent({
     async loadSnippet(name) {
       try {
         const response = await axios.get(
-          `${this.baseUrl}/snippet/${encodeURIComponent(name)}`
+          `${this.baseUrl}/snippets/${encodeURIComponent(name)}`
         );
         let text = "";
         const body = response.data;
@@ -344,15 +344,13 @@ export default defineComponent({
       const name = this.newSnippetName.trim();
       if (!name) return;
       try {
-        // Always start a brand‑new snippet with empty content
         await axios.post(
-          `${this.baseUrl}/snippet/${encodeURIComponent(name)}`,
+          `${this.baseUrl}/snippets/${encodeURIComponent(name)}`,
           { content: "" },
           { headers: { "Content-Type": "application/json" } }
         );
         this.addNewSnippet = false;
 
-        // Refresh list and focus the newly created snippet
         await this.fetchSnippets();
         this.selectedTab = name;
         this.query = "";
@@ -365,7 +363,7 @@ export default defineComponent({
       if (!this.selectedTab || this.selectedTab === "initialTab") return;
       try {
         await axios.put(
-          `${this.baseUrl}/snippet/${encodeURIComponent(this.selectedTab)}`,
+          `${this.baseUrl}/snippets/${encodeURIComponent(this.selectedTab)}`,
           this.query,
           {
             headers: {
