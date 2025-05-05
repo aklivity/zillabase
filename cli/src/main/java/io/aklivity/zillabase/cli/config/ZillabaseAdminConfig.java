@@ -300,7 +300,7 @@ public final class ZillabaseAdminConfig
                 exit: storage_filesystem_server
                 with:
                   directory: ${params.bucket}
-                  path: ${params.path}  
+                  path: ${params.path}
               - when:
                   - method: GET
                     path: /v1/snippets
