@@ -365,6 +365,125 @@ paths:
           description: Object deleted successfully
         "404":
           description: Not found
+  /snippets:
+    get:
+      tags:
+        - snippet
+      summary: List of all snippets
+      description: Retrieve a list of all snippets 
+      operationId: listSnippets
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SnippetObject"
+        "400":
+          description: Invalid request parameters
+        "404":
+          description: Bucket not found
+  /snippets/{snippet-name}:
+    get:
+      tags:
+        - snippet
+      summary: Retrieve a snippet
+      description: Retrieve a specific snippet
+      operationId: getSnippet
+      parameters:
+        - name: snippet-name
+          in: path
+          description: Name of the snippet
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SnippetContent"
+        "404":
+          description: Object not found
+    post:
+      tags:
+        - snippet
+      summary: Create snippet
+      description: Upload a specific snippet in a bucket
+      operationId: createSnippet
+      parameters:
+        - name: snippet-name
+          in: path
+          description: Name of the snippet
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SnippetContent"
+      responses:
+        "204":
+          description: Snippet created successfully
+        "400":
+          description: Bad Request
+    put:
+      tags:
+        - snippet
+      summary: Update snippet
+      description: Update an existing snippet
+      operationId: updateSnippet
+      parameters:
+        - name: snippet-name
+          in: path
+          description: Name of the snippet
+          required: true
+          schema:
+            type: string
+        - name: etag
+          in: header
+          description: A hash representing the current content of the snippet.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SnippetContent"
+      responses:
+        "200":
+          description: Snippet updated successfully
+        "400":
+          description: Bad Request
+        "404":
+          description: Object not found
+        "412":
+          description: Precondition Failed
+    delete:
+      tags:
+        - snippet
+      summary: Delete snippet
+      description: Delete a specific snippet by name
+      operationId: deleteSnippet
+      parameters:
+        - name: snippet-name
+          in: path
+          description: Name of the snippet
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Snippet deleted successfully
+        "404":
+          description: Not found
   /auth/users:
     post:
       tags:
@@ -585,6 +704,12 @@ components:
           type: string
           enum: [ file, directory ]
           description: Indicates whether the object is a file or a directory
+    SnippetObject:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the snippet
     StorageObjects:
       type: object
       properties:
@@ -602,6 +727,10 @@ components:
         - type: string
           format: binary
           description: File content (binary)
+    SnippetContent:
+      oneOf:
+        - type: string
+          description: File content
     IdentityProviderRequest:
       type: object
       properties:

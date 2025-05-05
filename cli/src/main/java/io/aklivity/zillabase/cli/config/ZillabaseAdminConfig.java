@@ -212,6 +212,14 @@ public final class ZillabaseAdminConfig
                 exit: auth_http_client
               - when:
                   - headers:
+                      :path: /v1/snippets
+                exit: http_filesystem_proxy
+              - when:
+                  - headers:
+                      :path: /v1/snippets/*
+                exit: http_filesystem_proxy
+              - when:
+                  - headers:
                       :path: /v1/storage/*
                 exit: http_filesystem_proxy
           config_http_client:
@@ -275,7 +283,7 @@ public final class ZillabaseAdminConfig
                     path: /v1/storage/buckets/{bucket}
                   - method: DELETE
                     path: /v1/storage/buckets/{bucket}
-                exit: filesystem_server
+                exit: storage_filesystem_server
                 with:
                   directory: ${params.bucket}
               - when:
@@ -289,19 +297,40 @@ public final class ZillabaseAdminConfig
                     path: /v1/storage/objects/{bucket}/{path}
                   - method: DELETE
                     path: /v1/storage/objects/{bucket}/{path}
-                exit: filesystem_server
+                exit: storage_filesystem_server
                 with:
                   directory: ${params.bucket}
+                  path: ${params.path}
+              - when:
+                  - method: GET
+                    path: /v1/snippets
+                  - method: GET
+                    path: /v1/snippets/{path}
+                  - method: GET
+                    path: /v1/snippets/
+                  - method: POST
+                    path: /v1/snippets/{path}
+                  - method: PUT
+                    path: /v1/snippets/{path}
+                  - method: DELETE
+                    path: /v1/snippets/{path}
+                exit: snippet_filesystem_server
+                with:
                   path: ${params.path}
           ws_server:
             type: ws
             kind: server
             exit: pgsql_server
-          filesystem_server:
+          storage_filesystem_server:
             type: filesystem
             kind: server
             options:
               location: /var/storage/
+          snippet_filesystem_server:
+            type: filesystem
+            kind: server
+            options:
+              location: /var/snippets/
         telemetry:
           exporters:
             stdout_logs_exporter:
