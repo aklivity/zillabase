@@ -24,38 +24,15 @@
                 @click="addNewSnippetDialog"
               />
             </div>
-            <div class="row q-mt-md full-width">
-              <q-input
-                outlined
-                dense
-                :placeholder="`Search Snippets...`"
-                class="rounded-10 self-center search-input text-weight-light rounded-input full-width"
-              >
-                <template v-slot:append>
-                  <q-icon
-                    name="img:/icons/search.svg"
-                    class="fs-lg filter-gray-dark"
-                  />
-                </template>
-              </q-input>
-            </div>
           </q-card-section>
           <q-tab v-for="(tab, index) in tabs" :key="tab.name" :name="tab.name">
             <!-- Tab name on the left -->
             <span
-              class="text-custom-gray-dark text-capitalize text-weight-light"
+              class="text-custom-gray-dark text-capitalize text-weight-light no-uppercase"
               >{{ tab.name }}</span
             >
             <!-- Buttons on the right -->
             <div class="flex">
-              <q-btn
-                flat
-                dense
-                icon="img:/icons/edit.svg"
-                class="filter-text-secondary"
-                @click="editTab(index)"
-                size="14px"
-              />
               <q-btn
                 flat
                 dense
@@ -119,6 +96,24 @@
               </p>
 
               <div class="sql-editor-area">
+                <div
+                  class="editor-header flex justify-between items-center bg-custom-primary q-px-md q-py-sm"
+                >
+                  <div
+                    class="text-subtitle1 text-custom-text-secondary text-weight-medium"
+                  >
+                    Editor
+                  </div>
+                  <q-btn
+                    unelevated
+                    label="Save"
+                    :ripple="false"
+                    @click="saveSnippet"
+                    class="bg-primary rounded-10 text-white"
+                  />
+                </div>
+                <q-separator />
+
                 <q-input
                   outlined
                   type="textarea"
@@ -195,6 +190,7 @@
             outlined
             placeholder="e.g my-snippet"
             class="rounded-10 self-center text-weight-light rounded-input bg-custom-primary"
+            v-model="newSnippetName"
           />
         </q-card-section>
         <q-separator />
@@ -211,6 +207,7 @@
             unelevated
             color="light-green"
             class="rounded-10 text-capitalize min-w-80"
+            @click="createSnippet"
           />
         </q-card-actions>
       </q-card>
@@ -220,22 +217,32 @@
 <script>
 import { defineComponent } from "vue";
 import { ref } from "vue";
+import axios from "axios";
 export default defineComponent({
   name: "SqlComponent",
   data() {
     return {
       addNewSnippet: false,
       selectedTab: "initialTab",
-      tabs: [
-        {
-          name: "Run Queries",
-        },
-      ],
-      resuleSet: null,
+      tabs: [],
       rows: [],
       columns: [],
       query: "",
+      baseUrl: "http://localhost:7184/v1",
+      newSnippetName: "",
+      snippetEtag: "",
     };
+  },
+  watch: {
+    selectedTab(newVal) {
+      this.query = "";
+      this.rows = [];
+      this.columns = [];
+      this.snippetEtag = "";
+      if (newVal && newVal !== "initialTab") {
+        this.loadSnippet(newVal);
+      }
+    },
   },
   setup() {
     return {
@@ -243,6 +250,7 @@ export default defineComponent({
     };
   },
   mounted() {
+    this.fetchSnippets();
     this.$ws.addMessageHandler((data) => {
       if (data.type == "execute_queries") {
         this.processQueryResult(data.data);
@@ -254,7 +262,23 @@ export default defineComponent({
   },
   methods: {
     addNewSnippetDialog() {
-      this.addNewSnippet = !this.addNewSnippet;
+      this.newSnippetName = "";
+      this.addNewSnippet = true;
+    },
+    async deleteTab(index) {
+      const snippetName = this.tabs[index].name;
+      try {
+        await axios.delete(`${this.baseUrl}/snippets/${encodeURIComponent(snippetName)}`);
+        this.tabs.splice(index, 1);
+        if (this.tabs.length === 0) {
+          this.selectedTab = "initialTab";
+          this.query = "";
+        } else if (this.selectedTab === snippetName) {
+          this.selectedTab = this.tabs[0].name;
+        }
+      } catch (err) {
+        console.error("Failed to delete snippet", err);
+      }
     },
     runQuery() {
       this.$ws.sendMessage(this.query, "execute_queries");
@@ -271,6 +295,92 @@ export default defineComponent({
       } else {
         this.columns = [];
         this.rows = [];
+      }
+    },
+    async fetchSnippets() {
+      try {
+        const { data } = await axios.get(`${this.baseUrl}/snippets`);
+        this.tabs = data
+          .filter((item) => item.type === "file")
+          .map((item) => ({ name: item.path }));
+        if (this.tabs.length > 0) {
+          if (!this.tabs.some((t) => t.name === this.selectedTab)) {
+            this.selectedTab = this.tabs[0].name;
+          }
+        } else {
+          this.selectedTab = "initialTab";
+        }
+      } catch (err) {
+        console.error("Failed to list snippets", err);
+      }
+    },
+    async loadSnippet(name) {
+      try {
+        const response = await axios.get(
+          `${this.baseUrl}/snippets/${encodeURIComponent(name)}`
+        );
+        let text = "";
+        const body = response.data;
+        if (typeof body === "string") {
+          try {
+            const parsed = JSON.parse(body);
+            text =
+              parsed && typeof parsed === "object" && "content" in parsed
+                ? parsed.content
+                : body;
+          } catch {
+            text = body;
+          }
+        } else if (body && typeof body === "object" && "content" in body) {
+          text = body.content;
+        }
+        this.query = text;
+        this.snippetEtag = response.headers.etag || "";
+      } catch (err) {
+        console.error("Failed to load snippet", err);
+      }
+    },
+    async createSnippet() {
+      const name = this.newSnippetName.trim();
+      if (!name) return;
+      try {
+        await axios.post(
+          `${this.baseUrl}/snippets/${encodeURIComponent(name)}`,
+          { content: "" },
+          { headers: { "Content-Type": "application/json" } }
+        );
+        this.addNewSnippet = false;
+
+        await this.fetchSnippets();
+        this.selectedTab = name;
+        this.query = "";
+        this.snippetEtag = "";
+      } catch (err) {
+        console.error("Failed to create snippet", err);
+      }
+    },
+    async saveSnippet() {
+      if (!this.selectedTab || this.selectedTab === "initialTab") return;
+      try {
+        await axios.put(
+          `${this.baseUrl}/snippets/${encodeURIComponent(this.selectedTab)}`,
+          this.query,
+          {
+            headers: {
+              "If-Match": this.snippetEtag || "*"
+            },
+          }
+        );
+        await this.loadSnippet(this.selectedTab);
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 412) {
+          this.$q.notify({
+            type: "negative",
+            message: "Snippet was modified elsewhere—please reload and try again.",
+          });
+        } else {
+          console.error("Failed to update snippet", err);
+        }
       }
     },
   },
@@ -309,5 +419,19 @@ export default defineComponent({
     height: calc(100vh - 490px);
     overflow: auto;
   }
+}
+  .no-uppercase {
+    text-transform: none;
+  }
+
+.sql-editor-area {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.editor-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 </style>
