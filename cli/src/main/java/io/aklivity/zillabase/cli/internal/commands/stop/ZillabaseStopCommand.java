@@ -53,7 +53,7 @@ public final class ZillabaseStopCommand extends ZillabaseCommand
             : new String[] { "docker", "compose", "down" };
 
         ProcessBuilder builder = new ProcessBuilder(commands);
-        builder.directory(new File(".docker"));
+        builder.directory(new File("/tmp/zillabase-docker"));
         builder.inheritIO();
 
         Process process = builder.start();

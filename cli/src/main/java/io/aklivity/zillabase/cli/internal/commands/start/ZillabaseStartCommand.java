@@ -119,19 +119,22 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
         Path source = Paths.get("zillabase/functions/java/target");
         Path target = Paths.get("/tmp/zillabase-docker/volumes/functions/java");
 
-        Files.walk(source)
-            .filter(f -> f.toString().endsWith(".jar"))
-            .forEach(file ->
-            {
-                try
+        if (Files.exists(source))
+        {
+            Files.walk(source)
+                .filter(f -> f.toString().endsWith(".jar"))
+                .forEach(file ->
                 {
-                    Files.copy(file, target.resolve(source.relativize(file)), REPLACE_EXISTING);
-                }
-                catch (IOException e)
-                {
-                    System.out.println("Failed to copy: " + file);
-                }
-            });
+                    try
+                    {
+                        Files.copy(file, target.resolve(source.relativize(file)), REPLACE_EXISTING);
+                    }
+                    catch (IOException e)
+                    {
+                        System.out.println("Failed to copy: " + file);
+                    }
+                });
+        }
     }
 
     private void runDockerCompose() throws IOException, InterruptedException

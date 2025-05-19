@@ -53,7 +53,7 @@ services:
       test: ["CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/29092"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
 
   kafka-init:
     image: "bitnami/kafka:${KAFKA_VERSION}"
@@ -181,8 +181,8 @@ services:
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/8180" ]
       interval: 5s
-      timeout: 3s
-      retries: 5
+      timeout: 5s
+      retries: 20
     restart: unless-stopped
 
   keycloak-config-cli:
@@ -254,6 +254,8 @@ services:
     command: [ "start", "-v", "-e" ]
     volumes:
       - ./volumes/admin/zilla.yaml:/etc/zilla/zilla.yaml
+      - ./volumes/admin/snippets:/var/snippets
+      - ./volumes/admin/storage:/var/storage
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184" ]
       interval: 5s
