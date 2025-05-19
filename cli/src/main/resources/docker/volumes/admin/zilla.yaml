@@ -95,7 +95,7 @@ bindings:
         with:
           headers:
             overrides:
-              :authority: ${{env.PYTHON_UDF_SERVER_HOST}}:${{env.PYTHON_UDF_SERVER_PORT}}
+              :authority: ${{env.PYTHON_UDF_API_HOST}}:${{env.PYTHON_UDF_API_PORT}}
               :path: /python/functions
         exit: python_udf_http_client
       - when:
@@ -106,7 +106,7 @@ bindings:
         with:
           headers:
             overrides:
-              :authority: ${{env.JAVA_UDF_SERVER_HOST}}:${{env.JAVA_UDF_SERVER_PORT}}
+              :authority: ${{env.JAVA_UDF_API_HOST}}:${{env.JAVA_UDF_API_PORT}}
               :path: /java/functions
         exit: java_udf_http_client
       - when:
@@ -214,8 +214,8 @@ bindings:
     type: tcp
     kind: client
     options:
-      host: ${{env.PYTHON_UDF_SERVER_HOST}}
-      port: ${{env.PYTHON_UDF_SERVER_PORT}}
+      host: ${{env.PYTHON_UDF_API_HOST}}
+      port: ${{env.PYTHON_UDF_API_PORT}}
   java_udf_http_client:
     type: http
     kind: client
@@ -224,8 +224,8 @@ bindings:
     type: tcp
     kind: client
     options:
-      host: ${{env.JAVA_UDF_SERVER_HOST}}
-      port: ${{env.JAVA_UDF_SERVER_PORT}}
+      host: ${{env.JAVA_UDF_API_HOST}}
+      port: ${{env.JAVA_UDF_API_PORT}}
   apicurio_http_client:
     type: http
     kind: client
