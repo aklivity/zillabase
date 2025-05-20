@@ -19,10 +19,15 @@ WORKDIR /opt/udf
 
 COPY src/io/aklivity/zillabase/* .
 
-RUN pip install --upgrade pip
-RUN pip install flask
-RUN pip install arrow-udf
-
 ENV PYTHONPATH="/opt/udf/lib"
 
-CMD ["python3", "main.py"]
+RUN pip install --upgrade pip && \
+    pip install flask arrow-udf
+
+# Check if requirements.txt is provided at runtime
+# Compose setup will mount /opt/udf/lib with potential requirements.txt
+CMD ["/bin/bash", "-c", "\
+  if [ -f /opt/udf/lib/requirements.txt ]; then \
+    pip install -r /opt/udf/lib/requirements.txt; \
+  fi && \
+  python3 main.py"]

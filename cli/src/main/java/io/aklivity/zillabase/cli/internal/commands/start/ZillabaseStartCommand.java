@@ -46,6 +46,7 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
             unpackResourcesDocker();
             copyMigrations();
             copyJavaFunctions();
+            copyPythonFunctions();
             runDockerCompose();
             printExposedEndpoints();
         }
@@ -123,6 +124,28 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
         {
             Files.walk(source)
                 .filter(f -> f.toString().endsWith(".jar"))
+                .forEach(file ->
+                {
+                    try
+                    {
+                        Files.copy(file, target.resolve(source.relativize(file)), REPLACE_EXISTING);
+                    }
+                    catch (IOException e)
+                    {
+                        System.out.println("Failed to copy: " + file);
+                    }
+                });
+        }
+    }
+
+    private void copyPythonFunctions() throws IOException
+    {
+        Path source = Paths.get("zillabase/functions/python");
+        Path target = Paths.get("/tmp/zillabase-docker/volumes/functions/python");
+
+        if (Files.exists(source))
+        {
+            Files.walk(source)
                 .forEach(file ->
                 {
                     try
