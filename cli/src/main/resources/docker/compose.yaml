@@ -205,6 +205,13 @@ services:
   api-gen:
     image: ghcr.io/aklivity/zillabase/api-gen:${ZILLABASE_VERSION}
     hostname: api-gen.zillabase.dev
+    depends_on:
+      kafka:
+        condition: service_healthy
+      apicurio:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       ADMIN_HTTP_URL: ${ADMIN_HTTP_URL}
       KAFKA_BOOTSTRAP_SERVER: ${KAFKA_BOOTSTRAP_SERVER}
@@ -256,6 +263,11 @@ services:
       - ./volumes/admin/zilla.yaml:/etc/zilla/zilla.yaml
       - ./volumes/admin/snippets:/var/snippets
       - ./volumes/admin/storage:/var/storage
+    depends_on:
+      kafka:
+        condition: service_healthy
+      risingwave:
+        condition: service_healthy  
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo -n '' > /dev/tcp/127.0.0.1/7184" ]
       interval: 5s
@@ -308,6 +320,9 @@ services:
 
   postgres-init:
     image: postgres:${POSTGRES_VERSION}
+    depends_on:
+      admin:
+        condition: service_healthy
     volumes:
       - ./volumes/db/:/sql/
     environment:
