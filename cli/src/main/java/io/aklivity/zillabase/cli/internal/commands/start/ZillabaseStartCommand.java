@@ -45,6 +45,7 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
         {
             unpackResourcesDocker();
             copyMigrations();
+            copyKeylock();
             copyJavaFunctions();
             copyPythonFunctions();
             runDockerCompose();
@@ -113,6 +114,16 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
                     e.printStackTrace();
                 }
             });
+    }
+
+    private void copyKeylock() throws IOException
+    {
+        Path source = Paths.get("zillabase/keycloak.yaml");
+        Path target = Paths.get("/tmp/zillabase-docker/volumes/auth/");
+
+        Files.createDirectories(target);
+
+        Files.copy(source, target.resolve(source.getFileName()), REPLACE_EXISTING);
     }
 
     private void copyJavaFunctions() throws IOException
