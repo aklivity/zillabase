@@ -121,6 +121,13 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
         Path source = Paths.get("zillabase/keycloak.yaml");
         Path target = Paths.get("/tmp/zillabase-docker/volumes/auth/");
 
+        if (Files.exists(target))
+        {
+            Files.walk(target)
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
+        }
         Files.createDirectories(target);
 
         Files.copy(source, target.resolve(source.getFileName()), REPLACE_EXISTING);
@@ -156,12 +163,29 @@ public final class ZillabaseStartCommand extends ZillabaseCommand
 
         if (Files.exists(source))
         {
+            if (Files.exists(target))
+            {
+                Files.walk(target)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+            }
+            Files.createDirectories(target);
+
             Files.walk(source)
                 .forEach(file ->
                 {
                     try
                     {
-                        Files.copy(file, target.resolve(source.relativize(file)), REPLACE_EXISTING);
+                        Path destination = target.resolve(source.relativize(file));
+                        if (Files.isDirectory(file))
+                        {
+                            Files.createDirectories(destination);
+                        }
+                        else
+                        {
+                            Files.copy(file, destination, REPLACE_EXISTING);
+                        }
                     }
                     catch (IOException e)
                     {
