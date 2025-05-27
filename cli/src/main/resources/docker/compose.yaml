@@ -212,6 +212,8 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+      karapace:
+        condition: service_healthy
     environment:
       ADMIN_HTTP_URL: ${ADMIN_HTTP_URL}
       KAFKA_BOOTSTRAP_SERVER: ${KAFKA_BOOTSTRAP_SERVER}
