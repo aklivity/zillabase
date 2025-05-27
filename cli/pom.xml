@@ -83,6 +83,14 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.jasig.maven</groupId>
@@ -137,38 +145,45 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <configuration>
-          <filters>
-            <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <exclude>**/module-info.class</exclude>
-                <exclude>META-INF/*.SF</exclude>
-                <exclude>META-INF/*.DSA</exclude>
-                <exclude>META-INF/*.RSA</exclude>
-                <exclude>META-INF/LICENSE</exclude>
-                <exclude>META-INF/LICENSE.md</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
-                <exclude>META-INF/NOTICE</exclude>
-                <exclude>META-INF/NOTICE.md</exclude>
-                <exclude>META-INF/NOTICE.txt</exclude>
-                <exclude>META-INF/MANIFEST.MF</exclude>
-                <exclude>META-INF/DEPENDENCIES</exclude>
-              </excludes>
-            </filter>
-          </filters>
-          <transformers>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-              <mainClass>io.aklivity.zillabase.cli.internal.ZillabaseMain</mainClass>
-              <manifestEntries>
-                <Name>io/aklivity/zillabase/cli/</Name>
-                <Specification-Title>${project.name}</Specification-Title>
-                <Specification-Version>${project.version}</Specification-Version>
-                <Specification-Vendor>aklivity.io</Specification-Vendor>
-              </manifestEntries>
-            </transformer>
-          </transformers>
-        </configuration>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <!-- Transformer to include docker resources -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                  <resource>src/main/resources/docker/</resource>
+                  <file>docker/</file>
+                </transformer>
+  
+                <!-- Transformer to modify the manifest file -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>io.aklivity.zillabase.cli.internal.ZillabaseMain</mainClass>
+                  <manifestEntries>
+                    <Name>io/aklivity/zillabase/cli/</Name>
+                    <Specification-Title>${project.name}</Specification-Title>
+                    <Specification-Version>${project.version}</Specification-Version>
+                    <Specification-Vendor>aklivity.io</Specification-Vendor>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

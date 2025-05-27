@@ -1,0 +1,82 @@
+realm: zillabase
+
+users:
+  - username: allen
+    email: allen.doe@example.com
+    firstName: Allen
+    lastName: Doe
+    enabled: true
+    credentials:
+      - type: password
+        value: Test@123
+        temporary: false
+
+  - username: bertollo
+    email: bertollo.doe@example.com
+    firstName: Bertollo
+    lastName: Doe
+    enabled: true
+    credentials:
+      - type: password
+        value: Test@123
+        temporary: false
+
+  - username: candice
+    email: candice.doe@example.com
+    firstName: Candice
+    lastName: Doe
+    enabled: true
+    credentials:
+      - type: password
+        value: Test@123
+        temporary: false
+
+  - username: dennis
+    email: dennis.doe@example.com
+    firstName: Dennis
+    lastName: Doe
+    enabled: true
+    credentials:
+      - type: password
+        value: Test@123
+        temporary: false
+
+  - username: elaine
+    email: elaine.doe@example.com
+    firstName: Elaine
+    lastName: Doe
+    enabled: true
+    credentials:
+      - type: password
+        value: Test@123
+        temporary: false
+
+  - username: fred
+    email: fred.doe@example.com
+    firstName: Fred
+    lastName: Doe
+    enabled: true
+    credentials:
+      - type: password
+        value: Test@123
+        temporary: false
+
+  - username: greg
+    email: greg.doe@example.com
+    firstName: Greg
+    lastName: Doe
+    enabled: true
+    credentials:
+      - type: password
+        value: Test@123
+        temporary: false
+
+clients:
+  - clientId: streampay
+    enabled: true
+    publicClient: true
+    rootUrl: "http://localhost:8084"
+    redirectUris:
+      - "http://localhost:8084/*"
+    webOrigins:
+      - "*"

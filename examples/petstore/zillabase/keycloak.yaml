@@ -1,0 +1,11 @@
+realm: zillabase
+
+clients:
+  - clientId: petstore
+    enabled: true
+    publicClient: true
+    rootUrl: "http://localhost:8084"
+    redirectUris:
+      - "http://localhost:8084/*"
+    webOrigins:
+      - "*"

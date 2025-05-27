@@ -231,6 +231,7 @@
                   <exclude>src/test/**/seed-kafka.yaml</exclude>
                   <exclude>src/test/**/kafka-asyncapi.yaml</exclude>
                   <exclude>src/test/**/http-asyncapi.yaml</exclude>
+                  <exclude>src/main/resources/docker/**</exclude>
                 </excludes>
               </licenseSet>
             </licenseSets>
