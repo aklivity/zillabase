@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",
-    "axios": "^1.7.9",
+    "axios": "^1.13.5",
     "events": "^3.3.0",
     "express": "^4.21.2",
     "nodemon": "^3.1.9",
